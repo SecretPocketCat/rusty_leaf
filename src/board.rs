@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use std::{
     iter,
-    ops::{Range, Rem},
+    ops::{Div, Mul, Range, Rem, Sub},
 };
 
 struct Board {
@@ -161,11 +161,18 @@ impl Board {
         ((self.width / self.section_size) * row + col, section)
     }
 
-    fn get_section_by_section_index(&self, index: usize) -> Vec<usize> {
+    fn get_section_coords_from_section_index(&self, index: usize) -> (usize, usize) {
         let x = index.rem_euclid(self.width / self.section_size) * self.section_size;
-        let y = index.div_floor(self.heigth / self.section_size) * self.section_size;
+        let y = index
+            .div(self.width / self.section_size)
+            .mul(self.section_size);
 
-        self.get_section(x, y).1
+        (x, y)
+    }
+
+    fn get_section_by_section_index(&self, index: usize) -> Vec<usize> {
+        let coords = self.get_section_coords_from_section_index(index);
+        self.get_section(coords.0, coords.1).1
     }
 
     fn section_done(&self, x: usize, y: usize) -> (usize, bool) {
@@ -282,12 +289,37 @@ mod tests {
         board.get_section(x, y)
     }
 
+    #[test_case(0, 6, 4, 2 => (0, 0))]
+    #[test_case(2, 6, 4, 2 => (4, 0))]
+    #[test_case(5, 6, 4, 2 => (4, 2))]
+    #[test_case(6, 6, 4, 2 => (0, 4))]
+    #[test_case(2, 6, 2, 2 => (4, 0))]
+    fn get_section_coords_from_section_index(
+        index: usize,
+        width: usize,
+        height: usize,
+        section_size: usize,
+    ) -> (usize, usize) {
+        let board = Board::new(width, height, section_size);
+
+        board.get_section_coords_from_section_index(index)
+    }
+
     #[test_case(0 => vec![0, 1, 4, 5])]
     #[test_case(1 => vec![2, 3, 6, 7])]
     #[test_case(2 => vec![8, 9, 12, 13])]
     #[test_case(3 => vec![10, 11, 14, 15])]
     fn get_section_by_section_index(section_index: usize) -> Vec<usize> {
         let board = Board::new(4, 4, 2);
+
+        board.get_section_by_section_index(section_index)
+    }
+
+    #[test_case(0 => vec![0, 1, 6, 7])]
+    #[test_case(1 => vec![2, 3, 8, 9])]
+    #[test_case(2 => vec![4, 5, 10, 11])]
+    fn get_section_by_section_index_wide_board(section_index: usize) -> Vec<usize> {
+        let board = Board::new(6, 2, 2);
 
         board.get_section_by_section_index(section_index)
     }
