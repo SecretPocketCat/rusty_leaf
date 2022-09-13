@@ -1,5 +1,8 @@
 #![allow(dead_code)]
-use std::iter;
+use std::{
+    iter,
+    ops::{Range, Rem},
+};
 
 struct Board {
     width: usize,
@@ -118,17 +121,24 @@ impl Board {
         Ok(cleared)
     }
 
-    fn row_done(&self, row: usize) -> bool {
-        let from = row * self.width;
-        (from..from + self.width).all(|i| self.fields[i])
+    fn get_column(&self, col: usize) -> Vec<usize> {
+        if col >= self.width {
+            panic!("Column [{col}] is out of bounds");
+        }
+
+        (col..self.width * self.heigth)
+            .into_iter()
+            .filter(|i| *i == col || i.rem(col + self.width) == 0)
+            .collect()
     }
 
-    fn column_done(&self, column: usize) -> bool {
-        self.fields
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| i % (self.width + column) == 0)
-            .all(|(_, taken)| *taken)
+    fn get_row_range(&self, row: usize) -> Range<usize> {
+        if row >= self.heigth {
+            panic!("Row [{row}] is out of bounds");
+        }
+
+        let from = row * self.width;
+        from..from + self.width
     }
 
     fn get_section(&self, x: usize, y: usize) -> (usize, Vec<usize>) {
@@ -154,7 +164,6 @@ impl Board {
     fn get_section_by_section_index(&self, index: usize) -> Vec<usize> {
         let x = index.rem_euclid(self.width / self.section_size) * self.section_size;
         let y = index.div_floor(self.heigth / self.section_size) * self.section_size;
-        println!(" index {index} => {x}, {y}");
 
         self.get_section(x, y).1
     }
@@ -164,21 +173,22 @@ impl Board {
         (section.0, section.1.iter().all(|i| self.fields[*i]))
     }
 
+    fn row_done(&self, row: usize) -> bool {
+        self.get_row_range(row).all(|i| self.fields[i])
+    }
+
+    fn column_done(&self, column: usize) -> bool {
+        self.get_column(column).iter().all(|i| self.fields[*i])
+    }
+
     fn clear_column(&mut self, column: usize) {
-        for f in self
-            .fields
-            .iter_mut()
-            .enumerate()
-            .filter(|(i, _)| i % (self.width + column) == 0)
-            .into_iter()
-        {
-            *f.1 = false;
+        for i in self.get_column(column).iter() {
+            self.fields[*i] = false;
         }
     }
 
     fn clear_row(&mut self, row: usize) {
-        let from = row * self.width;
-        for i in from..from + self.width {
+        for i in self.get_row_range(row) {
             self.fields[i] = false;
         }
     }
@@ -193,7 +203,6 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::assert_eq;
     use test_case::test_case;
 
     #[test_case(1, 1, 1)]
@@ -244,20 +253,22 @@ mod tests {
         board.can_place_piece(x, y, &piece)
     }
 
-    #[test_case(0, true)]
-    #[test_case(1, false)]
-    fn row_done(row: usize, expected: bool) {
-        let board = Board::new_with_fields(2, 2, 2, [true, true, true, false].into());
+    #[test_case(0 => vec![0, 4])]
+    #[test_case(2 => vec![2, 6])]
+    #[test_case(5 => panics)]
+    fn get_column(column: usize) -> Vec<usize> {
+        let board = Board::new(4, 2, 2);
 
-        assert_eq!(expected, board.row_done(row));
+        board.get_column(column)
     }
 
-    #[test_case(0, true)]
-    #[test_case(1, false)]
-    fn column_done(col: usize, expected: bool) {
-        let board = Board::new_with_fields(2, 2, 2, [true, true, true, false].into());
+    #[test_case(0 => 0..4)]
+    #[test_case(2 => 8..12)]
+    #[test_case(5 => panics)]
+    fn get_row_range(row: usize) -> Range<usize> {
+        let board = Board::new(4, 3, 2);
 
-        assert_eq!(expected, board.column_done(col));
+        board.get_row_range(row)
     }
 
     #[test_case(0, 0, (0, vec![0, 1, 4, 5]))]
@@ -281,6 +292,22 @@ mod tests {
         assert_eq!(expected, board.get_section_by_section_index(section_index));
     }
 
+    #[test_case(0, true)]
+    #[test_case(1, false)]
+    fn row_done(row: usize, expected: bool) {
+        let board = Board::new_with_fields(2, 2, 2, [true, true, true, false].into());
+
+        assert_eq!(expected, board.row_done(row));
+    }
+
+    #[test_case(0, true)]
+    #[test_case(1, false)]
+    fn column_done(col: usize, expected: bool) {
+        let board = Board::new_with_fields(2, 2, 2, [true, true, true, false].into());
+
+        assert_eq!(expected, board.column_done(col));
+    }
+
     #[test_case(0, 0, (0, true))]
     #[test_case(1, 1, (0, true))]
     #[test_case(0, 2, (1, false))]
@@ -293,5 +320,32 @@ mod tests {
         );
 
         assert_eq!(expected, board.section_done(x, y));
+    }
+
+    #[test_case(0 => vec![false, true, false, true])]
+    #[test_case(1 => vec![true, false, true, false])]
+    fn clear_column(col: usize) -> Vec<bool> {
+        let mut board = Board::new_with_fields(2, 2, 2, [true; 4].into());
+
+        board.clear_column(col);
+        board.fields
+    }
+
+    #[test_case(0 => vec![false, false, true, true])]
+    #[test_case(1 => vec![true, true, false, false])]
+    fn clear_row(row: usize) -> Vec<bool> {
+        let mut board = Board::new_with_fields(2, 2, 2, [true; 4].into());
+
+        board.clear_row(row);
+        board.fields
+    }
+
+    #[test_case(0 => vec![false, false, true, true, false, false, true, true])]
+    #[test_case(1 => vec![true, true, false, false, true, true, false, false])]
+    fn clear_section(section: usize) -> Vec<bool> {
+        let mut board = Board::new_with_fields(4, 2, 2, [true; 8].into());
+
+        board.clear_section(section);
+        board.fields
     }
 }
