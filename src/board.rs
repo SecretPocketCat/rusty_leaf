@@ -1,6 +1,9 @@
 use std::{iter, ops::Rem};
 
-struct Board<const S: usize, const W: usize, const H: usize = W> {
+struct Board {
+    width: usize,
+    heigth: usize,
+    section_size: usize,
     fields: Vec<bool>,
 }
 
@@ -15,14 +18,21 @@ enum PlaceError {
     OutOfBounds,
 }
 
-impl<const S: usize, const W: usize, const H: usize> Board<S, W, H> {
-    pub fn new() -> Self {
-        if W * H % (S * S) != 0 {
-            panic!("Invalid section size {}", S);
+impl Board {
+    pub fn new(width: usize, heigth: usize, section_size: usize) -> Self {
+        if width == 0 || heigth == 0 || section_size == 0 {
+            panic!("Invalid dimension - no dimension can be 0");
+        }
+
+        if width * heigth % (section_size * section_size) != 0 {
+            panic!("Invalid section size {section_size}");
         }
 
         Self {
-            fields: iter::repeat(false).take(W * H).collect(),
+            width,
+            heigth,
+            section_size,
+            fields: iter::repeat(false).take(width * heigth).collect(),
         }
     }
 
@@ -35,8 +45,8 @@ impl<const S: usize, const W: usize, const H: usize> Board<S, W, H> {
         let mut errors = Vec::new();
 
         for field in piece {
-            let i = field + x + y * W;
-            if i > W * H {
+            let i = field + x + y * self.width;
+            if i > self.width * self.heigth {
                 errors.push(PlaceError::OutOfBounds);
             } else if self.fields[i] {
                 errors.push(PlaceError::Taken);
@@ -65,7 +75,7 @@ impl<const S: usize, const W: usize, const H: usize> Board<S, W, H> {
             let row_done = self.row_done(y);
             let section_done = self.section_done(x, y);
 
-            self.fields[field + x + y * W] = true;
+            self.fields[field + x + y * self.width] = true;
 
             if !col_done && self.column_done(x) {
                 cleared.push(BoardClear::Column(x));
@@ -91,13 +101,9 @@ impl<const S: usize, const W: usize, const H: usize> Board<S, W, H> {
         Ok(cleared)
     }
 
-    fn get_change_count(&self, x: usize, y: usize) -> usize {
-        [].iter().filter(|taken| **taken).count()
-    }
-
     fn row_done(&self, row: usize) -> bool {
-        let from = row * W;
-        (from..from + W).all(|i| self.fields[i])
+        let from = row * self.width;
+        (from..from + self.width).all(|i| self.fields[i])
     }
 
     fn column_done(&self, column: usize) -> bool {
@@ -114,21 +120,21 @@ impl<const S: usize, const W: usize, const H: usize> Board<S, W, H> {
     }
 
     fn get_section(&self, x: usize, y: usize) -> (usize, Vec<usize>) {
-        let mut section = Vec::with_capacity(S * S);
+        let mut section = Vec::with_capacity(self.section_size * self.section_size);
 
-        let row = H.div_floor(y);
-        let col = W.div_floor(x);
+        let row = self.heigth.div_floor(y);
+        let col = self.width.div_floor(x);
 
-        for i in 0..S {
-            section.push(row * W + col + i);
+        for i in 0..self.section_size {
+            section.push(row * self.width + col + i);
         }
 
         (row * col, section)
     }
 
     fn get_section_by_index(&self, index: usize) -> Vec<usize> {
-        let x = index.rem_euclid(W) * S;
-        let y = index.div_floor(H / S) * S;
+        let x = index.rem_euclid(self.width) * self.section_size;
+        let y = index.div_floor(self.heigth / self.section_size) * self.section_size;
         self.get_section(x, y).1
     }
 
@@ -145,8 +151,8 @@ impl<const S: usize, const W: usize, const H: usize> Board<S, W, H> {
     }
 
     fn clear_row(&mut self, row: usize) {
-        let from = row * W;
-        for i in from..from + W {
+        let from = row * self.width;
+        for i in from..from + self.width {
             self.fields[i] = false;
         }
     }
@@ -155,5 +161,24 @@ impl<const S: usize, const W: usize, const H: usize> Board<S, W, H> {
         for i in self.get_section_by_index(section) {
             self.fields[i] = false;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::{assert_eq, assert_ne};
+    use test_case::test_case;
+
+    #[test_case(1, 1, 1)]
+    #[test_case(3, 3, 1)]
+    #[test_case(3, 3, 3)]
+    #[test_case(12, 9, 3)]
+    #[test_case(10, 10, 3 => panics)]
+    #[test_case(0, 1, 1 => panics)]
+    #[test_case(1, 0, 1 => panics)]
+    #[test_case(1, 1, 0 => panics)]
+    fn new(width: usize, heigth: usize, section_size: usize) {
+        Board::new(width, heigth, section_size);
     }
 }
