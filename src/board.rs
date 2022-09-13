@@ -1,4 +1,5 @@
-use std::{iter, ops::Rem};
+#![allow(dead_code)]
+use std::iter;
 
 struct Board {
     width: usize,
@@ -21,6 +22,20 @@ enum PlaceError {
 
 impl Board {
     pub fn new(width: usize, heigth: usize, section_size: usize) -> Self {
+        Self::new_with_fields(
+            width,
+            heigth,
+            section_size,
+            iter::repeat(false).take(width * heigth).collect(),
+        )
+    }
+
+    fn new_with_fields(
+        width: usize,
+        heigth: usize,
+        section_size: usize,
+        fields: Vec<bool>,
+    ) -> Self {
         if width == 0 || heigth == 0 || section_size == 0 {
             panic!("Invalid dimension - no dimension can be 0");
         }
@@ -33,7 +48,7 @@ impl Board {
             width,
             heigth,
             section_size,
-            fields: iter::repeat(false).take(width * heigth).collect(),
+            fields,
         }
     }
 
@@ -195,11 +210,28 @@ mod tests {
     #[test_case(2, 2 => matches Ok(_))]
     #[test_case(4, 4 => matches Ok(_))]
     fn can_place_square_piece_maybe_taken(x: usize, y: usize) -> Result<(), PlaceError> {
+        // todo: use new_with_fields
         let mut board = Board::new(6, 9, 3);
         let piece = [0, 1, 6, 7];
 
         board.place_piece(0, 0, &piece).unwrap();
 
         board.can_place_piece(x, y, &piece)
+    }
+
+    #[test_case(0, true)]
+    #[test_case(1, false)]
+    fn row_done(row: usize, expected: bool) {
+        let board = Board::new_with_fields(2, 2, 2, [true, true, true, false].into());
+
+        assert_eq!(expected, board.row_done(row));
+    }
+
+    #[test_case(0, true)]
+    #[test_case(1, false)]
+    fn column_done(col: usize, expected: bool) {
+        let board = Board::new_with_fields(2, 2, 2, [true, true, true, false].into());
+
+        assert_eq!(expected, board.column_done(col));
     }
 }
