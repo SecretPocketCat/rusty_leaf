@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use std::{
     iter,
-    ops::{Div, Mul, Range, Rem, Sub},
+    ops::{Div, Mul, Range, Rem},
 };
 
 struct Board {
@@ -11,6 +11,7 @@ struct Board {
     fields: Vec<bool>,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 enum BoardClear {
     Row(usize),
     Column(usize),
@@ -25,7 +26,7 @@ enum PlaceError {
 
 impl Board {
     pub fn new(width: usize, heigth: usize, section_size: usize) -> Self {
-        Self::new_with_fields(
+        Self::with_fields(
             width,
             heigth,
             section_size,
@@ -33,12 +34,7 @@ impl Board {
         )
     }
 
-    fn new_with_fields(
-        width: usize,
-        heigth: usize,
-        section_size: usize,
-        fields: Vec<bool>,
-    ) -> Self {
+    fn with_fields(width: usize, heigth: usize, section_size: usize, fields: Vec<bool>) -> Self {
         if width == 0 || heigth == 0 || section_size == 0 {
             panic!("Invalid dimension - no dimension can be 0");
         }
@@ -91,11 +87,14 @@ impl Board {
         let mut cleared = Vec::new();
 
         for field in piece {
+            let x = (field + x).rem(self.width);
+            let y = field / self.width + y;
+
             let col_done = self.column_done(x);
             let row_done = self.row_done(y);
             let section_done = self.section_done(x, y);
 
-            self.fields[field + x + y * self.width] = true;
+            self.fields[y * self.width + x] = true;
 
             if !col_done && self.column_done(x) {
                 cleared.push(BoardClear::Column(x));
@@ -108,14 +107,6 @@ impl Board {
             if !section_done.1 && self.section_done(x, y).1 {
                 cleared.push(BoardClear::Section(section_done.0));
             }
-        }
-
-        for x in cleared.iter() {
-            match x {
-                BoardClear::Row(row) => self.clear_row(*row),
-                BoardClear::Column(col) => self.clear_column(*col),
-                BoardClear::Section(section) => self.clear_section(*section),
-            };
         }
 
         Ok(cleared)
@@ -227,7 +218,7 @@ mod tests {
     #[test_case(2, 1, 1, vec![true, false])]
     #[test_case(2, 1, 1, vec![true] => panics)]
     fn new_with_fields(width: usize, heigth: usize, section_size: usize, fields: Vec<bool>) {
-        Board::new_with_fields(width, heigth, section_size, fields);
+        Board::with_fields(width, heigth, section_size, fields);
     }
 
     #[test_case(0, 0 => matches Ok(_))]
@@ -255,7 +246,7 @@ mod tests {
         for i in piece {
             fields[i] = true;
         }
-        let board = Board::new_with_fields(6, 9, 3, fields.into());
+        let board = Board::with_fields(6, 9, 3, fields.into());
 
         board.can_place_piece(x, y, &piece)
     }
@@ -327,7 +318,7 @@ mod tests {
     #[test_case(0 => true)]
     #[test_case(1 => false)]
     fn row_done(row: usize) -> bool {
-        let board = Board::new_with_fields(2, 2, 2, [true, true, true, false].into());
+        let board = Board::with_fields(2, 2, 2, [true, true, true, false].into());
 
         board.row_done(row)
     }
@@ -335,7 +326,7 @@ mod tests {
     #[test_case(0 => true)]
     #[test_case(1 => false)]
     fn column_done(col: usize) -> bool {
-        let board = Board::new_with_fields(2, 2, 2, [true, true, true, false].into());
+        let board = Board::with_fields(2, 2, 2, [true, true, true, false].into());
 
         board.column_done(col)
     }
@@ -344,7 +335,7 @@ mod tests {
     #[test_case(1, 1 => (0, true))]
     #[test_case(0, 2 => (1, false))]
     fn section_done(x: usize, y: usize) -> (usize, bool) {
-        let board = Board::new_with_fields(
+        let board = Board::with_fields(
             2,
             4,
             2,
@@ -357,7 +348,7 @@ mod tests {
     #[test_case(0 => vec![false, true, false, true])]
     #[test_case(1 => vec![true, false, true, false])]
     fn clear_column(col: usize) -> Vec<bool> {
-        let mut board = Board::new_with_fields(2, 2, 2, [true; 4].into());
+        let mut board = Board::with_fields(2, 2, 2, [true; 4].into());
 
         board.clear_column(col);
         board.fields
@@ -366,7 +357,7 @@ mod tests {
     #[test_case(0 => vec![false, false, true, true])]
     #[test_case(1 => vec![true, true, false, false])]
     fn clear_row(row: usize) -> Vec<bool> {
-        let mut board = Board::new_with_fields(2, 2, 2, [true; 4].into());
+        let mut board = Board::with_fields(2, 2, 2, [true; 4].into());
 
         board.clear_row(row);
         board.fields
@@ -375,9 +366,54 @@ mod tests {
     #[test_case(0 => vec![false, false, true, true, false, false, true, true])]
     #[test_case(1 => vec![true, true, false, false, true, true, false, false])]
     fn clear_section(section: usize) -> Vec<bool> {
-        let mut board = Board::new_with_fields(4, 2, 2, [true; 8].into());
+        let mut board = Board::with_fields(4, 2, 2, [true; 8].into());
 
         board.clear_section(section);
         board.fields
+    }
+
+    #[test_case(Vec::<usize>::new() => Vec::<BoardClear>::new())]
+    #[test_case(vec![6, 7, 10, 11, 15] => Vec::<BoardClear>::new())]
+    #[test_case(vec![2, 3] => vec![BoardClear::Row(0)])]
+    #[test_case(vec![8, 12] => vec![BoardClear::Column(0)])]
+    #[test_case(vec![5] => vec![BoardClear::Section(0)])]
+    #[test_case(vec![2, 3, 5, 8, 12] => vec![BoardClear::Row(0), BoardClear::Column(0), BoardClear::Section(0)])]
+    fn place_piece(taken: Vec<usize>) -> Vec<BoardClear> {
+        let mut fields = [false; 16];
+
+        for i in taken {
+            fields[i] = true;
+        }
+
+        let mut board = Board::with_fields(4, 4, 2, fields.into());
+        // corner piece
+        board.place_piece(0, 0, &[0, 1, 4]).unwrap()
+    }
+
+    #[test]
+    fn place_piece_cross() {
+        let mut fields = [false; 9];
+        for i in [0, 2, 6, 8] {
+            fields[i] = true;
+        }
+
+        let mut board = Board::with_fields(3, 3, 3, fields.into());
+        // corner piece
+        let res = board.place_piece(0, 0, &[1, 3, 4, 5, 7]).unwrap();
+
+        assert_eq!(Vec::<bool>::from([true; 9]), board.fields);
+
+        assert_eq!(
+            res,
+            vec![
+                BoardClear::Row(0),
+                BoardClear::Column(0),
+                BoardClear::Column(1),
+                BoardClear::Column(2),
+                BoardClear::Row(1),
+                BoardClear::Row(2),
+                BoardClear::Section(0)
+            ]
+        )
     }
 }
