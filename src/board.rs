@@ -44,6 +44,14 @@ impl Board {
             panic!("Invalid section size {section_size}");
         }
 
+        if fields.len() != width * heigth {
+            panic!(
+                "Invalid fields len {}, should be {}",
+                fields.len(),
+                width * heigth
+            );
+        }
+
         Self {
             width,
             heigth,
@@ -123,28 +131,33 @@ impl Board {
             .all(|(_, taken)| *taken)
     }
 
-    fn section_done(&self, x: usize, y: usize) -> (usize, bool) {
-        let section = self.get_section(x, y);
-        (section.0, section.1.iter().all(|i| self.fields[*i]))
-    }
-
     fn get_section(&self, x: usize, y: usize) -> (usize, Vec<usize>) {
         let mut section = Vec::with_capacity(self.section_size * self.section_size);
 
-        let row = y.div_floor(self.heigth);
-        let col = x.div_floor(self.width);
+        let row = y.div_floor(self.section_size);
+        let col = x.div_floor(self.section_size);
 
-        for i in 0..self.section_size {
-            section.push(row * self.width + col + i);
+        println!("{x}, {y} => {col}, {row}");
+
+        let moved_y = row * self.section_size;
+        for y in moved_y..moved_y + self.section_size {
+            for x in 0..self.section_size {
+                section.push(y * self.width + col + x);
+            }
         }
 
-        (row * col, section)
+        ((self.width / self.section_size) * row + col, section)
     }
 
     fn get_section_by_section_index(&self, index: usize) -> Vec<usize> {
         let x = index.rem_euclid(self.width) * self.section_size;
         let y = index.div_floor(self.heigth / self.section_size) * self.section_size;
         self.get_section(x, y).1
+    }
+
+    fn section_done(&self, x: usize, y: usize) -> (usize, bool) {
+        let section = self.get_section(x, y);
+        (section.0, section.1.iter().all(|i| self.fields[*i]))
     }
 
     fn clear_column(&mut self, column: usize) {
@@ -233,5 +246,28 @@ mod tests {
         let board = Board::new_with_fields(2, 2, 2, [true, true, true, false].into());
 
         assert_eq!(expected, board.column_done(col));
+    }
+
+    #[test_case(0, 0, (0, vec![0, 1, 4, 5]))]
+    #[test_case(1, 1, (0, vec![0, 1, 4, 5]))]
+    #[test_case(0, 2, (2, vec![8, 9, 12, 13]))]
+    fn get_section(x: usize, y: usize, expected: (usize, Vec<usize>)) {
+        let board = Board::new(4, 4, 2);
+
+        assert_eq!(expected, board.get_section(x, y));
+    }
+
+    #[test_case(0, 0, (0, true))]
+    #[test_case(1, 1, (0, true))]
+    #[test_case(0, 2, (1, false))]
+    fn section_done(x: usize, y: usize, expected: (usize, bool)) {
+        let board = Board::new_with_fields(
+            2,
+            4,
+            2,
+            [true, true, true, true, true, true, false, false].into(),
+        );
+
+        assert_eq!(expected, board.section_done(x, y));
     }
 }
