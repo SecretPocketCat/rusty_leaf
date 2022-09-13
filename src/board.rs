@@ -271,47 +271,47 @@ mod tests {
         board.get_row_range(row)
     }
 
-    #[test_case(0, 0, (0, vec![0, 1, 4, 5]))]
-    #[test_case(1, 1, (0, vec![0, 1, 4, 5]))]
-    #[test_case(2, 0, (1, vec![2, 3, 6, 7]))]
-    #[test_case(0, 2, (2, vec![8, 9, 12, 13]))]
-    #[test_case(2, 2, (3, vec![10, 11, 14, 15]))]
-    fn get_section(x: usize, y: usize, expected: (usize, Vec<usize>)) {
+    #[test_case(0, 0 => (0, vec![0, 1, 4, 5]))]
+    #[test_case(1, 1 => (0, vec![0, 1, 4, 5]))]
+    #[test_case(2, 0 => (1, vec![2, 3, 6, 7]))]
+    #[test_case(0, 2 => (2, vec![8, 9, 12, 13]))]
+    #[test_case(2, 2 => (3, vec![10, 11, 14, 15]))]
+    fn get_section(x: usize, y: usize) -> (usize, Vec<usize>) {
         let board = Board::new(4, 4, 2);
 
-        assert_eq!(expected, board.get_section(x, y));
+        board.get_section(x, y)
     }
 
-    #[test_case(0, vec![0, 1, 4, 5])]
-    #[test_case(1, vec![2, 3, 6, 7])]
-    #[test_case(2, vec![8, 9, 12, 13])]
-    #[test_case(3, vec![10, 11, 14, 15])]
-    fn get_section_by_section_index(section_index: usize, expected: Vec<usize>) {
+    #[test_case(0 => vec![0, 1, 4, 5])]
+    #[test_case(1 => vec![2, 3, 6, 7])]
+    #[test_case(2 => vec![8, 9, 12, 13])]
+    #[test_case(3 => vec![10, 11, 14, 15])]
+    fn get_section_by_section_index(section_index: usize) -> Vec<usize> {
         let board = Board::new(4, 4, 2);
 
-        assert_eq!(expected, board.get_section_by_section_index(section_index));
+        board.get_section_by_section_index(section_index)
     }
 
-    #[test_case(0, true)]
-    #[test_case(1, false)]
-    fn row_done(row: usize, expected: bool) {
+    #[test_case(0 => true)]
+    #[test_case(1 => false)]
+    fn row_done(row: usize) -> bool {
         let board = Board::new_with_fields(2, 2, 2, [true, true, true, false].into());
 
-        assert_eq!(expected, board.row_done(row));
+        board.row_done(row)
     }
 
-    #[test_case(0, true)]
-    #[test_case(1, false)]
-    fn column_done(col: usize, expected: bool) {
+    #[test_case(0 => true)]
+    #[test_case(1 => false)]
+    fn column_done(col: usize) -> bool {
         let board = Board::new_with_fields(2, 2, 2, [true, true, true, false].into());
 
-        assert_eq!(expected, board.column_done(col));
+        board.column_done(col)
     }
 
-    #[test_case(0, 0, (0, true))]
-    #[test_case(1, 1, (0, true))]
-    #[test_case(0, 2, (1, false))]
-    fn section_done(x: usize, y: usize, expected: (usize, bool)) {
+    #[test_case(0, 0 => (0, true))]
+    #[test_case(1, 1 => (0, true))]
+    #[test_case(0, 2 => (1, false))]
+    fn section_done(x: usize, y: usize) -> (usize, bool) {
         let board = Board::new_with_fields(
             2,
             4,
@@ -319,7 +319,7 @@ mod tests {
             [true, true, true, true, true, true, false, false].into(),
         );
 
-        assert_eq!(expected, board.section_done(x, y));
+        board.section_done(x, y)
     }
 
     #[test_case(0 => vec![false, true, false, true])]
