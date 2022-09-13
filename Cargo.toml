@@ -1,8 +1,8 @@
 [package]
-name = "bevy_game" # ToDo
+name = "bevy_game"                               # ToDo
 version = "0.1.0"
 publish = false
-authors = ["Niklas Eicker <git@nikl.me>"] # ToDo: you are the author ;)
+authors = ["SPC"]                                # ToDo: you are the author ;)
 edition = "2021"
 exclude = ["dist", "build", "assets", "credits"]
 
@@ -17,12 +17,16 @@ lto = true
 codegen-units = 1
 
 [features]
-dev = [
-    "bevy/dynamic",
-]
+dev = ["bevy/dynamic"]
 
 [dependencies]
-bevy = { version = "0.8", default-features = false, features = ["bevy_asset", "bevy_winit", "render", "png", "x11"] }
+bevy = { version = "0.8", default-features = false, features = [
+    "bevy_asset",
+    "bevy_winit",
+    "render",
+    "png",
+    "x11",
+] }
 bevy_kira_audio = { version = "0.12" }
 bevy_asset_loader = { version = "0.12" }
 rand = { version = "0.8.3" }

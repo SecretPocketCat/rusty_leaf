@@ -1,5 +1,8 @@
+#![feature(int_roundings)]
+
 mod actions;
 mod audio;
+mod board;
 mod loading;
 mod menu;
 mod player;
