@@ -13,6 +13,7 @@ enum BoardClear {
     Section(usize),
 }
 
+#[derive(Debug)]
 enum PlaceError {
     Taken,
     OutOfBounds,
@@ -36,28 +37,21 @@ impl Board {
         }
     }
 
-    pub fn can_place_piece(
-        &self,
-        x: usize,
-        y: usize,
-        piece: &[usize],
-    ) -> Result<(), Vec<PlaceError>> {
-        let mut errors = Vec::new();
+    pub fn can_place_piece(&self, x: usize, y: usize, piece: &[usize]) -> Result<(), PlaceError> {
+        let mut res = Ok(());
 
         for field in piece {
             let i = field + x + y * self.width;
-            if i > self.width * self.heigth {
-                errors.push(PlaceError::OutOfBounds);
+            let offset_x = field.rem_euclid(self.width) + x;
+            if i >= self.width * self.heigth || offset_x >= self.width || y >= self.heigth {
+                // out of bounds has higher prio
+                return Err(PlaceError::OutOfBounds);
             } else if self.fields[i] {
-                errors.push(PlaceError::Taken);
+                res = Err(PlaceError::Taken);
             }
         }
 
-        if errors.len() > 0 {
-            Err(errors)
-        } else {
-            Ok(())
-        }
+        return res;
     }
 
     pub fn place_piece(
@@ -65,7 +59,7 @@ impl Board {
         x: usize,
         y: usize,
         piece: &[usize],
-    ) -> Result<Vec<BoardClear>, Vec<PlaceError>> {
+    ) -> Result<Vec<BoardClear>, PlaceError> {
         self.can_place_piece(x, y, piece)?;
 
         let mut cleared = Vec::new();
@@ -110,7 +104,7 @@ impl Board {
         self.fields
             .iter()
             .enumerate()
-            .filter(|(i, _)| i % column == 0)
+            .filter(|(i, _)| i % (self.width + column) == 0)
             .all(|(_, taken)| *taken)
     }
 
@@ -122,8 +116,8 @@ impl Board {
     fn get_section(&self, x: usize, y: usize) -> (usize, Vec<usize>) {
         let mut section = Vec::with_capacity(self.section_size * self.section_size);
 
-        let row = self.heigth.div_floor(y);
-        let col = self.width.div_floor(x);
+        let row = y.div_floor(self.heigth);
+        let col = x.div_floor(self.width);
 
         for i in 0..self.section_size {
             section.push(row * self.width + col + i);
@@ -132,7 +126,7 @@ impl Board {
         (row * col, section)
     }
 
-    fn get_section_by_index(&self, index: usize) -> Vec<usize> {
+    fn get_section_by_section_index(&self, index: usize) -> Vec<usize> {
         let x = index.rem_euclid(self.width) * self.section_size;
         let y = index.div_floor(self.heigth / self.section_size) * self.section_size;
         self.get_section(x, y).1
@@ -143,7 +137,7 @@ impl Board {
             .fields
             .iter_mut()
             .enumerate()
-            .filter(|(i, _)| i % column == 0)
+            .filter(|(i, _)| i % (self.width + column) == 0)
             .into_iter()
         {
             *f.1 = false;
@@ -158,7 +152,7 @@ impl Board {
     }
 
     fn clear_section(&mut self, section: usize) {
-        for i in self.get_section_by_index(section) {
+        for i in self.get_section_by_section_index(section) {
             self.fields[i] = false;
         }
     }
@@ -180,5 +174,32 @@ mod tests {
     #[test_case(1, 1, 0 => panics)]
     fn new(width: usize, heigth: usize, section_size: usize) {
         Board::new(width, heigth, section_size);
+    }
+
+    #[test_case(0, 0 => matches Ok(_))]
+    #[test_case(3, 3 => matches Ok(_))]
+    #[test_case(4, 6 => matches Ok(_))]
+    #[test_case(5, 0 => matches Err(PlaceError::OutOfBounds))]
+    #[test_case(50, 0 => matches Err(PlaceError::OutOfBounds))]
+    #[test_case(0, 7 => matches Err(PlaceError::OutOfBounds))]
+    #[test_case(0, 50 => matches Err(PlaceError::OutOfBounds))]
+    #[allow(non_snake_case)]
+    fn can_place_L_piece(x: usize, y: usize) -> Result<(), PlaceError> {
+        let board = Board::new(6, 9, 3);
+        board.can_place_piece(x, y, &[0, 6, 12, 13])
+    }
+
+    #[test_case(0, 0 => matches Err(PlaceError::Taken))]
+    #[test_case(1, 0 => matches Err(PlaceError::Taken))]
+    #[test_case(0, 1 => matches Err(PlaceError::Taken))]
+    #[test_case(2, 2 => matches Ok(_))]
+    #[test_case(4, 4 => matches Ok(_))]
+    fn can_place_square_piece_maybe_taken(x: usize, y: usize) -> Result<(), PlaceError> {
+        let mut board = Board::new(6, 9, 3);
+        let piece = [0, 1, 6, 7];
+
+        board.place_piece(0, 0, &piece).unwrap();
+
+        board.can_place_piece(x, y, &piece)
     }
 }
