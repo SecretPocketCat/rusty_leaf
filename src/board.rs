@@ -132,17 +132,19 @@ impl Board {
     }
 
     fn get_section(&self, x: usize, y: usize) -> (usize, Vec<usize>) {
+        if x >= self.width || y >= self.heigth {
+            panic!("Section coords [{x}, {y}] are out of bounds");
+        }
+
         let mut section = Vec::with_capacity(self.section_size * self.section_size);
 
         let row = y.div_floor(self.section_size);
         let col = x.div_floor(self.section_size);
 
-        println!("{x}, {y} => {col}, {row}");
-
         let moved_y = row * self.section_size;
         for y in moved_y..moved_y + self.section_size {
             for x in 0..self.section_size {
-                section.push(y * self.width + col + x);
+                section.push(y * self.width + col * self.section_size + x);
             }
         }
 
@@ -150,8 +152,10 @@ impl Board {
     }
 
     fn get_section_by_section_index(&self, index: usize) -> Vec<usize> {
-        let x = index.rem_euclid(self.width) * self.section_size;
+        let x = index.rem_euclid(self.width / self.section_size) * self.section_size;
         let y = index.div_floor(self.heigth / self.section_size) * self.section_size;
+        println!(" index {index} => {x}, {y}");
+
         self.get_section(x, y).1
     }
 
@@ -189,7 +193,7 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::{assert_eq, assert_ne};
+    use pretty_assertions::assert_eq;
     use test_case::test_case;
 
     #[test_case(1, 1, 1)]
@@ -211,9 +215,9 @@ mod tests {
     #[test_case(50, 0 => matches Err(PlaceError::OutOfBounds))]
     #[test_case(0, 7 => matches Err(PlaceError::OutOfBounds))]
     #[test_case(0, 50 => matches Err(PlaceError::OutOfBounds))]
-    #[allow(non_snake_case)]
-    fn can_place_L_piece(x: usize, y: usize) -> Result<(), PlaceError> {
+    fn can_place_l_piece(x: usize, y: usize) -> Result<(), PlaceError> {
         let board = Board::new(6, 9, 3);
+        // L piece
         board.can_place_piece(x, y, &[0, 6, 12, 13])
     }
 
@@ -223,11 +227,13 @@ mod tests {
     #[test_case(2, 2 => matches Ok(_))]
     #[test_case(4, 4 => matches Ok(_))]
     fn can_place_square_piece_maybe_taken(x: usize, y: usize) -> Result<(), PlaceError> {
-        // todo: use new_with_fields
-        let mut board = Board::new(6, 9, 3);
+        // square piece
         let piece = [0, 1, 6, 7];
-
-        board.place_piece(0, 0, &piece).unwrap();
+        let mut fields = [false; 54];
+        for i in piece {
+            fields[i] = true;
+        }
+        let board = Board::new_with_fields(6, 9, 3, fields.into());
 
         board.can_place_piece(x, y, &piece)
     }
@@ -250,11 +256,23 @@ mod tests {
 
     #[test_case(0, 0, (0, vec![0, 1, 4, 5]))]
     #[test_case(1, 1, (0, vec![0, 1, 4, 5]))]
+    #[test_case(2, 0, (1, vec![2, 3, 6, 7]))]
     #[test_case(0, 2, (2, vec![8, 9, 12, 13]))]
+    #[test_case(2, 2, (3, vec![10, 11, 14, 15]))]
     fn get_section(x: usize, y: usize, expected: (usize, Vec<usize>)) {
         let board = Board::new(4, 4, 2);
 
         assert_eq!(expected, board.get_section(x, y));
+    }
+
+    #[test_case(0, vec![0, 1, 4, 5])]
+    #[test_case(1, vec![2, 3, 6, 7])]
+    #[test_case(2, vec![8, 9, 12, 13])]
+    #[test_case(3, vec![10, 11, 14, 15])]
+    fn get_section_by_section_index(section_index: usize, expected: Vec<usize>) {
+        let board = Board::new(4, 4, 2);
+
+        assert_eq!(expected, board.get_section_by_section_index(section_index));
     }
 
     #[test_case(0, 0, (0, true))]
