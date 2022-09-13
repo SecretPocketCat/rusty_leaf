@@ -208,6 +208,12 @@ mod tests {
         Board::new(width, heigth, section_size);
     }
 
+    #[test_case(2, 1, 1, vec![true, false])]
+    #[test_case(2, 1, 1, vec![true] => panics)]
+    fn new_with_fields(width: usize, heigth: usize, section_size: usize, fields: Vec<bool>) {
+        Board::new_with_fields(width, heigth, section_size, fields);
+    }
+
     #[test_case(0, 0 => matches Ok(_))]
     #[test_case(3, 3 => matches Ok(_))]
     #[test_case(4, 6 => matches Ok(_))]
