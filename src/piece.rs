@@ -5,12 +5,15 @@ use std::{
     ops::{Div, Mul, Range, Rem},
 };
 
-pub struct Piece {
+#[derive(Component)]
+pub struct Piece;
+
+pub struct PieceFields {
     width: usize,
     fields: Vec<usize>,
 }
 
-impl Piece {
+impl PieceFields {
     pub fn new(fields: &[usize], width: usize, padded_width: usize) -> Self {
         if width > padded_width {
             panic!("Piece is too wide {width} for the padded width {padded_width}");
@@ -50,7 +53,7 @@ mod tests {
     #[test_case(vec![0, 1, 2, 5, 6], 3, 5 => vec![0, 1, 2, 7, 10])]
     #[test_case(vec![0, 1, 2, 3], 2, 3 => vec![0, 1, 3, 4])]
     fn new(fields: Vec<usize>, width: usize, padded_width: usize) -> Vec<usize> {
-        let piece = Piece::new(&fields, width, padded_width);
+        let piece = PieceFields::new(&fields, width, padded_width);
         piece.fields
     }
 }

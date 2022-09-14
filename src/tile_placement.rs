@@ -1,6 +1,15 @@
-use crate::{board::Board, mouse::CursorWorldPosition, piece::Piece, GameState};
+use crate::{
+    board::Board,
+    mouse::CursorWorldPosition,
+    piece::{Piece, PieceFields},
+    GameState,
+};
 use bevy::prelude::*;
 use bevy_inspector_egui::InspectorPlugin;
+use bevy_interact_2d::{
+    drag::{Draggable, Dragged},
+    Interactable, InteractionState,
+};
 use bevy_prototype_lyon::prelude::*;
 use iyes_loopless::prelude::*;
 use rand::Rng;
@@ -19,21 +28,22 @@ impl Plugin for TilePlacementPlugin {
             // .add_plugin(InspectorPlugin::<Board>::new())
             .insert_resource(Pieces {
                 pieces: vec![
-                    Piece::new(&[0, 1], 2, BOARD_SIZE),
-                    Piece::new(&[0, 1], 1, BOARD_SIZE),
-                    Piece::new(&[0, 1, 2, 3], 2, BOARD_SIZE),
-                    Piece::new(&[0, 1, 2], 2, BOARD_SIZE),
-                    Piece::new(&[0, 1, 3], 2, BOARD_SIZE),
-                    Piece::new(&[0, 1, 2, 5], 3, BOARD_SIZE),
-                    Piece::new(&[0, 1, 2, 3], 3, BOARD_SIZE),
-                    Piece::new(&[0, 1, 2, 4], 3, BOARD_SIZE),
-                    Piece::new(&[1, 3, 4, 5], 3, BOARD_SIZE),
+                    PieceFields::new(&[0, 1], 2, BOARD_SIZE),
+                    PieceFields::new(&[0, 1], 1, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 2, 3], 2, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 2], 2, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 3], 2, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 2, 5], 3, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 2, 3], 3, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 2, 4], 3, BOARD_SIZE),
+                    PieceFields::new(&[1, 3, 4, 5], 3, BOARD_SIZE),
                 ],
                 queue: default(),
             })
             .add_enter_system(GameState::Playing, setup_board)
             .add_system(fill_piece_queue.run_if_resource_exists::<Pieces>())
-            .add_system(spawn_piece_on_click.run_if_resource_exists::<Board>())
+            // .add_system(spawn_piece_on_click.run_if_resource_exists::<Board>())
+            .add_system(drag_piece)
             .add_system(update_tile_coords);
         //.add_system(log_tile_coords);
     }
@@ -43,7 +53,7 @@ impl Plugin for TilePlacementPlugin {
 pub struct TileCoords(pub UVec2);
 
 pub struct Pieces {
-    pieces: Vec<Piece>,
+    pieces: Vec<PieceFields>,
     queue: VecDeque<usize>,
 }
 
@@ -182,18 +192,17 @@ fn spawn_piece_on_click(
     }
 }
 
-fn spawn_piece(cmd: &mut Commands, piece: &Piece, position: Vec2) {
-    cmd.spawn_bundle(TransformBundle {
-        local: Transform::from_xyz(0., 0., 100.),
+fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, position: Vec2) {
+    cmd.spawn_bundle(SpatialBundle {
+        transform: Transform::from_xyz(position.x, position.y, 1.),
         ..default()
     })
-    .insert_bundle(VisibilityBundle::default())
     .with_children(|b| {
         let size = 60.;
         let piece_w = piece.get_width();
         for i in piece.get_fields().iter() {
-            let x = position.x + (i % piece_w) as f32 * size;
-            let y = position.y + (i / piece_w) as f32 * size;
+            let x = (i % piece_w) as f32 * size;
+            let y = (i / piece_w) as f32 * size;
 
             b.spawn_bundle(GeometryBuilder::build_as(
                 &shapes::Rectangle {
@@ -202,8 +211,44 @@ fn spawn_piece(cmd: &mut Commands, piece: &Piece, position: Vec2) {
                 },
                 DrawMode::Fill(FillMode::color(Color::ORANGE)),
                 Transform::from_xyz(x, y, 0.),
-            ));
+            ))
+            // .insert(Interactable {
+            //     groups: vec![bevy_interact_2d::Group(0)],
+            //     bounding_box: (Vec2::splat(-30.), Vec2::splat(30.)),
+            //     ..default()
+            // })
+            // .insert(Draggable {
+            //     groups: vec![bevy_interact_2d::Group(0)],
+            //     hook: None,
+            //     ..Default::default()
+            // })
+            ;
         }
     })
+    .insert(Interactable {
+        groups: vec![bevy_interact_2d::Group(0)],
+        bounding_box: (Vec2::splat(-30.), Vec2::splat(30.)),
+        ..default()
+    })
+    .insert(Draggable {
+        groups: vec![bevy_interact_2d::Group(0)],
+        // hook: Some(Vec2::new(0., 60.)),
+        ..Default::default()
+    })
+    .insert(Piece)
     .insert(Name::new("piece"));
+}
+
+fn drag_piece(
+    mut commands: Commands,
+    mouse_button_input: Res<Input<MouseButton>>,
+    dragged_query: Query<Entity, (With<Dragged>, With<Piece>)>,
+) {
+    if !mouse_button_input.just_released(MouseButton::Left) {
+        return;
+    }
+
+    for dragged in dragged_query.iter() {
+        commands.entity(dragged).remove::<Dragged>();
+    }
 }

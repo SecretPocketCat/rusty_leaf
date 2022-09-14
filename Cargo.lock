@@ -443,6 +443,7 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_asset_loader",
+ "bevy_interact_2d",
  "bevy_kira_audio",
  "bevy_prototype_lyon",
  "embed-resource",
@@ -505,6 +506,15 @@ dependencies = [
  "bevy_ecs",
  "bevy_math",
  "bevy_utils",
+]
+
+[[package]]
+name = "bevy_interact_2d"
+version = "0.8.0"
+source = "git+https://github.com/Anshorei/bevy_rei#e326e32caf6d0d8dd0e5a1432a6eec09b03eddb1"
+dependencies = [
+ "bevy",
+ "bevy_prototype_lyon",
 ]
 
 [[package]]
