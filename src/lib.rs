@@ -1,21 +1,16 @@
 #![feature(int_roundings)]
 
-mod audio;
 mod board;
-mod loading;
-mod menu;
 mod mouse;
 mod render;
 mod tile_placement;
 
-use crate::audio::InternalAudioPlugin;
-use crate::loading::LoadingPlugin;
-use crate::menu::MenuPlugin;
 use crate::tile_placement::TilePlacementPlugin;
-
 use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::prelude::*;
+use bevy_prototype_lyon::prelude::ShapePlugin;
+use iyes_loopless::prelude::AppLooplessStateExt;
 use mouse::MousePlugin;
 use render::RenderPlugin;
 
@@ -36,11 +31,9 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state(GameState::Loading)
-            .add_plugin(LoadingPlugin)
+        app.add_loopless_state(GameState::Playing)
             .add_plugin(RenderPlugin)
-            .add_plugin(MenuPlugin)
-            .add_plugin(InternalAudioPlugin)
+            .add_plugin(ShapePlugin)
             .add_plugin(TilePlacementPlugin)
             .add_plugin(MousePlugin);
     }

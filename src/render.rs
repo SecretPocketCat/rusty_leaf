@@ -12,5 +12,6 @@ impl Plugin for RenderPlugin {
 }
 
 fn setup(mut cmd: Commands) {
+    info!("render setup");
     cmd.spawn_bundle(Camera2dBundle::default()).insert(MainCam);
 }

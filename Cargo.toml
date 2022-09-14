@@ -35,6 +35,8 @@ rand = { version = "0.8.3" }
 winit = { version = "0.26.0", default-features = false }
 image = { version = "0.24", default-features = false }
 bevy_prototype_lyon = "0.6.0"
+iyes_loopless = "0.7.1"
+bevy-inspector-egui = "0.12.1"
 
 [build-dependencies]
 embed-resource = "1.4"
