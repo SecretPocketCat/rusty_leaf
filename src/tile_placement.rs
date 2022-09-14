@@ -1,16 +1,22 @@
+use std::ops::Div;
+
 use crate::{mouse::CursorWorldPosition, GameState};
 use bevy::prelude::*;
-use bevy_prototype_lyon::prelude::{tess::geom::euclid::num::Floor, *};
+use bevy_prototype_lyon::prelude::*;
 use iyes_loopless::prelude::*;
 
 pub struct TilePlacementPlugin;
-
 impl Plugin for TilePlacementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Playing, setup_board)
-            .add_system(update_tile_coords);
+        app.init_resource::<TileCoords>()
+            .add_enter_system(GameState::Playing, setup_board)
+            .add_system(update_tile_coords)
+            .add_system(log_tile_coords);
     }
 }
+
+#[derive(Default, Debug)]
+pub struct TileCoords(IVec2);
 
 fn setup_board(mut cmd: Commands) {
     let size = 540.;
@@ -61,6 +67,22 @@ fn setup_board(mut cmd: Commands) {
     ));
 }
 
-fn update_tile_coords(cursor_pos: Res<CursorWorldPosition>) {
-    // info!("{}", cursor_pos.0);
+fn update_tile_coords(cursor_pos: Res<CursorWorldPosition>, mut tile_coords: ResMut<TileCoords>) {
+    if cursor_pos.is_changed() {
+        let coords = cursor_pos.0.div(60.).round();
+        let coords = IVec2::new(coords.x as i32 + 4, coords.y as i32 - 4);
+
+        if tile_coords.0 != coords {
+            tile_coords.0 = coords;
+        }
+    }
+}
+
+fn log_tile_coords(cursor_pos: Res<CursorWorldPosition>, tile_coords: Res<TileCoords>) {
+    if tile_coords.is_changed() {
+        info!(
+            "Tile coords [{}, {}]; Cursor coords [{}, {}]",
+            tile_coords.0.x, tile_coords.0.y, cursor_pos.0.x, cursor_pos.0.y
+        );
+    }
 }
