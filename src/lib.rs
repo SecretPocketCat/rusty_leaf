@@ -2,6 +2,7 @@
 
 mod board;
 mod mouse;
+mod piece;
 mod render;
 mod tile_placement;
 
