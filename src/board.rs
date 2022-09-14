@@ -1,15 +1,25 @@
 #![allow(dead_code)]
 use bevy::prelude::*;
+use bevy_inspector_egui::Inspectable;
 use std::{
     iter,
     ops::{Div, Mul, Range, Rem},
 };
 
+use crate::tile_placement::{BOARD_SIZE, SECTION_SIZE};
+
+#[derive(Debug, Inspectable)]
 pub struct Board {
     width: usize,
     heigth: usize,
     section_size: usize,
     fields: Vec<bool>,
+}
+
+impl Default for Board {
+    fn default() -> Self {
+        Self::new(BOARD_SIZE, BOARD_SIZE, SECTION_SIZE)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

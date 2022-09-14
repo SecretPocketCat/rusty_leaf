@@ -1,16 +1,22 @@
 use crate::{board::Board, mouse::CursorWorldPosition, piece::Piece, GameState};
 use bevy::prelude::*;
+use bevy_inspector_egui::InspectorPlugin;
 use bevy_prototype_lyon::prelude::*;
 use iyes_loopless::prelude::*;
 use rand::Rng;
-use std::ops::{Add, Div};
+use std::{
+    collections::VecDeque,
+    ops::{Add, Div},
+};
 
-const BOARD_SIZE: usize = 9;
+pub const BOARD_SIZE: usize = 9;
+pub const SECTION_SIZE: usize = 3;
 
 pub struct TilePlacementPlugin;
 impl Plugin for TilePlacementPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<TileCoords>()
+            // .add_plugin(InspectorPlugin::<Board>::new())
             .insert_resource(Pieces {
                 pieces: vec![
                     Piece::new(&[0, 1], 2, BOARD_SIZE),
@@ -23,9 +29,11 @@ impl Plugin for TilePlacementPlugin {
                     Piece::new(&[0, 1, 2, 4], 3, BOARD_SIZE),
                     Piece::new(&[1, 3, 4, 5], 3, BOARD_SIZE),
                 ],
+                queue: default(),
             })
             .add_enter_system(GameState::Playing, setup_board)
-            .add_system(spawn_piece.run_if_resource_exists::<Board>())
+            .add_system(fill_piece_queue.run_if_resource_exists::<Pieces>())
+            .add_system(spawn_piece_on_click.run_if_resource_exists::<Board>())
             .add_system(update_tile_coords);
         //.add_system(log_tile_coords);
     }
@@ -36,6 +44,7 @@ pub struct TileCoords(pub UVec2);
 
 pub struct Pieces {
     pieces: Vec<Piece>,
+    queue: VecDeque<usize>,
 }
 
 fn setup_board(mut cmd: Commands) {
@@ -112,61 +121,89 @@ fn log_tile_coords(cursor_pos: Res<CursorWorldPosition>, tile_coords: Res<TileCo
     }
 }
 
-fn spawn_piece(
+fn fill_piece_queue(mut cmd: Commands, mut pieces: ResMut<Pieces>) {
+    if pieces.is_changed() && pieces.queue.len() == 0 {
+        let pieces_len = pieces.pieces.len();
+        for _ in 0..3 {
+            pieces
+                .queue
+                .push_back(rand::thread_rng().gen_range(0..pieces_len));
+        }
+
+        for (i, piece_i) in pieces.queue.iter().enumerate() {
+            let x = ((i as i32) - 1i32) as f32 * 230.;
+            spawn_piece(
+                &mut cmd,
+                pieces.pieces.get(*piece_i).unwrap(),
+                Vec2::new(x, 350.),
+            );
+        }
+    }
+}
+
+fn spawn_piece_on_click(
     mut cmd: Commands,
     mut board: ResMut<Board>,
-    pieces: Res<Pieces>,
+    mut pieces: ResMut<Pieces>,
     buttons: Res<Input<MouseButton>>,
     tile_coords: Res<TileCoords>,
 ) {
     if buttons.just_pressed(MouseButton::Left) {
-        let piece = pieces
-            .pieces
-            .get(2)
-            // .get(rand::thread_rng().gen_range(0..pieces.pieces.len()))
-            .unwrap();
+        if let Some(i) = pieces.queue.pop_front() {
+            let piece = pieces.pieces.get(i).unwrap();
 
-        match board.can_place_piece(
-            tile_coords.0.x as usize,
-            tile_coords.0.y as usize,
-            &piece.get_fields(),
-        ) {
-            Ok(_) => {
-                let place_res = board.place_piece(
-                    tile_coords.0.x as usize,
-                    tile_coords.0.y as usize,
-                    &&piece.get_fields(),
-                );
+            match board.can_place_piece(
+                tile_coords.0.x as usize,
+                tile_coords.0.y as usize,
+                &piece.get_fields(),
+            ) {
+                Ok(_) => {
+                    let place_res = board.place_piece(
+                        tile_coords.0.x as usize,
+                        tile_coords.0.y as usize,
+                        piece.get_fields(),
+                    );
 
-                info!("Place res: {:?}", place_res);
+                    info!("Place res: {:?}", place_res);
 
-                cmd.spawn_bundle(TransformBundle {
-                    local: Transform::from_xyz(0., 0., 100.),
-                    ..default()
-                })
-                .insert_bundle(VisibilityBundle::default())
-                .with_children(|b| {
-                    let size = 60.;
-                    let piece_w = piece.get_width();
-                    for i in piece.get_fields().iter() {
-                        let x = (tile_coords.0.x as f32 - 4.) * size + (i % piece_w) as f32 * size;
-                        let y = (3. - tile_coords.0.y as f32) * size + (i / piece_w) as f32 * size;
+                    let piece_size = 60.;
+                    let pos = Vec2::new(
+                        (tile_coords.0.x as f32 - 4.) * piece_size,
+                        (3. - tile_coords.0.y as f32) * piece_size,
+                    );
 
-                        b.spawn_bundle(GeometryBuilder::build_as(
-                            &shapes::Rectangle {
-                                extents: Vec2::splat(size),
-                                ..default()
-                            },
-                            DrawMode::Fill(FillMode::color(Color::ORANGE)),
-                            Transform::from_xyz(x, y, 0.),
-                        ));
-                    }
-                })
-                .insert(Name::new("piece"));
-            }
-            Err(e) => {
-                warn!("Failed to place a piece {:?}", e);
+                    spawn_piece(&mut cmd, piece, pos);
+                }
+                Err(e) => {
+                    warn!("Failed to place a piece {:?}", e);
+                }
             }
         }
     }
+}
+
+fn spawn_piece(cmd: &mut Commands, piece: &Piece, position: Vec2) {
+    cmd.spawn_bundle(TransformBundle {
+        local: Transform::from_xyz(0., 0., 100.),
+        ..default()
+    })
+    .insert_bundle(VisibilityBundle::default())
+    .with_children(|b| {
+        let size = 60.;
+        let piece_w = piece.get_width();
+        for i in piece.get_fields().iter() {
+            let x = position.x + (i % piece_w) as f32 * size;
+            let y = position.y + (i / piece_w) as f32 * size;
+
+            b.spawn_bundle(GeometryBuilder::build_as(
+                &shapes::Rectangle {
+                    extents: Vec2::splat(size),
+                    ..default()
+                },
+                DrawMode::Fill(FillMode::color(Color::ORANGE)),
+                Transform::from_xyz(x, y, 0.),
+            ));
+        }
+    })
+    .insert(Name::new("piece"));
 }
