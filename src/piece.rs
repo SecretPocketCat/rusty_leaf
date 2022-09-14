@@ -25,7 +25,18 @@ impl Piece {
                 .collect()
         };
 
-        Self { width, fields }
+        Self {
+            width: padded_width,
+            fields,
+        }
+    }
+
+    pub fn get_fields(&self) -> &[usize] {
+        &self.fields
+    }
+
+    pub fn get_width(&self) -> usize {
+        self.width
     }
 }
 

@@ -10,6 +10,7 @@ use crate::tile_placement::TilePlacementPlugin;
 use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::prelude::*;
+use bevy_inspector_egui::WorldInspectorPlugin;
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use iyes_loopless::prelude::AppLooplessStateExt;
 use mouse::MousePlugin;
@@ -34,6 +35,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state(GameState::Playing)
             .add_plugin(RenderPlugin)
+            .add_plugin(WorldInspectorPlugin::new())
             .add_plugin(ShapePlugin)
             .add_plugin(TilePlacementPlugin)
             .add_plugin(MousePlugin);
