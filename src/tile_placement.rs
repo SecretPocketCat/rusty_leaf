@@ -1,6 +1,6 @@
-use std::ops::Div;
+use std::ops::{Add, Div};
 
-use crate::{mouse::CursorWorldPosition, GameState};
+use crate::{board::Board, mouse::CursorWorldPosition, GameState};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 use iyes_loopless::prelude::*;
@@ -9,14 +9,29 @@ pub struct TilePlacementPlugin;
 impl Plugin for TilePlacementPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<TileCoords>()
+            .insert_resource(Blocks {
+                blocks: vec![
+                    vec![0, 1],
+                    vec![0, 9],
+                    vec![0, 1, 2],
+                    vec![0, 9, 18],
+                    vec![0, 1, 9, 10],
+                    vec![0, 1, 2, 9],
+                ],
+            })
             .add_enter_system(GameState::Playing, setup_board)
             .add_system(update_tile_coords)
-            .add_system(log_tile_coords);
+            .add_system(place_square_on_click.run_if_resource_exists::<Board>());
+        //.add_system(log_tile_coords);
     }
 }
 
 #[derive(Default, Debug)]
-pub struct TileCoords(IVec2);
+pub struct TileCoords(pub UVec2);
+
+pub struct Blocks {
+    blocks: Vec<Vec<usize>>,
+}
 
 fn setup_board(mut cmd: Commands) {
     let size = 540.;
@@ -65,12 +80,14 @@ fn setup_board(mut cmd: Commands) {
         DrawMode::Stroke(StrokeMode::new(Color::DARK_GRAY, 12.0)),
         Transform::default(),
     ));
+
+    cmd.insert_resource(Board::new(9, 9, 3));
 }
 
 fn update_tile_coords(cursor_pos: Res<CursorWorldPosition>, mut tile_coords: ResMut<TileCoords>) {
     if cursor_pos.is_changed() {
-        let coords = cursor_pos.0.div(60.).round();
-        let coords = IVec2::new(coords.x as i32 + 4, coords.y as i32 - 4);
+        let coords = cursor_pos.0.div(60.).round().add(Vec2::splat(4.));
+        let coords = UVec2::new(coords.x as u32, 8u32.saturating_sub(coords.y.abs() as u32));
 
         if tile_coords.0 != coords {
             tile_coords.0 = coords;
@@ -82,7 +99,21 @@ fn log_tile_coords(cursor_pos: Res<CursorWorldPosition>, tile_coords: Res<TileCo
     if tile_coords.is_changed() {
         info!(
             "Tile coords [{}, {}]; Cursor coords [{}, {}]",
-            tile_coords.0.x, tile_coords.0.y, cursor_pos.0.x, cursor_pos.0.y
+            tile_coords.0.x as usize, tile_coords.0.y as usize, cursor_pos.0.x, cursor_pos.0.y
         );
+    }
+}
+
+fn place_square_on_click(mut board: ResMut<Board>, tile_coords: Res<TileCoords>) {
+    if tile_coords.is_changed() {
+        let piece = [0, 1, 9, 10];
+        if let Ok(_) =
+            board.can_place_piece(tile_coords.0.x as usize, tile_coords.0.y as usize, &piece)
+        {
+            let place_res =
+                board.place_piece(tile_coords.0.x as usize, tile_coords.0.y as usize, &piece);
+
+            info!("Place res: {:?}", place_res);
+        }
     }
 }

@@ -1,10 +1,11 @@
 #![allow(dead_code)]
+use bevy::prelude::*;
 use std::{
     iter,
     ops::{Div, Mul, Range, Rem},
 };
 
-struct Board {
+pub struct Board {
     width: usize,
     heigth: usize,
     section_size: usize,
@@ -12,14 +13,14 @@ struct Board {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-enum BoardClear {
+pub enum BoardClear {
     Row(usize),
     Column(usize),
     Section(usize),
 }
 
 #[derive(Debug)]
-enum PlaceError {
+pub enum PlaceError {
     Taken,
     OutOfBounds,
 }
