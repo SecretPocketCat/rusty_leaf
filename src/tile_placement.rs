@@ -1,7 +1,8 @@
 use crate::{
     board::Board,
+    coords::{get_world_coords_from_tile, TileCoords},
     mouse::CursorWorldPosition,
-    piece::{Piece, PieceFields},
+    piece::{spawn_piece, Piece, PieceFields},
     GameState,
 };
 use bevy::prelude::*;
@@ -18,13 +19,15 @@ use std::{
     ops::{Add, Div, Sub},
 };
 
+pub const BOARD_SIZE_PX: f32 = 540.;
 pub const BOARD_SIZE: usize = 9;
+pub const TILE_SIZE: f32 = BOARD_SIZE_PX / BOARD_SIZE as f32;
 pub const SECTION_SIZE: usize = 3;
 
 pub struct TilePlacementPlugin;
 impl Plugin for TilePlacementPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<TileCoords>()
+        app
             // .add_plugin(InspectorPlugin::<Board>::new())
             .insert_resource(Pieces {
                 pieces: vec![
@@ -44,15 +47,10 @@ impl Plugin for TilePlacementPlugin {
             .add_system_to_stage(CoreStage::Last, limit_drag_count)
             .add_enter_system(GameState::Playing, setup_board)
             .add_system(fill_piece_queue.run_if_resource_exists::<Pieces>())
+            .add_system(drop_piece)
             .add_system(drag_piece)
-            .add_system(log_tile_coords)
-            .add_system(update_tile_coords);
+            .add_system(process_movers);
     }
-}
-
-#[derive(Default, Debug)]
-pub struct TileCoords {
-    dragged_item_tile_coords: Option<UVec2>,
 }
 
 pub struct Pieces {
@@ -60,8 +58,13 @@ pub struct Pieces {
     queue: VecDeque<usize>,
 }
 
+#[derive(Component)]
+pub struct Mover {
+    pub moved_e: Entity,
+}
+
 fn setup_board(mut cmd: Commands) {
-    let size = 540.;
+    let size = BOARD_SIZE_PX;
     let extents = size / 2.;
     let square = shapes::Rectangle {
         extents: Vec2::splat(size),
@@ -114,63 +117,6 @@ fn setup_board(mut cmd: Commands) {
     cmd.insert_resource(Board::new(9, 9, 3));
 }
 
-fn update_tile_coords(
-    cursor_pos: Res<CursorWorldPosition>,
-    mut tile_coords: ResMut<TileCoords>,
-    dragged_query: Query<(&Transform, &Interactable), With<Dragged>>,
-) {
-    if cursor_pos.is_changed() {
-        if let Ok((interactable_t, interactable)) = dragged_query.get_single() {
-            let dragged_tile_coords = get_tile_coords_from_world(
-                interactable_t.translation.truncate()
-                    + Vec2::new(
-                        -interactable.bounding_box.0.x.abs() + 90.,
-                        interactable.bounding_box.0.y.abs() - 30.,
-                    ),
-            );
-
-            if tile_coords.dragged_item_tile_coords.is_some() && dragged_tile_coords.is_none() {
-                tile_coords.dragged_item_tile_coords = dragged_tile_coords;
-            } else {
-                match tile_coords.dragged_item_tile_coords {
-                    Some(prev_coords) => match dragged_tile_coords {
-                        Some(new_coords) => {
-                            if prev_coords != new_coords {
-                                tile_coords.dragged_item_tile_coords = dragged_tile_coords;
-                            }
-                        }
-                        None => tile_coords.dragged_item_tile_coords = dragged_tile_coords,
-                    },
-                    None => tile_coords.dragged_item_tile_coords = dragged_tile_coords,
-                }
-            }
-        } else if tile_coords.dragged_item_tile_coords.is_some() {
-            tile_coords.dragged_item_tile_coords = None;
-        }
-    }
-}
-
-fn get_tile_coords_from_world(world_coords: Vec2) -> Option<UVec2> {
-    let max_i = BOARD_SIZE as f32 - 1.;
-    let base_coords = world_coords.div(60.).round().add(Vec2::splat(4.));
-    let coords = Vec2::new(base_coords.x - 1., max_i - base_coords.y.abs());
-
-    if coords.x >= 0. && coords.x <= max_i && coords.y >= 0. && coords.y <= max_i {
-        Some(UVec2::new(coords.x as u32, coords.y as u32))
-    } else {
-        None
-    }
-}
-
-fn log_tile_coords(cursor_pos: Res<CursorWorldPosition>, tile_coords: Res<TileCoords>) {
-    if tile_coords.is_changed() {
-        info!(
-            "Dragged tile coords [{:?}]; Cursor coords [{}, {}]",
-            tile_coords.dragged_item_tile_coords, cursor_pos.0.x, cursor_pos.0.y
-        );
-    }
-}
-
 fn fill_piece_queue(mut cmd: Commands, mut pieces: ResMut<Pieces>) {
     if pieces.is_changed() && pieces.queue.len() == 0 {
         let pieces_len = pieces.pieces.len();
@@ -192,75 +138,34 @@ fn fill_piece_queue(mut cmd: Commands, mut pieces: ResMut<Pieces>) {
     }
 }
 
-fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, position: Vec2) {
-    let size = 60.;
-    let size_h = size / 2.;
-    let corner = Vec2::new(
-        piece.get_width() as f32 * size_h,
-        piece.get_height() as f32 * size_h,
-    );
-
-    cmd.spawn_bundle(SpatialBundle {
-        transform: Transform::from_xyz(position.x, position.y, 1.),
-        ..default()
-    })
-    .with_children(|b| {
-        let piece_padded_w = piece.get_padded_width();
-        let piece_offset_x = piece.get_width().sub(1) as f32 / 2.;
-        let piece_offset_y = piece.get_height().sub(1) as f32 / 2.;
-        for i in piece.get_fields().iter() {
-            let x = ((i % piece_padded_w) as f32 - piece_offset_x) * size;
-            let y = ((i / piece_padded_w) as f32 - piece_offset_y) * -size;
-
-            b.spawn_bundle(GeometryBuilder::build_as(
-                &shapes::Rectangle {
-                    extents: Vec2::splat(size),
-                    ..default()
-                },
-                DrawMode::Fill(FillMode::color(Color::ORANGE)),
-                Transform::from_xyz(x, y, 0.),
-            ));
+fn drop_piece(
+    mut cmd: Commands,
+    mouse_input: Res<Input<MouseButton>>,
+    dragged_query: Query<(Entity, &Piece, &TileCoords), With<Dragged>>,
+) {
+    if mouse_input.just_released(MouseButton::Left) {
+        for (dragged_e, ..) in dragged_query.iter() {
+            cmd.entity(dragged_e).remove::<Dragged>();
         }
-    })
-    .insert(Interactable {
-        groups: vec![bevy_interact_2d::Group(0)],
-        bounding_box: (-corner, corner),
-        ..default()
-    })
-    .insert(Draggable {
-        groups: vec![bevy_interact_2d::Group(0)],
-        // hook: Some(Vec2::new(0., 60.)),
-        ..Default::default()
-    })
-    .insert(Piece(piece_index))
-    .insert(Name::new("piece"));
+    }
 }
 
 fn drag_piece(
     mut cmd: Commands,
     mouse_input: Res<Input<MouseButton>>,
-    tile_coords: Res<TileCoords>,
     board: Res<Board>,
     pieces: Res<Pieces>,
-    dragged_query: Query<(Entity, &Piece), With<Dragged>>,
+    dragged_query: Query<(Entity, &Piece, &TileCoords), (With<Dragged>, Changed<TileCoords>)>,
 ) {
-    if mouse_input.just_released(MouseButton::Left) {
-        for (dragged_e, _) in dragged_query.iter() {
-            cmd.entity(dragged_e).remove::<Dragged>();
-        }
-    } else if mouse_input.pressed(MouseButton::Left) {
-        if tile_coords.is_changed() {
-            if dragged_query.iter().len() > 0 {
-                if let Some(coords) = tile_coords.dragged_item_tile_coords {
-                    if let Ok((_, piece)) = dragged_query.get_single() {
-                        if let Ok(_) = board.can_place_piece(
-                            coords.x as usize,
-                            coords.y as usize,
-                            pieces.pieces[piece.0].get_fields(),
-                        ) {
-                            info!("can place!");
-                        }
-                    }
+    if mouse_input.pressed(MouseButton::Left) {
+        if let Ok((_, piece, coords)) = dragged_query.get_single() {
+            if let Some(coords) = coords.tile_coords {
+                if let Ok(_) = board.can_place_piece(
+                    coords.x as usize,
+                    coords.y as usize,
+                    pieces.pieces[piece.0].get_fields(),
+                ) {
+                    info!("can place!");
                 }
             }
         }
@@ -271,6 +176,27 @@ fn limit_drag_count(mut cmd: Commands, dragged_query: Query<Entity, With<Dragged
     if dragged_query.iter().len() > 1 {
         for e in dragged_query.iter().skip(1) {
             cmd.entity(e).remove::<Dragged>();
+        }
+    }
+}
+
+fn process_movers(
+    mover_q: Query<(&Mover, &Transform, &TileCoords, &Interactable)>,
+    mut moved_q: Query<&mut Transform, Without<Mover>>,
+) {
+    for (mover, mover_t, coords, interactable) in mover_q.iter() {
+        if let Ok(mut t) = moved_q.get_mut(mover.moved_e) {
+            t.translation = if let Some(pos) = coords.tile_coords {
+                (get_world_coords_from_tile(pos)
+                    + Vec2::new(-BOARD_SIZE_PX / 2., BOARD_SIZE_PX / 2.)
+                    + Vec2::new(
+                        interactable.bounding_box.0.x.abs(),
+                        -interactable.bounding_box.0.y.abs(),
+                    ))
+                .extend(0.)
+            } else {
+                mover_t.translation
+            };
         }
     }
 }

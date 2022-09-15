@@ -1,6 +1,7 @@
 #![feature(int_roundings)]
 
 mod board;
+mod coords;
 mod mouse;
 mod piece;
 mod render;
@@ -13,6 +14,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::WorldInspectorPlugin;
 use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin, InteractionPlugin};
 use bevy_prototype_lyon::prelude::ShapePlugin;
+use coords::CoordsPlugin;
 use iyes_loopless::prelude::AppLooplessStateExt;
 use mouse::MousePlugin;
 use render::RenderPlugin;
@@ -42,6 +44,7 @@ impl Plugin for GamePlugin {
             .add_plugin(DragPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(TilePlacementPlugin)
+            .add_plugin(CoordsPlugin)
             .add_plugin(MousePlugin);
     }
 }

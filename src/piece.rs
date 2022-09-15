@@ -1,9 +1,13 @@
 #![allow(dead_code)]
 use bevy::prelude::*;
+use bevy_interact_2d::{drag::Draggable, Interactable};
+use bevy_prototype_lyon::prelude::*;
 use std::{
     iter,
-    ops::{Div, Mul, Range, Rem},
+    ops::{Div, Mul, Range, Rem, Sub},
 };
+
+use crate::{tile_placement::Mover, coords::TileCoords};
 
 #[derive(Component)]
 pub struct Piece(pub usize);
@@ -59,6 +63,62 @@ impl PieceFields {
     pub fn get_height(&self) -> usize {
         self.height
     }
+}
+
+pub fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, position: Vec2) {
+    let size = 60.;
+    let size_h = size / 2.;
+    let corner = Vec2::new(
+        piece.get_width() as f32 * size_h,
+        piece.get_height() as f32 * size_h,
+    );
+
+    let piece_visual_e = cmd
+        .spawn_bundle(SpatialBundle {
+            transform: Transform::from_xyz(position.x, position.y, 1.),
+            ..default()
+        })
+        .with_children(|b| {
+            let piece_padded_w = piece.get_padded_width();
+            let piece_offset_x = piece.get_width().sub(1) as f32 / 2.;
+            let piece_offset_y = piece.get_height().sub(1) as f32 / 2.;
+            for i in piece.get_fields().iter() {
+                let x = ((i % piece_padded_w) as f32 - piece_offset_x) * size;
+                let y = ((i / piece_padded_w) as f32 - piece_offset_y) * -size;
+
+                b.spawn_bundle(GeometryBuilder::build_as(
+                    &shapes::Rectangle {
+                        extents: Vec2::splat(size),
+                        ..default()
+                    },
+                    DrawMode::Fill(FillMode::color(Color::ORANGE)),
+                    Transform::from_xyz(x, y, 0.),
+                ));
+            }
+        })
+        .insert(Name::new("piece_visual"))
+        .id();
+
+    cmd.spawn_bundle(SpatialBundle {
+        transform: Transform::from_xyz(position.x, position.y, 1.),
+        ..default()
+    })
+    .insert(Interactable {
+        groups: vec![bevy_interact_2d::Group(0)],
+        bounding_box: (-corner, corner),
+        ..default()
+    })
+    .insert(Draggable {
+        groups: vec![bevy_interact_2d::Group(0)],
+        // hook: Some(Vec2::new(0., 60.)),
+        ..Default::default()
+    })
+    .insert(Piece(piece_index))
+    .insert(TileCoords::default())
+    .insert(Mover {
+        moved_e: piece_visual_e,
+    })
+    .insert(Name::new("piece"));
 }
 
 #[cfg(test)]
