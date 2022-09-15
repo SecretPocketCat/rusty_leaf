@@ -42,15 +42,17 @@ impl Plugin for TilePlacementPlugin {
             })
             .add_enter_system(GameState::Playing, setup_board)
             .add_system(fill_piece_queue.run_if_resource_exists::<Pieces>())
-            // .add_system(spawn_piece_on_click.run_if_resource_exists::<Board>())
             .add_system(drag_piece)
+            .add_system(log_tile_coords)
             .add_system(update_tile_coords);
-        //.add_system(log_tile_coords);
     }
 }
 
 #[derive(Default, Debug)]
-pub struct TileCoords(pub UVec2);
+pub struct TileCoords {
+    cursor_tile_coords: UVec2,
+    dragged_item_tile_coords: Option<UVec2>,
+}
 
 pub struct Pieces {
     pieces: Vec<PieceFields>,
@@ -111,23 +113,52 @@ fn setup_board(mut cmd: Commands) {
     cmd.insert_resource(Board::new(9, 9, 3));
 }
 
-fn update_tile_coords(cursor_pos: Res<CursorWorldPosition>, mut tile_coords: ResMut<TileCoords>) {
+fn update_tile_coords(
+    cursor_pos: Res<CursorWorldPosition>,
+    mut tile_coords: ResMut<TileCoords>,
+    dragged_query: Query<(&Transform, &Interactable), With<Dragged>>,
+) {
     // todo: use grabbed tile coords (top left)
     if cursor_pos.is_changed() {
-        let coords = cursor_pos.0.div(60.).round().add(Vec2::splat(4.));
-        let coords = UVec2::new(coords.x as u32, 8u32.saturating_sub(coords.y.abs() as u32));
+        let cursor_coords = get_tile_coords_from_world(cursor_pos.0);
+        if tile_coords.cursor_tile_coords != cursor_coords {
+            tile_coords.cursor_tile_coords = cursor_coords;
+        }
 
-        if tile_coords.0 != coords {
-            tile_coords.0 = coords;
+        if let Ok((interactable_t, interactable)) = dragged_query.get_single() {
+            let dragged_tile_coords = get_tile_coords_from_world(
+                interactable_t.translation.truncate()
+                    + Vec2::new(15., interactable.bounding_box.0.y),
+            );
+
+            match tile_coords.dragged_item_tile_coords {
+                Some(coords) => {
+                    if coords != dragged_tile_coords {
+                        tile_coords.dragged_item_tile_coords = Some(cursor_coords);
+                    }
+                }
+                None => tile_coords.dragged_item_tile_coords = Some(dragged_tile_coords),
+            }
+        } else if tile_coords.dragged_item_tile_coords.is_some() {
+            tile_coords.dragged_item_tile_coords = None;
         }
     }
+}
+
+fn get_tile_coords_from_world(world_coords: Vec2) -> UVec2 {
+    let coords = world_coords.div(60.).round().add(Vec2::splat(4.));
+    UVec2::new(coords.x as u32, 8u32.saturating_sub(coords.y.abs() as u32))
 }
 
 fn log_tile_coords(cursor_pos: Res<CursorWorldPosition>, tile_coords: Res<TileCoords>) {
     if tile_coords.is_changed() {
         info!(
-            "Tile coords [{}, {}]; Cursor coords [{}, {}]",
-            tile_coords.0.x as usize, tile_coords.0.y as usize, cursor_pos.0.x, cursor_pos.0.y
+            "Tile coords [{}, {}]; Dragged tile coords [{:?}]; Cursor coords [{}, {}]",
+            tile_coords.cursor_tile_coords.x,
+            tile_coords.cursor_tile_coords.y,
+            tile_coords.dragged_item_tile_coords,
+            cursor_pos.0.x,
+            cursor_pos.0.y
         );
     }
 }
@@ -148,47 +179,6 @@ fn fill_piece_queue(mut cmd: Commands, mut pieces: ResMut<Pieces>) {
                 pieces.pieces.get(*piece_i).unwrap(),
                 Vec2::new(x, 350.),
             );
-        }
-    }
-}
-
-fn spawn_piece_on_click(
-    mut cmd: Commands,
-    mut board: ResMut<Board>,
-    mut pieces: ResMut<Pieces>,
-    buttons: Res<Input<MouseButton>>,
-    tile_coords: Res<TileCoords>,
-) {
-    if buttons.just_pressed(MouseButton::Left) {
-        if let Some(i) = pieces.queue.pop_front() {
-            let piece = pieces.pieces.get(i).unwrap();
-
-            match board.can_place_piece(
-                tile_coords.0.x as usize,
-                tile_coords.0.y as usize,
-                &piece.get_fields(),
-            ) {
-                Ok(_) => {
-                    let place_res = board.place_piece(
-                        tile_coords.0.x as usize,
-                        tile_coords.0.y as usize,
-                        piece.get_fields(),
-                    );
-
-                    info!("Place res: {:?}", place_res);
-
-                    let piece_size = 60.;
-                    let pos = Vec2::new(
-                        (tile_coords.0.x as f32 - 4.) * piece_size,
-                        (3. - tile_coords.0.y as f32) * piece_size,
-                    );
-
-                    spawn_piece(&mut cmd, piece, pos);
-                }
-                Err(e) => {
-                    warn!("Failed to place a piece {:?}", e);
-                }
-            }
         }
     }
 }
