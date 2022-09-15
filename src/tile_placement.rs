@@ -40,6 +40,7 @@ impl Plugin for TilePlacementPlugin {
                 ],
                 queue: default(),
             })
+            .add_system_to_stage(CoreStage::Last, limit_drag_count)
             .add_enter_system(GameState::Playing, setup_board)
             .add_system(fill_piece_queue.run_if_resource_exists::<Pieces>())
             .add_system(drag_piece)
@@ -230,13 +231,21 @@ fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, position: Vec2) {
 }
 
 fn drag_piece(
-    mut commands: Commands,
-    mouse_button_input: Res<Input<MouseButton>>,
+    mut cmd: Commands,
+    mouse_input: Res<Input<MouseButton>>,
     dragged_query: Query<Entity, (With<Dragged>, With<Piece>)>,
 ) {
-    if mouse_button_input.just_released(MouseButton::Left) {
+    if mouse_input.just_released(MouseButton::Left) {
         for dragged in dragged_query.iter() {
-            commands.entity(dragged).remove::<Dragged>();
+            cmd.entity(dragged).remove::<Dragged>();
+        }
+    }
+}
+
+fn limit_drag_count(mut cmd: Commands, dragged_query: Query<Entity, With<Dragged>>) {
+    if dragged_query.iter().len() > 1 {
+        for e in dragged_query.iter().skip(1) {
+            cmd.entity(e).remove::<Dragged>();
         }
     }
 }
