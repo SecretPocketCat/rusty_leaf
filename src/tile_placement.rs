@@ -15,7 +15,7 @@ use iyes_loopless::prelude::*;
 use rand::Rng;
 use std::{
     collections::VecDeque,
-    ops::{Add, Div},
+    ops::{Add, Div, Sub},
 };
 
 pub const BOARD_SIZE: usize = 9;
@@ -112,6 +112,7 @@ fn setup_board(mut cmd: Commands) {
 }
 
 fn update_tile_coords(cursor_pos: Res<CursorWorldPosition>, mut tile_coords: ResMut<TileCoords>) {
+    // todo: use grabbed tile coords (top left)
     if cursor_pos.is_changed() {
         let coords = cursor_pos.0.div(60.).round().add(Vec2::splat(4.));
         let coords = UVec2::new(coords.x as u32, 8u32.saturating_sub(coords.y.abs() as u32));
@@ -193,16 +194,26 @@ fn spawn_piece_on_click(
 }
 
 fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, position: Vec2) {
+    let size = 60.;
+    let size_h = size / 2.;
+    let corner = Vec2::new(
+        piece.get_width() as f32 * size_h,
+        piece.get_height() as f32 * size_h,
+    );
+
+    info!("piece height: {}", piece.get_height());
+
     cmd.spawn_bundle(SpatialBundle {
         transform: Transform::from_xyz(position.x, position.y, 1.),
         ..default()
     })
     .with_children(|b| {
-        let size = 60.;
-        let piece_w = piece.get_width();
+        let piece_padded_w = piece.get_padded_width();
+        let piece_offset_x = piece.get_width().sub(1) as f32 / 2.;
+        let piece_offset_y = piece.get_height().sub(1) as f32 / 2.;
         for i in piece.get_fields().iter() {
-            let x = (i % piece_w) as f32 * size;
-            let y = (i / piece_w) as f32 * size;
+            let x = ((i % piece_padded_w) as f32 - piece_offset_x) * size;
+            let y = ((i / piece_padded_w) as f32 - piece_offset_y) * -size;
 
             b.spawn_bundle(GeometryBuilder::build_as(
                 &shapes::Rectangle {
@@ -211,23 +222,12 @@ fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, position: Vec2) {
                 },
                 DrawMode::Fill(FillMode::color(Color::ORANGE)),
                 Transform::from_xyz(x, y, 0.),
-            ))
-            // .insert(Interactable {
-            //     groups: vec![bevy_interact_2d::Group(0)],
-            //     bounding_box: (Vec2::splat(-30.), Vec2::splat(30.)),
-            //     ..default()
-            // })
-            // .insert(Draggable {
-            //     groups: vec![bevy_interact_2d::Group(0)],
-            //     hook: None,
-            //     ..Default::default()
-            // })
-            ;
+            ));
         }
     })
     .insert(Interactable {
         groups: vec![bevy_interact_2d::Group(0)],
-        bounding_box: (Vec2::splat(-30.), Vec2::splat(30.)),
+        bounding_box: (-corner, corner),
         ..default()
     })
     .insert(Draggable {
@@ -244,11 +244,9 @@ fn drag_piece(
     mouse_button_input: Res<Input<MouseButton>>,
     dragged_query: Query<Entity, (With<Dragged>, With<Piece>)>,
 ) {
-    if !mouse_button_input.just_released(MouseButton::Left) {
-        return;
-    }
-
-    for dragged in dragged_query.iter() {
-        commands.entity(dragged).remove::<Dragged>();
+    if mouse_button_input.just_released(MouseButton::Left) {
+        for dragged in dragged_query.iter() {
+            commands.entity(dragged).remove::<Dragged>();
+        }
     }
 }

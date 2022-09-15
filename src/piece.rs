@@ -10,6 +10,8 @@ pub struct Piece;
 
 pub struct PieceFields {
     width: usize,
+    padded_width: usize,
+    height: usize,
     fields: Vec<usize>,
 }
 
@@ -17,6 +19,10 @@ impl PieceFields {
     pub fn new(fields: &[usize], width: usize, padded_width: usize) -> Self {
         if width > padded_width {
             panic!("Piece is too wide {width} for the padded width {padded_width}");
+        }
+
+        if fields.len() == 0 {
+            panic!("No fields");
         }
 
         let fields: Vec<usize> = if width == padded_width {
@@ -28,8 +34,12 @@ impl PieceFields {
                 .collect()
         };
 
+        let height = *fields.iter().max().unwrap() / padded_width + 1;
+
         Self {
-            width: padded_width,
+            width,
+            padded_width,
+            height,
             fields,
         }
     }
@@ -38,8 +48,16 @@ impl PieceFields {
         &self.fields
     }
 
+    pub fn get_padded_width(&self) -> usize {
+        self.padded_width
+    }
+
     pub fn get_width(&self) -> usize {
         self.width
+    }
+
+    pub fn get_height(&self) -> usize {
+        self.height
     }
 }
 
