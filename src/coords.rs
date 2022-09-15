@@ -6,7 +6,7 @@ use crate::{
     GameState,
 };
 use bevy::prelude::*;
-use bevy_inspector_egui::InspectorPlugin;
+use bevy_inspector_egui::{Inspectable, InspectorPlugin, RegisterInspectable};
 use bevy_interact_2d::{
     drag::{Draggable, Dragged},
     Interactable, InteractionState,
@@ -28,7 +28,7 @@ impl Plugin for CoordsPlugin {
     }
 }
 
-#[derive(Component, Debug, Default)]
+#[derive(Component, Debug, Default, Inspectable)]
 pub struct TileCoords {
     pub tile_coords: Option<UVec2>,
 }

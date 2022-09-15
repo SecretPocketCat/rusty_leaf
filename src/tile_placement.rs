@@ -2,7 +2,7 @@ use crate::{
     board::Board,
     coords::{get_world_coords_from_tile, TileCoords},
     mouse::CursorWorldPosition,
-    piece::{spawn_piece, Piece, PieceFields},
+    piece::{spawn_piece, FieldCoords, Piece, PieceFields},
     GameState,
 };
 use bevy::prelude::*;
@@ -42,7 +42,6 @@ impl Plugin for TilePlacementPlugin {
                     PieceFields::new(&[0, 1, 2, 4], 3, BOARD_SIZE),
                     PieceFields::new(&[1, 3, 4, 5], 3, BOARD_SIZE),
                 ],
-                queue: default(),
             })
             .add_system_to_stage(CoreStage::Last, limit_drag_count)
             .add_enter_system(GameState::Playing, setup_board)
@@ -55,7 +54,6 @@ impl Plugin for TilePlacementPlugin {
 
 pub struct Pieces {
     pieces: Vec<PieceFields>,
-    queue: VecDeque<usize>,
 }
 
 #[derive(Component)]
@@ -117,21 +115,17 @@ fn setup_board(mut cmd: Commands) {
     cmd.insert_resource(Board::new(9, 9, 3));
 }
 
-fn fill_piece_queue(mut cmd: Commands, mut pieces: ResMut<Pieces>) {
-    if pieces.is_changed() && pieces.queue.len() == 0 {
+fn fill_piece_queue(mut cmd: Commands, pieces: Res<Pieces>, pieces_q: Query<Entity, With<Piece>>) {
+    if pieces_q.iter().len() == 0 {
         let pieces_len = pieces.pieces.len();
-        for _ in 0..3 {
-            pieces
-                .queue
-                .push_back(rand::thread_rng().gen_range(0..pieces_len));
-        }
-
-        for (i, piece_i) in pieces.queue.iter().enumerate() {
+        let mut rng = rand::thread_rng();
+        for i in 0..3 {
+            let piece_i = rng.gen_range(0..pieces_len);
             let x = ((i as i32) - 1i32) as f32 * 230.;
             spawn_piece(
                 &mut cmd,
-                pieces.pieces.get(*piece_i).unwrap(),
-                *piece_i,
+                &pieces.pieces[piece_i],
+                piece_i,
                 Vec2::new(x, 350.),
             );
         }
@@ -141,11 +135,38 @@ fn fill_piece_queue(mut cmd: Commands, mut pieces: ResMut<Pieces>) {
 fn drop_piece(
     mut cmd: Commands,
     mouse_input: Res<Input<MouseButton>>,
-    dragged_query: Query<(Entity, &Piece, &TileCoords), With<Dragged>>,
+    mut board: ResMut<Board>,
+    pieces: Res<Pieces>,
+    dragged_query: Query<(Entity, &Piece, &TileCoords, &Mover), With<Dragged>>,
+    child_q: Query<&Children>,
+    field_q: Query<&FieldCoords>,
 ) {
     if mouse_input.just_released(MouseButton::Left) {
-        for (dragged_e, ..) in dragged_query.iter() {
-            cmd.entity(dragged_e).remove::<Dragged>();
+        for (dragged_e, piece, coords, mover) in dragged_query.iter() {
+            let mut e_cmd = cmd.entity(dragged_e);
+            e_cmd.remove::<Dragged>();
+
+            if let Some(coords) = coords.tile_coords {
+                if let Ok(_) = board.place_piece(
+                    coords.x as usize,
+                    coords.y as usize,
+                    pieces.pieces[piece.0].get_fields(),
+                ) {
+                    e_cmd.despawn_recursive();
+
+                    if let Ok(children) = child_q.get(mover.moved_e) {
+                        for c in children.iter() {
+                            if let Ok(fld_coords) = field_q.get(*c) {
+                                cmd.entity(*c).insert(TileCoords {
+                                    tile_coords: Some(coords + fld_coords.0),
+                                });
+                            }
+                        }
+
+                        cmd.entity(mover.moved_e).despawn();
+                    }
+                }
+            }
         }
     }
 }
@@ -165,6 +186,7 @@ fn drag_piece(
                     coords.y as usize,
                     pieces.pieces[piece.0].get_fields(),
                 ) {
+                    // todo: colour outline or smt.
                     info!("can place!");
                 }
             }

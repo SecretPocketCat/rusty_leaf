@@ -39,6 +39,8 @@ impl Plugin for GamePlugin {
         app.add_loopless_state(GameState::Playing)
             .add_plugin(RenderPlugin)
             // .add_plugin(WorldInspectorPlugin::new())
+            // .register_inspectable::<TileCoords>()
+            // .add_system(log_coords)
             // .add_plugin(InteractionPlugin)
             .add_plugin(InteractionDebugPlugin)
             .add_plugin(DragPlugin)

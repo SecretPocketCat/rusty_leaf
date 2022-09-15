@@ -7,10 +7,13 @@ use std::{
     ops::{Div, Mul, Range, Rem, Sub},
 };
 
-use crate::{tile_placement::Mover, coords::TileCoords};
+use crate::{coords::TileCoords, tile_placement::Mover};
 
 #[derive(Component)]
 pub struct Piece(pub usize);
+
+#[derive(Component)]
+pub struct FieldCoords(pub UVec2);
 
 pub struct PieceFields {
     width: usize,
@@ -83,8 +86,8 @@ pub fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, 
             let piece_offset_x = piece.get_width().sub(1) as f32 / 2.;
             let piece_offset_y = piece.get_height().sub(1) as f32 / 2.;
             for i in piece.get_fields().iter() {
-                let x = ((i % piece_padded_w) as f32 - piece_offset_x) * size;
-                let y = ((i / piece_padded_w) as f32 - piece_offset_y) * -size;
+                let x = i % piece_padded_w;
+                let y = i / piece_padded_w;
 
                 b.spawn_bundle(GeometryBuilder::build_as(
                     &shapes::Rectangle {
@@ -92,8 +95,13 @@ pub fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, 
                         ..default()
                     },
                     DrawMode::Fill(FillMode::color(Color::ORANGE)),
-                    Transform::from_xyz(x, y, 0.),
-                ));
+                    Transform::from_xyz(
+                        (x as f32 - piece_offset_x) * size,
+                        (y as f32 - piece_offset_y) * -size,
+                        0.,
+                    ),
+                ))
+                .insert(FieldCoords(UVec2::new(x as u32, y as u32)));
             }
         })
         .insert(Name::new("piece_visual"))
