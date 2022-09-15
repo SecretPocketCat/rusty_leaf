@@ -6,7 +6,7 @@ use std::{
 };
 
 #[derive(Component)]
-pub struct Piece;
+pub struct Piece(pub usize);
 
 pub struct PieceFields {
     width: usize,
