@@ -33,12 +33,19 @@ pub struct TileCoords {
     pub tile_coords: Option<UVec2>,
 }
 
-pub fn get_tile_coords_from_world(world_coords: Vec2) -> Option<UVec2> {
-    let max_i = BOARD_SIZE as f32 - 1.;
+pub fn get_tile_coords_from_world(world_coords: Vec2, tile_size: UVec2) -> Option<UVec2> {
+    let max_i = BOARD_SIZE as f32;
     let base_coords = world_coords.div(60.).round().add(Vec2::splat(4.));
-    let coords = Vec2::new(base_coords.x - 1., max_i - base_coords.y.abs());
+    let coords = Vec2::new(base_coords.x - 1., max_i - 1. - base_coords.y.abs());
+    let tile_size = Vec2::new(tile_size.x as f32, tile_size.y as f32);
 
-    if coords.x >= 0. && coords.x <= max_i && coords.y >= 0. && coords.y <= max_i {
+    info!("{base_coords}, {coords}, {tile_size}");
+    if coords.min_element() >= 0.
+        && coords.max_element() < max_i
+        && base_coords.y >= 0.
+        && base_coords.y - tile_size.y + 1. >= 0.
+        && coords.x + tile_size.x - 1. < max_i
+    {
         Some(UVec2::new(coords.x as u32, coords.y as u32))
     } else {
         None
@@ -58,12 +65,15 @@ fn update_tile_coords(
 ) {
     if cursor_pos.is_changed() {
         if let Ok((mut coords, interactable_t, interactable)) = dragged_query.get_single_mut() {
+            let tile_size = interactable.bounding_box.0.abs().div(TILE_SIZE / 2.);
+            let tile_size = UVec2::new(tile_size.x as u32, tile_size.y as u32);
             let dragged_tile_coords = get_tile_coords_from_world(
                 interactable_t.translation.truncate()
                     + Vec2::new(
-                        -interactable.bounding_box.0.x.abs() + 90.,
-                        interactable.bounding_box.0.y.abs() - 30.,
+                        -interactable.bounding_box.0.x.abs() + 1.5 * TILE_SIZE,
+                        interactable.bounding_box.0.y.abs() - 0.5 * TILE_SIZE,
                     ),
+                tile_size,
             );
 
             if coords.tile_coords.is_some() && dragged_tile_coords.is_none() {
