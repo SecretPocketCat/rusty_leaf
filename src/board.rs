@@ -136,7 +136,7 @@ impl Board {
 
         (col..self.width * self.heigth)
             .into_iter()
-            .filter(|i| *i == col || i.rem(col + self.width) == 0)
+            .filter(|i| *i % self.width == col)
             .collect()
     }
 
@@ -232,6 +232,7 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use spectral::prelude::*;
     use test_case::test_case;
 
     #[test_case(1, 1, 1)]
@@ -283,11 +284,20 @@ mod tests {
     }
 
     #[test_case(0 => vec![0, 4])]
+    #[test_case(1 => vec![1, 5])]
     #[test_case(2 => vec![2, 6])]
     #[test_case(5 => panics)]
     fn get_column(column: usize) -> Vec<usize> {
         let board = Board::new(4, 2, 2);
+        board.get_column(column)
+    }
 
+    #[test_case(0 => vec![0, 3, 6])]
+    #[test_case(1 => vec![1, 4, 7])]
+    #[test_case(2 => vec![2, 5, 8])]
+    #[test_case(4 => panics)]
+    fn get_column_3_x_3(column: usize) -> Vec<usize> {
+        let board = Board::new(3, 3, 3);
         board.get_column(column)
     }
 
@@ -296,7 +306,15 @@ mod tests {
     #[test_case(5 => panics)]
     fn get_row_range(row: usize) -> Range<usize> {
         let board = Board::new(4, 3, 2);
+        board.get_row_range(row)
+    }
 
+    #[test_case(0 => 0..3)]
+    #[test_case(1 => 3..6)]
+    #[test_case(2 => 6..9)]
+    #[test_case(4 => panics)]
+    fn get_row_range_3_x_3(row: usize) -> Range<usize> {
+        let board = Board::new(3, 3, 3);
         board.get_row_range(row)
     }
 
@@ -429,22 +447,49 @@ mod tests {
         }
 
         let mut board = Board::with_fields(3, 3, 3, fields.into());
-        // corner piece
+        // cross piece
         let res = board.place_piece(0, 0, &[1, 3, 4, 5, 7]).unwrap();
 
         assert_eq!(Vec::<bool>::from([true; 9]), board.fields);
 
-        assert_eq!(
-            res,
-            vec![
+        assert_that(&res.iter()).contains_all_of(
+            &vec![
                 BoardClear::Row(0),
+                BoardClear::Row(1),
+                BoardClear::Row(2),
                 BoardClear::Column(0),
                 BoardClear::Column(1),
                 BoardClear::Column(2),
-                BoardClear::Row(1),
-                BoardClear::Row(2),
-                BoardClear::Section(0)
+                BoardClear::Section(0),
             ]
-        )
+            .iter(),
+        );
+    }
+
+    #[test]
+    fn place_piece_double_corner() {
+        let mut fields = [false; 9];
+        for i in [2, 5, 6, 7] {
+            fields[i] = true;
+        }
+
+        let mut board = Board::with_fields(3, 3, 3, fields.into());
+        // square piece
+        let res = board.place_piece(0, 0, &[0, 1, 3, 4]).unwrap();
+
+        let mut expected_flds = Vec::from([true; 9]);
+        expected_flds[8] = false;
+
+        assert_eq!(expected_flds, board.fields);
+
+        assert_that(&res.iter()).contains_all_of(
+            &vec![
+                BoardClear::Row(0),
+                BoardClear::Row(1),
+                BoardClear::Column(0),
+                BoardClear::Column(1),
+            ]
+            .iter(),
+        );
     }
 }
