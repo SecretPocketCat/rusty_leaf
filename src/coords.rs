@@ -39,7 +39,6 @@ pub fn get_tile_coords_from_world(world_coords: Vec2, tile_size: UVec2) -> Optio
     let coords = Vec2::new(base_coords.x - 1., max_i - 1. - base_coords.y.abs());
     let tile_size = Vec2::new(tile_size.x as f32, tile_size.y as f32);
 
-    info!("{base_coords}, {coords}, {tile_size}");
     if coords.min_element() >= 0.
         && coords.max_element() < max_i
         && base_coords.y >= 0.

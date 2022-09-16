@@ -14,7 +14,7 @@ fn main() {
         .insert_resource(Msaa { samples: 1 })
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
         .insert_resource(WindowDescriptor {
-            width: 660.,
+            width: 1160.,
             height: 950.,
             title: "Bevy game".to_string(), // ToDo
             canvas: Some("#bevy".to_owned()),
