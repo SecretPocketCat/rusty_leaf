@@ -2,6 +2,7 @@
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use std::{
+    collections::VecDeque,
     iter,
     ops::{Div, Mul, Range, Rem},
 };
@@ -27,6 +28,11 @@ pub enum BoardClear {
     Row(usize),
     Column(usize),
     Section(usize),
+}
+
+#[derive(Debug, Default)]
+pub struct BoardClearQueue {
+    pub queue: VecDeque<BoardClear>,
 }
 
 #[derive(Debug)]
@@ -190,22 +196,36 @@ impl Board {
         self.get_column(column).iter().all(|i| self.fields[*i])
     }
 
-    fn clear_column(&mut self, column: usize) {
-        for i in self.get_column(column).iter() {
+    pub fn clear_column(&mut self, column: usize) -> Vec<usize> {
+        let col = self.get_column(column);
+        for i in col.iter() {
             self.fields[*i] = false;
         }
+
+        col
     }
 
-    fn clear_row(&mut self, row: usize) {
+    pub fn clear_row(&mut self, row: usize) -> Vec<usize> {
+        let mut row_i = Vec::new();
         for i in self.get_row_range(row) {
             self.fields[i] = false;
+            row_i.push(i);
         }
+
+        row_i
     }
 
-    fn clear_section(&mut self, section: usize) {
-        for i in self.get_section_by_section_index(section) {
-            self.fields[i] = false;
+    pub fn clear_section(&mut self, section: usize) -> Vec<usize> {
+        let section = self.get_section_by_section_index(section);
+        for i in section.iter() {
+            self.fields[*i] = false;
         }
+
+        section
+    }
+
+    pub fn tile_coords_to_tile_index(&self, coords: UVec2) -> usize {
+        (coords.y * self.width as u32 + coords.x) as usize
     }
 }
 

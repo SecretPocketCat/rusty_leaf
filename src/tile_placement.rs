@@ -1,8 +1,8 @@
 use crate::{
-    board::Board,
+    board::{Board, BoardClear, BoardClearQueue},
     coords::{get_world_coords_from_tile, TileCoords},
     mouse::CursorWorldPosition,
-    piece::{spawn_piece, FieldCoords, Piece, PieceFields},
+    piece::{spawn_piece, FieldCoords, Piece, PieceFields, PlacedFieldIndex},
     GameState,
 };
 use bevy::prelude::*;
@@ -43,9 +43,14 @@ impl Plugin for TilePlacementPlugin {
                     PieceFields::new(&[1, 3, 4, 5], 3, BOARD_SIZE),
                 ],
             })
+            .init_resource::<BoardClearQueue>()
             .add_system_to_stage(CoreStage::Last, limit_drag_count)
             .add_enter_system(GameState::Playing, setup_board)
             .add_system(fill_piece_queue.run_if_resource_exists::<Pieces>())
+            .add_system_to_stage(
+                CoreStage::Last,
+                clear_board.run_if_resource_exists::<Board>(),
+            )
             .add_system(drop_piece)
             .add_system(drag_piece)
             .add_system(process_movers);
@@ -136,6 +141,7 @@ fn drop_piece(
     mut cmd: Commands,
     mouse_input: Res<Input<MouseButton>>,
     mut board: ResMut<Board>,
+    mut clear_queue: ResMut<BoardClearQueue>,
     pieces: Res<Pieces>,
     dragged_query: Query<(Entity, &Piece, &TileCoords, &Mover), With<Dragged>>,
     child_q: Query<&Children>,
@@ -147,7 +153,7 @@ fn drop_piece(
             e_cmd.remove::<Dragged>();
 
             if let Some(coords) = coords.tile_coords {
-                if let Ok(_) = board.place_piece(
+                if let Ok(cleared) = board.place_piece(
                     coords.x as usize,
                     coords.y as usize,
                     pieces.pieces[piece.0].get_fields(),
@@ -157,16 +163,48 @@ fn drop_piece(
                     if let Ok(children) = child_q.get(mover.moved_e) {
                         for c in children.iter() {
                             if let Ok(fld_coords) = field_q.get(*c) {
-                                cmd.entity(*c).insert(TileCoords {
-                                    tile_coords: Some(coords + fld_coords.0),
-                                });
+                                cmd.entity(*c).insert(PlacedFieldIndex(
+                                    board.tile_coords_to_tile_index(coords + fld_coords.0),
+                                ));
                             }
                         }
 
                         cmd.entity(mover.moved_e).despawn();
                     }
+
+                    for c in cleared {
+                        clear_queue.queue.push_back(c);
+                    }
                 }
             }
+        }
+    }
+}
+
+fn clear_board(
+    mut cmd: Commands,
+    mut queue: ResMut<BoardClearQueue>,
+    mut board: ResMut<Board>,
+    field_q: Query<(Entity, &PlacedFieldIndex)>,
+) {
+    if queue.is_changed() {
+        let mut cleared_indices: Vec<usize> = Vec::default();
+
+        while let Some(c) = queue.queue.pop_front() {
+            match c {
+                BoardClear::Row(row) => cleared_indices.extend(board.clear_row(row)),
+                BoardClear::Column(col) => cleared_indices.extend(board.clear_column(col)),
+                BoardClear::Section(section) => {
+                    cleared_indices.extend(board.clear_section(section))
+                }
+            }
+        }
+
+        for (e, ..) in field_q
+            .iter()
+            .filter(|(_, f)| cleared_indices.contains(&f.0))
+        {
+            cmd.entity(e).despawn_recursive();
         }
     }
 }

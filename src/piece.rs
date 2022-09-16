@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use bevy::prelude::*;
+use bevy_inspector_egui::Inspectable;
 use bevy_interact_2d::{drag::Draggable, Interactable};
 use bevy_prototype_lyon::prelude::*;
 use std::{
@@ -14,6 +15,9 @@ pub struct Piece(pub usize);
 
 #[derive(Component)]
 pub struct FieldCoords(pub UVec2);
+
+#[derive(Component, Inspectable)]
+pub struct PlacedFieldIndex(pub usize);
 
 pub struct PieceFields {
     width: usize,
