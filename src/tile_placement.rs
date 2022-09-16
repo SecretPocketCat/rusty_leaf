@@ -31,27 +31,16 @@ impl Plugin for TilePlacementPlugin {
             // .add_plugin(InspectorPlugin::<Board>::new())
             .insert_resource(Pieces {
                 pieces: vec![
+                    PieceFields::new(&[0, 1], 2, BOARD_SIZE),
+                    PieceFields::new(&[0, 1], 1, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 2], 1, BOARD_SIZE),
                     PieceFields::new(&[0, 1, 2, 3], 2, BOARD_SIZE),
-                    PieceFields::new(&[0, 1, 2, 3], 2, BOARD_SIZE),
-                    PieceFields::new(&[0, 1, 2, 3], 2, BOARD_SIZE),
-                    PieceFields::new(
-                        &[
-                            2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 27, 28, 36,
-                            37, 45, 46, 54, 55, 63, 64, 72, 73,
-                        ],
-                        9,
-                        BOARD_SIZE,
-                    ),
-                    // PieceFields::new(&[0, 1], 2, BOARD_SIZE),
-                    // PieceFields::new(&[0, 1], 1, BOARD_SIZE),
-                    // PieceFields::new(&[0, 1, 2], 1, BOARD_SIZE),
-                    // PieceFields::new(&[0, 1, 2, 3], 2, BOARD_SIZE),
-                    // PieceFields::new(&[0, 1, 2], 2, BOARD_SIZE),
-                    // PieceFields::new(&[0, 1, 3], 2, BOARD_SIZE),
-                    // PieceFields::new(&[0, 1, 2, 5], 3, BOARD_SIZE),
-                    // PieceFields::new(&[0, 1, 2, 3], 3, BOARD_SIZE),
-                    // PieceFields::new(&[0, 1, 2, 4], 3, BOARD_SIZE),
-                    // PieceFields::new(&[1, 3, 4, 5], 3, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 2], 2, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 3], 2, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 2, 5], 3, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 2, 3], 3, BOARD_SIZE),
+                    PieceFields::new(&[0, 1, 2, 4], 3, BOARD_SIZE),
+                    PieceFields::new(&[1, 3, 4, 5], 3, BOARD_SIZE),
                 ],
             })
             .init_resource::<BoardClearQueue>()
