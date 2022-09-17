@@ -164,11 +164,6 @@ fn drop_card(
     mut dragged_query: Query<(Entity, &Card, &Dragged, &mut Transform)>,
 ) {
     if mouse_input.just_released(MouseButton::Left) {
-        for (dragged_e, ..) in dragged_query.iter() {
-            cmd.entity(dragged_e).despawn_recursive();
-            continue;
-        }
-
         for (dragged_e, card, dragged, mut card_t) in dragged_query.iter_mut() {
             let mut e_cmd = cmd.entity(dragged_e);
             e_cmd.remove::<Dragged>();
