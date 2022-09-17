@@ -10,7 +10,8 @@ use std::{
 
 use crate::{
     coords::TileCoords,
-    tile_placement::{Mover, TILE_SIZE},
+    drag::{DragGroup, Mover},
+    tile_placement::TILE_SIZE,
 };
 
 #[derive(Component)]
@@ -122,12 +123,12 @@ pub fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, 
         ..default()
     })
     .insert(Interactable {
-        groups: vec![bevy_interact_2d::Group(0)],
+        groups: vec![DragGroup::Piece.into()],
         bounding_box: (-corner, corner),
         ..default()
     })
     .insert(Draggable {
-        groups: vec![bevy_interact_2d::Group(0)],
+        groups: vec![DragGroup::Piece.into()],
         // hook: Some(Vec2::new(0., TILE_SIZE)),
         ..Default::default()
     })

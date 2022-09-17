@@ -1,7 +1,9 @@
 #![feature(int_roundings)]
 
 mod board;
+mod card;
 mod coords;
+mod drag;
 mod level;
 mod mouse;
 mod piece;
@@ -12,10 +14,12 @@ use crate::tile_placement::TilePlacementPlugin;
 use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::prelude::*;
-use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::{RegisterInspectable, WorldInspectorPlugin};
 use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin, InteractionPlugin};
 use bevy_prototype_lyon::prelude::ShapePlugin;
+use card::{Card, CardPlugin, Ingredient};
 use coords::CoordsPlugin;
+use drag::DragPlugin as GameDragPlugin;
 use iyes_loopless::prelude::AppLooplessStateExt;
 use level::LevelPlugin;
 use mouse::MousePlugin;
@@ -34,21 +38,27 @@ enum GameState {
     Menu,
 }
 
+pub use render::WINDOW_SIZE;
+
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state(GameState::Playing)
             .add_plugin(RenderPlugin)
-            // .add_plugin(WorldInspectorPlugin::new())
+            .add_plugin(WorldInspectorPlugin::new())
+            .register_inspectable::<Card>()
+            .register_inspectable::<Ingredient>()
             // .register_inspectable::<TileCoords>()
             // .add_system(log_coords)
             .add_plugin(InteractionPlugin)
             // .add_plugin(InteractionDebugPlugin)
             .add_plugin(DragPlugin)
+            .add_plugin(GameDragPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(TilePlacementPlugin)
             .add_plugin(LevelPlugin)
+            .add_plugin(CardPlugin)
             .add_plugin(CoordsPlugin)
             .add_plugin(MousePlugin);
     }
