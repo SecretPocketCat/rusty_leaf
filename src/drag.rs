@@ -27,6 +27,10 @@ impl Plugin for DragPlugin {
 pub enum DragGroup {
     Piece = 1,
     Card,
+    Cauldron,
+    CauldronFire,
+    TileGrid,
+    TilePieces,
 }
 
 impl Into<Group> for DragGroup {

@@ -14,7 +14,6 @@ use crate::{
     tile_placement::{BOARD_SHIFT, SECTION_SIZE},
 };
 
-// todo: move cards if a card is applied/removed
 pub struct CardPlugin;
 impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {

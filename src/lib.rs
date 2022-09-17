@@ -2,6 +2,7 @@
 
 mod board;
 mod card;
+mod cauldron;
 mod coords;
 mod drag;
 mod level;
@@ -18,6 +19,7 @@ use bevy_inspector_egui::{RegisterInspectable, WorldInspectorPlugin};
 use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin, InteractionPlugin};
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use card::{Card, CardPlugin, Ingredient};
+use cauldron::CauldronPlugin;
 use coords::CoordsPlugin;
 use drag::DragPlugin as GameDragPlugin;
 use iyes_loopless::prelude::AppLooplessStateExt;
@@ -51,14 +53,15 @@ impl Plugin for GamePlugin {
             .register_inspectable::<Ingredient>()
             // .register_inspectable::<TileCoords>()
             // .add_system(log_coords)
-            .add_plugin(InteractionPlugin)
-            // .add_plugin(InteractionDebugPlugin)
+            // .add_plugin(InteractionPlugin)
+            .add_plugin(InteractionDebugPlugin)
             .add_plugin(DragPlugin)
             .add_plugin(GameDragPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(TilePlacementPlugin)
             .add_plugin(LevelPlugin)
             .add_plugin(CardPlugin)
+            .add_plugin(CauldronPlugin)
             .add_plugin(CoordsPlugin)
             .add_plugin(MousePlugin);
     }
