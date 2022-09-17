@@ -100,7 +100,11 @@ pub fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, 
                         extents: Vec2::splat(TILE_SIZE),
                         ..default()
                     },
-                    DrawMode::Fill(FillMode::color(Color::ORANGE)),
+                    DrawMode::Outlined {
+                        // fed171
+                        outline_mode: StrokeMode::new(Color::rgb_u8(141, 71, 46), 4.),
+                        fill_mode: FillMode::color(Color::rgb_u8(254, 209, 113)),
+                    },
                     Transform::from_xyz(
                         (x as f32 - piece_offset_x) * TILE_SIZE,
                         (y as f32 - piece_offset_y) * -TILE_SIZE,

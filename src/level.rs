@@ -20,7 +20,7 @@ fn setup(mut cmd: Commands, ass: Res<AssetServer>) {
     cmd.spawn_bundle(SpriteBundle {
         texture: ass.load("sprites/parchment.png"),
         transform: Transform {
-            translation: Vec3::new(BOARD_SHIFT.x + 5., -580., 0.1),
+            translation: Vec3::new(BOARD_SHIFT.x + 25., -580., 0.1),
             scale: Vec2::splat(4.).extend(1.),
             ..default()
         },
