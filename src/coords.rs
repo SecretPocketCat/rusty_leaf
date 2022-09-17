@@ -2,7 +2,7 @@ use crate::{
     board::Board,
     mouse::CursorWorldPosition,
     piece::{spawn_piece, Piece, PieceFields},
-    tile_placement::{BOARD_SIZE, TILE_SIZE},
+    tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, TILE_SIZE},
     GameState,
 };
 use bevy::prelude::*;
@@ -55,25 +55,41 @@ pub fn get_world_coords_from_tile(tile_coords: UVec2) -> Vec2 {
     Vec2::new(
         tile_coords.x as f32 * TILE_SIZE,
         tile_coords.y as f32 * -TILE_SIZE,
-    )
+    ) + BOARD_SHIFT.truncate()
 }
 
 fn update_tile_coords(
     cursor_pos: Res<CursorWorldPosition>,
-    mut dragged_query: Query<(&mut TileCoords, &Transform, &Interactable), With<Dragged>>,
+    mut dragged_query: Query<(&mut TileCoords, &Piece, &Transform, &Interactable), With<Dragged>>,
+    board: Res<Board>,
+    pieces: Res<Pieces>,
 ) {
     if cursor_pos.is_changed() {
-        if let Ok((mut coords, interactable_t, interactable)) = dragged_query.get_single_mut() {
+        if let Ok((mut coords, piece, interactable_t, interactable)) =
+            dragged_query.get_single_mut()
+        {
             let tile_size = interactable.bounding_box.0.abs().div(TILE_SIZE / 2.);
             let tile_size = UVec2::new(tile_size.x as u32, tile_size.y as u32);
-            let dragged_tile_coords = get_tile_coords_from_world(
+            let mut dragged_tile_coords = get_tile_coords_from_world(
                 interactable_t.translation.truncate()
                     + Vec2::new(
                         -interactable.bounding_box.0.x.abs() + 1.5 * TILE_SIZE,
                         interactable.bounding_box.0.y.abs() - 0.5 * TILE_SIZE,
-                    ),
+                    )
+                    + -BOARD_SHIFT.truncate(),
                 tile_size,
             );
+
+            if let Some(dragged_coords) = dragged_tile_coords {
+                let piece = &pieces.pieces[piece.0];
+                if let Err(_) = board.can_place_piece(
+                    dragged_coords.x as usize,
+                    dragged_coords.y as usize,
+                    piece.get_fields(),
+                ) {
+                    dragged_tile_coords = None;
+                }
+            }
 
             if coords.tile_coords.is_some() && dragged_tile_coords.is_none() {
                 coords.tile_coords = dragged_tile_coords;

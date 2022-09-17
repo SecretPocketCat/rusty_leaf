@@ -19,10 +19,11 @@ use std::{
     ops::{Add, Div, Sub},
 };
 
-pub const BOARD_SIZE_PX: f32 = 400.;
+pub const BOARD_SIZE_PX: f32 = 480.;
 pub const BOARD_SIZE: usize = 9;
 pub const TILE_SIZE: f32 = BOARD_SIZE_PX / BOARD_SIZE as f32;
 pub const SECTION_SIZE: usize = 3;
+pub const BOARD_SHIFT: Vec3 = Vec3::new(-345.0, -95., 0.);
 
 pub struct TilePlacementPlugin;
 impl Plugin for TilePlacementPlugin {
@@ -58,7 +59,7 @@ impl Plugin for TilePlacementPlugin {
 }
 
 pub struct Pieces {
-    pieces: Vec<PieceFields>,
+    pub pieces: Vec<PieceFields>,
 }
 
 #[derive(Component)]
@@ -67,55 +68,56 @@ pub struct Mover {
 }
 
 fn setup_board(mut cmd: Commands) {
-    let size = BOARD_SIZE_PX;
-    let extents = size / 2.;
-    let square = shapes::Rectangle {
-        extents: Vec2::splat(size),
-        ..shapes::Rectangle::default()
-    };
-    let builder = GeometryBuilder::new().add(&square);
+    // let pos = BOARD_SHIFT.truncate().extend(1.);
+    // let size = BOARD_SIZE_PX;
+    // let extents = size / 2.;
+    // let square = shapes::Rectangle {
+    //     extents: Vec2::splat(size),
+    //     ..shapes::Rectangle::default()
+    // };
+    // let builder = GeometryBuilder::new().add(&square);
 
-    cmd.spawn_bundle(builder.build(
-        DrawMode::Fill(FillMode::color(Color::ANTIQUE_WHITE)),
-        Transform::default(),
-    ))
-    .insert(Name::new("board_bg"));
+    // cmd.spawn_bundle(builder.build(
+    //     DrawMode::Fill(FillMode::color(Color::ANTIQUE_WHITE)),
+    //     Transform::from_translation(pos),
+    // ))
+    // .insert(Name::new("board_bg"));
 
-    let mut builder = GeometryBuilder::new();
+    // let mut builder = GeometryBuilder::new();
 
-    let section_count = 9;
-    let section_count_half = section_count / 2;
-    let section_size = size / section_count as f32;
-    for i in -section_count_half..section_count_half {
-        let x = section_size * i as f32 + section_size / 2.;
-        let line_x = shapes::Line(Vec2::new(x, extents), Vec2::new(x, -extents));
-        let line_y = shapes::Line(Vec2::new(extents, x), Vec2::new(-extents, x));
-        builder = builder.add(&line_x).add(&line_y);
-    }
+    // let section_count = 9;
+    // let section_count_half = section_count / 2;
+    // let section_size = size / section_count as f32;
+    // for i in -section_count_half..section_count_half {
+    //     let x = section_size * i as f32 + section_size / 2.;
+    //     let line_x = shapes::Line(Vec2::new(x, extents), Vec2::new(x, -extents));
+    //     let line_y = shapes::Line(Vec2::new(extents, x), Vec2::new(-extents, x));
+    //     builder = builder.add(&line_x).add(&line_y);
+    // }
 
-    cmd.spawn_bundle(builder.build(
-        DrawMode::Stroke(StrokeMode::new(Color::GRAY, 5.0)),
-        Transform::default(),
-    ))
-    .insert(Name::new("board_sections"));
+    // cmd.spawn_bundle(builder.build(
+    //     DrawMode::Stroke(StrokeMode::new(Color::GRAY, 5.0)),
+    //     Transform::from_translation(pos),
+    // ))
+    // .insert(Name::new("board_sections"));
 
-    let mut builder = GeometryBuilder::new().add(&square);
+    // let mut builder = GeometryBuilder::new().add(&square);
 
-    let section_count = 3;
-    let section_count_half = section_count / 2;
-    let section_size = size / section_count as f32;
-    for i in -section_count_half..section_count_half {
-        let x = section_size * i as f32 + section_size / 2.;
-        let line_x = shapes::Line(Vec2::new(x, extents), Vec2::new(x, -extents));
-        let line_y = shapes::Line(Vec2::new(extents, x), Vec2::new(-extents, x));
-        builder = builder.add(&line_x).add(&line_y);
-    }
+    // let section_count = 3;
+    // let section_count_half = section_count / 2;
+    // let section_size = size / section_count as f32;
+    // for i in -section_count_half..section_count_half {
+    //     let x = section_size * i as f32 + section_size / 2.;
+    //     let line_x = shapes::Line(Vec2::new(x, extents), Vec2::new(x, -extents));
+    //     let line_y = shapes::Line(Vec2::new(extents, x), Vec2::new(-extents, x));
+    //     builder = builder.add(&line_x).add(&line_y);
+    // }
 
-    cmd.spawn_bundle(builder.build(
-        DrawMode::Stroke(StrokeMode::new(Color::DARK_GRAY, 12.0)),
-        Transform::default(),
-    ))
-    .insert(Name::new("board_lines"));
+    // cmd.spawn_bundle(builder.build(
+    //     DrawMode::Stroke(StrokeMode::new(Color::DARK_GRAY, 12.0)),
+    //     Transform::from_translation(pos),
+    // ))
+    // .insert(Name::new("board_lines"));
 
     cmd.insert_resource(Board::new(9, 9, 3));
 }
@@ -126,12 +128,19 @@ fn fill_piece_queue(mut cmd: Commands, pieces: Res<Pieces>, pieces_q: Query<Enti
         let mut rng = rand::thread_rng();
         for i in 0..3 {
             let piece_i = rng.gen_range(0..pieces_len);
-            let x = ((i as i32) - 1i32) as f32 * 230.;
+            let x = ((i as i32) - 1i32) as f32 * 180.;
+            let piece = &pieces.pieces[piece_i];
             spawn_piece(
                 &mut cmd,
-                &pieces.pieces[piece_i],
+                piece,
                 piece_i,
-                Vec2::new(x, 350.),
+                Vec2::new(
+                    x + BOARD_SHIFT.x,
+                    BOARD_SIZE_PX / 2.
+                        + BOARD_SHIFT.y
+                        // + (piece.get_height() as f32 * TILE_SIZE) / 2.
+                        + 100.,
+                ),
             );
         }
     }
@@ -246,6 +255,7 @@ fn process_movers(
 ) {
     for (mover, mover_t, coords, interactable) in mover_q.iter() {
         if let Ok(mut t) = moved_q.get_mut(mover.moved_e) {
+            let z = t.translation.z;
             t.translation = if let Some(pos) = coords.tile_coords {
                 (get_world_coords_from_tile(pos)
                     + Vec2::new(-BOARD_SIZE_PX / 2., BOARD_SIZE_PX / 2.)
@@ -253,7 +263,7 @@ fn process_movers(
                         interactable.bounding_box.0.x.abs(),
                         -interactable.bounding_box.0.y.abs(),
                     ))
-                .extend(0.)
+                .extend(z)
             } else {
                 mover_t.translation
             };

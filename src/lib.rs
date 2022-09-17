@@ -40,7 +40,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state(GameState::Playing)
             .add_plugin(RenderPlugin)
-            .add_plugin(WorldInspectorPlugin::new())
+            // .add_plugin(WorldInspectorPlugin::new())
             // .register_inspectable::<TileCoords>()
             // .add_system(log_coords)
             // .add_plugin(InteractionPlugin)
