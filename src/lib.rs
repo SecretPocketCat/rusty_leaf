@@ -2,6 +2,7 @@
 
 mod board;
 mod coords;
+mod level;
 mod mouse;
 mod piece;
 mod render;
@@ -16,6 +17,7 @@ use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin, InteractionPlug
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use coords::CoordsPlugin;
 use iyes_loopless::prelude::AppLooplessStateExt;
+use level::LevelPlugin;
 use mouse::MousePlugin;
 use render::RenderPlugin;
 
@@ -38,7 +40,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state(GameState::Playing)
             .add_plugin(RenderPlugin)
-            // .add_plugin(WorldInspectorPlugin::new())
+            .add_plugin(WorldInspectorPlugin::new())
             // .register_inspectable::<TileCoords>()
             // .add_system(log_coords)
             // .add_plugin(InteractionPlugin)
@@ -46,6 +48,7 @@ impl Plugin for GamePlugin {
             .add_plugin(DragPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(TilePlacementPlugin)
+            .add_plugin(LevelPlugin)
             .add_plugin(CoordsPlugin)
             .add_plugin(MousePlugin);
     }

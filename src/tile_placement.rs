@@ -19,7 +19,7 @@ use std::{
     ops::{Add, Div, Sub},
 };
 
-pub const BOARD_SIZE_PX: f32 = 540.;
+pub const BOARD_SIZE_PX: f32 = 400.;
 pub const BOARD_SIZE: usize = 9;
 pub const TILE_SIZE: f32 = BOARD_SIZE_PX / BOARD_SIZE as f32;
 pub const SECTION_SIZE: usize = 3;

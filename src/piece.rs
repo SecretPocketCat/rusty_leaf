@@ -8,7 +8,10 @@ use std::{
     ops::{Div, Mul, Range, Rem, Sub},
 };
 
-use crate::{coords::TileCoords, tile_placement::Mover};
+use crate::{
+    coords::TileCoords,
+    tile_placement::{Mover, TILE_SIZE},
+};
 
 #[derive(Component)]
 pub struct Piece(pub usize);
@@ -73,8 +76,7 @@ impl PieceFields {
 }
 
 pub fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, position: Vec2) {
-    let size = 60.;
-    let size_h = size / 2.;
+    let size_h = TILE_SIZE / 2.;
     let corner = Vec2::new(
         piece.get_width() as f32 * size_h,
         piece.get_height() as f32 * size_h,
@@ -95,13 +97,13 @@ pub fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, 
 
                 b.spawn_bundle(GeometryBuilder::build_as(
                     &shapes::Rectangle {
-                        extents: Vec2::splat(size),
+                        extents: Vec2::splat(TILE_SIZE),
                         ..default()
                     },
                     DrawMode::Fill(FillMode::color(Color::ORANGE)),
                     Transform::from_xyz(
-                        (x as f32 - piece_offset_x) * size,
-                        (y as f32 - piece_offset_y) * -size,
+                        (x as f32 - piece_offset_x) * TILE_SIZE,
+                        (y as f32 - piece_offset_y) * -TILE_SIZE,
                         0.,
                     ),
                 ))
@@ -122,7 +124,7 @@ pub fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, 
     })
     .insert(Draggable {
         groups: vec![bevy_interact_2d::Group(0)],
-        // hook: Some(Vec2::new(0., 60.)),
+        // hook: Some(Vec2::new(0., TILE_SIZE)),
         ..Default::default()
     })
     .insert(Piece(piece_index))

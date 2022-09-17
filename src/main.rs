@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use bevy::prelude::{App, ClearColor, Color, Msaa, NonSend, WindowDescriptor};
+use bevy::render::texture::ImageSettings;
 use bevy::window::WindowId;
 use bevy::winit::WinitWindows;
 use bevy::DefaultPlugins;
@@ -13,9 +14,10 @@ fn main() {
     App::new()
         .insert_resource(Msaa { samples: 1 })
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
+        .insert_resource(ImageSettings::default_nearest())
         .insert_resource(WindowDescriptor {
-            width: 1160.,
-            height: 950.,
+            width: 1280.,
+            height: 720.,
             title: "Bevy game".to_string(), // ToDo
             canvas: Some("#bevy".to_owned()),
             ..Default::default()
