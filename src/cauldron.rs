@@ -1,13 +1,13 @@
 use crate::{
     anim::SheetAnimation,
-    assets::Sprites,
+    assets::{Fonts, Sprites},
     card::{CardEffect, Ingredient},
     drag::DragGroup,
     progress::TooltipProgress,
-    render::{NoRescale, ZIndex},
+    render::{NoRescale, ZIndex, SCALE_MULT},
     GameState,
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 use bevy_interact_2d::Interactable;
 use iyes_loopless::prelude::*;
 use std::{mem, time::Duration};
@@ -17,7 +17,9 @@ impl Plugin for CauldronPlugin {
     fn build(&self, app: &mut App) {
         app.add_exit_system(GameState::Loading, setup)
             .add_system(cook)
-            .add_system(set_fire_intensity.after(cook));
+            .add_system(set_fire_intensity.after(cook))
+            .add_system(show_progress_tooltip)
+            .add_system(add_ingredient_to_tooltip.run_not_in_state(GameState::Loading));
     }
 }
 
@@ -33,6 +35,66 @@ pub struct Cauldron {
     pub fire_boost: Timer,
     pub fire_e: Entity,
     pub tooltip_e: Entity,
+}
+
+pub struct TooltipIngredient {
+    count: u8,
+    entity: Entity,
+    text_e: Entity,
+}
+
+#[derive(Component, Default)]
+pub struct TooltipIngridientList {
+    pub ingredients: HashMap<u8, TooltipIngredient>,
+}
+
+pub fn spawn_tooltip_ingredient(
+    ingredient: Ingredient,
+    count: u8,
+    current_list_len: usize,
+    cmd: &mut Commands,
+    sprites: &Sprites,
+    fonts: &Fonts,
+) -> (Entity, Entity) {
+    let x_offset = 16.;
+
+    let x = match current_list_len {
+        0 => -x_offset,
+        1 => 0.,
+        2 => x_offset,
+        _ => panic!("Too many items"),
+    };
+
+    let txt_e = cmd
+        .spawn_bundle(Text2dBundle {
+            text: Text::from_section(
+                format!("{count}x"),
+                TextStyle {
+                    font: fonts.tooltip.clone(),
+                    font_size: 16.0 * SCALE_MULT,
+                    color: Color::rgb_u8(69, 61, 71),
+                },
+            )
+            .with_alignment(TextAlignment::BOTTOM_CENTER),
+            transform: Transform::from_scale(Vec2::splat(1. / SCALE_MULT).extend(1.))
+                .with_translation(Vec3::new(0., 6., 0.)),
+            ..default()
+        })
+        .id();
+
+    let tooltip_e = cmd
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: sprites.ingredients.clone(),
+            sprite: TextureAtlasSprite::new(ingredient.get_sprite_index()),
+            transform: Transform::from_translation(Vec2::new(x, -4.5).extend(0.01)),
+            ..default()
+        })
+        .insert(NoRescale)
+        .insert(Name::new("tooltip_ingredient"))
+        .add_child(txt_e.clone())
+        .id();
+
+    (tooltip_e, txt_e)
 }
 
 fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
@@ -65,6 +127,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             .insert(ZIndex::Tooltip)
             .insert(Name::new("Tooltip"))
             .insert(TooltipProgress::new())
+            .insert(TooltipIngridientList::default())
             .id();
 
         cmd.spawn_bundle(SpriteSheetBundle {
@@ -165,12 +228,76 @@ fn show_progress_tooltip(
     }
 }
 
+fn add_ingredient_to_tooltip(
+    mut cmd: Commands,
+    sprites: Res<Sprites>,
+    fonts: Res<Fonts>,
+    mut card_evr: EventReader<CardEffect>,
+    cauldron_q: Query<(Entity, &Cauldron)>,
+    mut tooltip_ingredient_q: Query<&mut TooltipIngridientList>,
+    mut txt_q: Query<&mut Text>,
+) {
+    let cooking_cauldrons: Vec<_> = card_evr
+        .iter()
+        .filter_map(|card_effect| {
+            if let CardEffect::Ingredient {
+                cauldron_e,
+                ingredient,
+            } = card_effect
+            {
+                Some((*cauldron_e, *ingredient))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    if cooking_cauldrons.len() > 0 {
+        for (c_e, c) in cauldron_q.iter() {
+            // todo: tween in
+            info!("progress in");
+
+            let mut ingredient_list = tooltip_ingredient_q.get_mut(c.tooltip_e).unwrap();
+
+            for (_, ingredient) in cooking_cauldrons.iter().filter(|(cc_e, ..)| *cc_e == c_e) {
+                if let Some(tooltip_ingredient) =
+                    ingredient_list.ingredients.get_mut(&(*ingredient as u8))
+                {
+                    tooltip_ingredient.count += 1;
+                    let mut txt = txt_q.get_mut(tooltip_ingredient.text_e).unwrap();
+                    txt.sections[0].value = format!("{}x", tooltip_ingredient.count);
+                } else {
+                    let (ingridient_e, ingridient_txt_e) = spawn_tooltip_ingredient(
+                        *ingredient,
+                        1,
+                        ingredient_list.ingredients.len(),
+                        &mut cmd,
+                        &sprites,
+                        &fonts,
+                    );
+
+                    cmd.entity(c.tooltip_e).add_child(ingridient_e.clone());
+
+                    ingredient_list.ingredients.insert(
+                        *ingredient as u8,
+                        TooltipIngredient {
+                            count: 1,
+                            entity: ingridient_e,
+                            text_e: ingridient_txt_e,
+                        },
+                    );
+                }
+            }
+        }
+    }
+}
+
 fn set_fire_intensity(
     cauldron_q: Query<(Entity, &Cauldron)>,
     mut fire_anim_q: Query<&mut SheetAnimation>,
     mut card_evr: EventReader<CardEffect>,
 ) {
-    let boosted_cauldrons: Vec<Entity> = card_evr
+    let boosted_cauldrons: Vec<_> = card_evr
         .iter()
         .filter_map(|card_effect| {
             if let CardEffect::FireBoost(cauldron_e) = card_effect {

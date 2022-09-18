@@ -5,7 +5,7 @@
     clippy::cast_precision_loss,
     clippy::needless_update,
     // jam-code only!
-    dead_code
+    // dead_code
 )]
 
 mod anim;
@@ -35,7 +35,7 @@ use card::{Card, CardPlugin, Ingredient};
 use cauldron::CauldronPlugin;
 use coords::CoordsPlugin;
 use drag::DragPlugin as GameDragPlugin;
-use iyes_loopless::prelude::AppLooplessStateExt;
+use iyes_loopless::prelude::*;
 use level::LevelPlugin;
 use mouse::MousePlugin;
 use progress::ProgressPlugin;

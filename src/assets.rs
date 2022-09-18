@@ -13,7 +13,8 @@ impl Plugin for AssetsPlugin {
                 LoadingState::new(GameState::Loading)
                     .continue_to_state(GameState::Playing)
                     .with_collection::<AudioAssets>()
-                    .with_collection::<Sprites>(),
+                    .with_collection::<Sprites>()
+                    .with_collection::<Fonts>(),
             );
     }
 }
@@ -69,4 +70,10 @@ pub struct Sprites {
     // // A collection of asset files loaded to typed asset handles
     // #[asset(paths("images/player.png", "images/tree.png"), collection(typed))]
     // files_typed: Vec<Handle<Image>>,
+}
+
+#[derive(AssetCollection)]
+pub struct Fonts {
+    #[asset(path = "fonts/m3x6.ttf")]
+    pub tooltip: Handle<Font>,
 }

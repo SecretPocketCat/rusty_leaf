@@ -47,12 +47,25 @@ pub struct CardInventoryIndex(usize);
 
 #[derive(Component, Debug, Inspectable, Clone, Copy)]
 pub enum Ingredient {
-    Pumpkin,
+    Pumpkin = 1,
     Potato,
     Tomato,
     Eggplant,
     Mushroom,
     Garlic,
+}
+
+impl Ingredient {
+    pub fn get_sprite_index(&self) -> usize {
+        match self {
+            Ingredient::Eggplant => 0,
+            Ingredient::Pumpkin => 1,
+            Ingredient::Potato => 2,
+            Ingredient::Mushroom => 3,
+            Ingredient::Garlic => 4,
+            Ingredient::Tomato => 5,
+        }
+    }
 }
 
 pub enum CardEffect {
@@ -89,15 +102,6 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
         },
     };
 
-    let sprite_index = match ingredient {
-        Ingredient::Eggplant => 0,
-        Ingredient::Pumpkin => 1,
-        Ingredient::Potato => 2,
-        Ingredient::Mushroom => 3,
-        Ingredient::Garlic => 4,
-        Ingredient::Tomato => 5,
-    };
-
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.card.clone(),
         sprite: Sprite {
@@ -126,7 +130,7 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
     .with_children(|b| {
         b.spawn_bundle(SpriteSheetBundle {
             texture_atlas: sprites.ingredients.clone(),
-            sprite: TextureAtlasSprite::new(sprite_index),
+            sprite: TextureAtlasSprite::new(ingredient.get_sprite_index()),
             transform: Transform::from_translation(Vec2::new(0., 10.).extend(0.0)),
             ..default()
         })
@@ -136,7 +140,8 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
 
 fn test_card_spawn(mut cmd: Commands, sprites: Res<Sprites>) {
     for i in 0..4 {
-        spawn_card(&mut cmd, &sprites, &BoardClear::Section(i));
+        spawn_card(&mut cmd, &sprites, &BoardClear::Section(0));
+        // spawn_card(&mut cmd, &sprites, &BoardClear::Section(i));
     }
 }
 
