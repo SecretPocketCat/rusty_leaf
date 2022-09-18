@@ -16,7 +16,7 @@ use crate::{
     board::BoardClear,
     cauldron::{Cauldron, FIRE_BOOST_TIME},
     drag::DragGroup,
-    render::WINDOW_SIZE,
+    render::{NoRescale, ZIndex, WINDOW_SIZE},
     GameState,
 };
 
@@ -95,13 +95,14 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
             color: Color::NONE,
             ..default()
         },
-        transform: Transform::from_scale(Vec2::splat(4.).extend(1.0)).with_translation(Vec3::new(
+        transform: Transform::from_translation(Vec3::new(
             WINDOW_SIZE.x / 2. - CARD_SIZE.x - 60.,
             WINDOW_SIZE.y / 2. - CARD_SIZE.y - 75.,
             2.,
         )),
         ..default()
     })
+    .insert(ZIndex::Card)
     .insert(Card {})
     .insert(ingredient)
     .insert(Interactable {
@@ -119,7 +120,8 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
             sprite: TextureAtlasSprite::new(sprite_index),
             transform: Transform::from_translation(Vec2::new(0., 10.).extend(0.0)),
             ..default()
-        });
+        })
+        .insert(NoRescale);
     });
 }
 

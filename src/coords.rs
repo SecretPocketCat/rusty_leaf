@@ -1,21 +1,15 @@
 use crate::{
     board::Board,
     mouse::CursorWorldPosition,
-    piece::{Piece},
+    piece::Piece,
+    render::SCALE_MULT,
     tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, TILE_SIZE},
 };
 use bevy::prelude::*;
-use bevy_inspector_egui::{Inspectable};
-use bevy_interact_2d::{
-    drag::{Dragged},
-    Interactable,
-};
+use bevy_inspector_egui::Inspectable;
+use bevy_interact_2d::{drag::Dragged, Interactable};
 
-
-
-use std::{
-    ops::{Add, Div},
-};
+use std::ops::{Add, Div};
 
 pub struct CoordsPlugin;
 impl Plugin for CoordsPlugin {
@@ -33,7 +27,10 @@ pub struct TileCoords {
 
 pub fn get_tile_coords_from_world(world_coords: Vec2, tile_size: UVec2) -> Option<UVec2> {
     let max_i = BOARD_SIZE as f32;
-    let base_coords = world_coords.div(TILE_SIZE).round().add(Vec2::splat(4.));
+    let base_coords = world_coords
+        .div(TILE_SIZE)
+        .round()
+        .add(Vec2::splat(SCALE_MULT));
     let coords = Vec2::new(base_coords.x - 1., max_i - 1. - base_coords.y.abs());
     let tile_size = Vec2::new(tile_size.x as f32, tile_size.y as f32);
 
@@ -80,11 +77,14 @@ fn update_tile_coords(
 
             if let Some(dragged_coords) = dragged_tile_coords {
                 let piece = &pieces.pieces[piece.0];
-                if board.can_place_piece(
-                    dragged_coords.x as usize,
-                    dragged_coords.y as usize,
-                    piece.get_fields(),
-                ).is_err() {
+                if board
+                    .can_place_piece(
+                        dragged_coords.x as usize,
+                        dragged_coords.y as usize,
+                        piece.get_fields(),
+                    )
+                    .is_err()
+                {
                     dragged_tile_coords = None;
                 }
             }

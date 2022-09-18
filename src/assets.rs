@@ -26,11 +26,6 @@ pub struct AudioAssets {
 
 #[derive(AssetCollection)]
 pub struct Sprites {
-    // Any file that can be loaded and turned into a texture atlas
-    #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 16., columns = 6, rows = 1))]
-    #[asset(path = "sprites/veggies_sheet.png")]
-    pub ingredients: Handle<TextureAtlas>,
-
     #[asset(path = "sprites/card.png")]
     pub card: Handle<Image>,
 
@@ -39,6 +34,26 @@ pub struct Sprites {
 
     #[asset(path = "sprites/parchment.png")]
     pub parchment: Handle<Image>,
+
+    #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 16., columns = 6, rows = 1))]
+    #[asset(path = "sprites/veggies_sheet.png")]
+    pub ingredients: Handle<TextureAtlas>,
+
+    #[asset(texture_atlas(tile_size_x = 52., tile_size_y = 48., columns = 2, rows = 1))]
+    #[asset(path = "sprites/cauldron_sheet.png")]
+    pub cauldron: Handle<TextureAtlas>,
+
+    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 8, rows = 2))]
+    #[asset(path = "sprites/fire_sheet.png")]
+    pub fire: Handle<TextureAtlas>,
+
+    #[asset(texture_atlas(tile_size_x = 48., tile_size_y = 32., columns = 2, rows = 1))]
+    #[asset(path = "sprites/firepit_sheet.png")]
+    pub firepit: Handle<TextureAtlas>,
+
+    #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 32., columns = 6, rows = 1))]
+    #[asset(path = "sprites/shop_smoke_sheet.png")]
+    pub shop_smoke: Handle<TextureAtlas>,
     // // A collection of asset files loaded to typed asset handles
     // #[asset(paths("images/player.png", "images/tree.png"), collection(typed))]
     // files_typed: Vec<Handle<Image>>,

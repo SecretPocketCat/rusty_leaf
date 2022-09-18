@@ -2,19 +2,22 @@ use std::{mem, time::Duration};
 
 use bevy::prelude::*;
 
-use bevy_interact_2d::{
-    Interactable,
-};
+use bevy_interact_2d::Interactable;
+use iyes_loopless::prelude::AppLooplessStateExt;
 
 use crate::{
+    assets::Sprites,
     card::Ingredient,
     drag::DragGroup,
+    render::{NoRescale, ZIndex},
+    GameState,
 };
 
 pub struct CauldronPlugin;
 impl Plugin for CauldronPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup).add_system(cook);
+        app.add_exit_system(GameState::Loading, setup)
+            .add_system(cook);
     }
 }
 
@@ -30,18 +33,16 @@ pub struct Cauldron {
     pub fire_boost: Timer,
 }
 
-fn setup(mut cmd: Commands) {
-    for x in [60., 230.].iter() {
+fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
+    for (x, firepit_x, sprite_index) in [(65., -2.5, 0), (235., -6., 1)].iter() {
         // todo: sprites (cauldrons, wood, fire)
-        cmd.spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                custom_size: Some(Vec2::splat(150.)),
-                color: Color::CYAN,
-                ..default()
-            },
-            transform: Transform::from_xyz(*x, -205., 0.5),
+        cmd.spawn_bundle(SpriteSheetBundle {
+            texture_atlas: sprites.cauldron.clone(),
+            sprite: TextureAtlasSprite::new(*sprite_index),
+            transform: Transform::from_xyz(*x, -176., 0.5),
             ..default()
         })
+        .insert(ZIndex::Cauldron)
         .insert(Cauldron {
             ingredients: Vec::with_capacity(10),
             cook_timer: Timer::new(Duration::from_secs_f32(COOK_TIME), true),
@@ -50,9 +51,17 @@ fn setup(mut cmd: Commands) {
         })
         .insert(Name::new("Cauldron"))
         .with_children(|b| {
+            b.spawn_bundle(SpriteSheetBundle {
+                texture_atlas: sprites.firepit.clone(),
+                sprite: TextureAtlasSprite::new(*sprite_index),
+                transform: Transform::from_xyz(*firepit_x, -25., -0.01),
+                ..default()
+            })
+            .insert(NoRescale);
+
             for (y, corner_x, corner_y, group) in [
-                (40., 80., 70., DragGroup::Cauldron),
-                (-90., 80., 40., DragGroup::Fire),
+                (10., 18., 18., DragGroup::Cauldron),
+                (-28., 18., 16., DragGroup::Fire),
             ] {
                 let corner = Vec2::new(corner_x, corner_y);
                 b.spawn_bundle(SpatialBundle {

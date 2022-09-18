@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::AppLooplessStateExt;
 
-use crate::{assets::Sprites, tile_placement::BOARD_SHIFT, GameState};
+use crate::{assets::Sprites, render::ZIndex, tile_placement::BOARD_SHIFT, GameState};
 
 pub struct LevelPlugin;
 
@@ -15,21 +15,18 @@ impl Plugin for LevelPlugin {
 fn setup_app(mut cmd: Commands, sprites: Res<Sprites>) {
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.bg.clone(),
-        transform: Transform::from_scale(Vec2::splat(4.).extend(1.0)),
         ..default()
     })
+    .insert(ZIndex::Bg)
     .insert(Name::new("bg"));
 }
 
 fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.parchment.clone(),
-        transform: Transform {
-            translation: Vec3::new(BOARD_SHIFT.x + 25., -580., 0.1),
-            scale: Vec2::splat(4.).extend(1.),
-            ..default()
-        },
+        transform: Transform::from_xyz(BOARD_SHIFT.x + 25., -580., 0.),
         ..default()
     })
+    .insert(ZIndex::Grid)
     .insert(Name::new("Parchment"));
 }
