@@ -3,6 +3,7 @@ use crate::{
     assets::Sprites,
     card::{CardEffect, Ingredient},
     drag::DragGroup,
+    progress::TooltipProgress,
     render::{NoRescale, ZIndex},
     GameState,
 };
@@ -21,8 +22,8 @@ impl Plugin for CauldronPlugin {
 }
 
 pub const COOK_TIME: f32 = 15.;
-pub const FIRE_BOOST_TIME: f32 = 30.;
-pub const FIRE_BOOST_MULT: f32 = 2.;
+pub const FIRE_BOOST_TIME: f32 = 15.;
+pub const FIRE_BOOST_MULT: f32 = 2.5;
 
 #[derive(Component)]
 pub struct Cauldron {
@@ -63,7 +64,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             .insert(NoRescale)
             .insert(ZIndex::Tooltip)
             .insert(Name::new("Tooltip"))
-            // .insert(Progress::new())
+            .insert(TooltipProgress::new())
             .id();
 
         cmd.spawn_bundle(SpriteSheetBundle {
@@ -111,7 +112,11 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
     }
 }
 
-fn cook(mut cauldron_q: Query<&mut Cauldron>, time: Res<Time>) {
+fn cook(
+    mut cauldron_q: Query<&mut Cauldron>,
+    mut progress_q: Query<&mut TooltipProgress>,
+    time: Res<Time>,
+) {
     for mut c in cauldron_q.iter_mut() {
         c.fire_boost.tick(time.delta());
 
@@ -127,6 +132,8 @@ fn cook(mut cauldron_q: Query<&mut Cauldron>, time: Res<Time>) {
             if c.cook_timer.just_finished() {
                 c.cooked = Some(mem::take(&mut c.ingredients));
                 info!("Soup's done!");
+            } else if let Ok(mut p) = progress_q.get_mut(c.tooltip_e) {
+                p.value = c.cook_timer.percent();
             }
         }
     }

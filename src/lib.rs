@@ -18,6 +18,7 @@ mod drag;
 mod level;
 mod mouse;
 mod piece;
+mod progress;
 mod render;
 mod tile_placement;
 
@@ -37,6 +38,7 @@ use drag::DragPlugin as GameDragPlugin;
 use iyes_loopless::prelude::AppLooplessStateExt;
 use level::LevelPlugin;
 use mouse::MousePlugin;
+use progress::ProgressPlugin;
 use render::RenderPlugin;
 
 // This example game uses States to separate logic
@@ -75,6 +77,7 @@ impl Plugin for GamePlugin {
             .add_plugin(LevelPlugin)
             .add_plugin(CardPlugin)
             .add_plugin(CauldronPlugin)
+            .add_plugin(ProgressPlugin)
             .add_plugin(CoordsPlugin)
             .add_plugin(MousePlugin);
     }
