@@ -55,7 +55,7 @@ pub struct Sprites {
     #[asset(path = "sprites/cauldron_sheet.png")]
     pub cauldron: Handle<TextureAtlas>,
 
-    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 8, rows = 2))]
+    #[asset(texture_atlas(tile_size_x = 17., tile_size_y = 24., columns = 8, rows = 2))]
     #[asset(path = "sprites/fire_sheet.png")]
     pub fire: Handle<TextureAtlas>,
 

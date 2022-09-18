@@ -8,6 +8,7 @@
     dead_code
 )]
 
+mod anim;
 mod assets;
 mod board;
 mod card;
@@ -21,6 +22,7 @@ mod render;
 mod tile_placement;
 
 use crate::tile_placement::TilePlacementPlugin;
+use anim::AnimationPlugin;
 use assets::AssetsPlugin;
 use bevy::app::App;
 #[cfg(debug_assertions)]
@@ -67,6 +69,7 @@ impl Plugin for GamePlugin {
             .add_plugin(InteractionDebugPlugin)
             .add_plugin(DragPlugin)
             .add_plugin(GameDragPlugin)
+            .add_plugin(AnimationPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(TilePlacementPlugin)
             .add_plugin(LevelPlugin)

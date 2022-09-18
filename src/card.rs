@@ -23,7 +23,8 @@ use crate::{
 pub struct CardPlugin;
 impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(CoreStage::Last, drop_card) // run after update to get precise dragged.origin
+        app.add_event::<CardEffect>()
+        .add_system_to_stage(CoreStage::Last, drop_card) // run after update to get precise dragged.origin
         .add_system(place_card)
             .add_system_to_stage(CoreStage::PostUpdate,shift_cards) // works with removedComponents, so can't run during Last
             ;
@@ -52,6 +53,11 @@ pub enum Ingredient {
     Eggplant,
     Mushroom,
     Garlic,
+}
+
+pub enum CardEffect {
+    FireBoost(Entity),
+    Ingredient,
 }
 
 pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
@@ -154,6 +160,7 @@ fn drop_card(
     interaction_state: Res<InteractionState>,
     parent_q: Query<&Parent>,
     mut cauldron_q: Query<&mut Cauldron>,
+    mut card_evw: EventWriter<CardEffect>,
 ) {
     if mouse_input.just_released(MouseButton::Left) {
         let mut used = false;
@@ -167,6 +174,8 @@ fn drop_card(
                         .duration()
                         .saturating_add(Duration::from_secs_f32(FIRE_BOOST_TIME));
                     c.fire_boost.set_duration(dur);
+                    c.fire_boost.reset();
+                    card_evw.send(CardEffect::FireBoost(cauldron_e.get()));
                     used = true;
                 }
             }
@@ -181,6 +190,8 @@ fn drop_card(
                         info!("cook, plz!");
                         if let Ok((_, _, ingredient, ..)) = dragged_query.get_single() {
                             c.ingredients.push(*ingredient);
+                            card_evw.send(CardEffect::Ingredient);
+
                             used = true;
                         }
                     }

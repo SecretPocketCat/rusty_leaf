@@ -24,7 +24,9 @@ pub struct NoRescale;
 pub enum ZIndex {
     Bg = 0,
     Character,
+    FirePit,
     Cauldron,
+    Fire,
     Fg,
     Grid,
     Piece,
