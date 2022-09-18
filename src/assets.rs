@@ -51,7 +51,7 @@ pub struct Sprites {
     #[asset(path = "sprites/veggies_sheet.png")]
     pub ingredients: Handle<TextureAtlas>,
 
-    #[asset(texture_atlas(tile_size_x = 52., tile_size_y = 48., columns = 2, rows = 1))]
+    #[asset(texture_atlas(tile_size_x = 37., tile_size_y = 30., columns = 2, rows = 1))]
     #[asset(path = "sprites/cauldron_sheet.png")]
     pub cauldron: Handle<TextureAtlas>,
 
@@ -59,7 +59,7 @@ pub struct Sprites {
     #[asset(path = "sprites/fire_sheet.png")]
     pub fire: Handle<TextureAtlas>,
 
-    #[asset(texture_atlas(tile_size_x = 48., tile_size_y = 32., columns = 2, rows = 1))]
+    #[asset(texture_atlas(tile_size_x = 40., tile_size_y = 32., columns = 2, rows = 1))]
     #[asset(path = "sprites/firepit_sheet.png")]
     pub firepit: Handle<TextureAtlas>,
 
