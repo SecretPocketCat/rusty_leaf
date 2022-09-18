@@ -1,4 +1,4 @@
-use bevy::{prelude::*, render::texture::ImageSettings};
+use bevy::{prelude::*};
 use bevy_interact_2d::InteractionSource;
 
 use crate::drag::DragGroup;

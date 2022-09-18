@@ -1,22 +1,20 @@
 use crate::{
     board::Board,
     mouse::CursorWorldPosition,
-    piece::{spawn_piece, Piece, PieceFields},
+    piece::{Piece},
     tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, TILE_SIZE},
-    GameState,
 };
 use bevy::prelude::*;
-use bevy_inspector_egui::{Inspectable, InspectorPlugin, RegisterInspectable};
+use bevy_inspector_egui::{Inspectable};
 use bevy_interact_2d::{
-    drag::{Draggable, Dragged},
-    Interactable, InteractionState,
+    drag::{Dragged},
+    Interactable,
 };
-use bevy_prototype_lyon::prelude::*;
-use iyes_loopless::prelude::*;
-use rand::Rng;
+
+
+
 use std::{
-    collections::VecDeque,
-    ops::{Add, Div, Sub},
+    ops::{Add, Div},
 };
 
 pub struct CoordsPlugin;
@@ -82,11 +80,11 @@ fn update_tile_coords(
 
             if let Some(dragged_coords) = dragged_tile_coords {
                 let piece = &pieces.pieces[piece.0];
-                if let Err(_) = board.can_place_piece(
+                if board.can_place_piece(
                     dragged_coords.x as usize,
                     dragged_coords.y as usize,
                     piece.get_fields(),
-                ) {
+                ).is_err() {
                     dragged_tile_coords = None;
                 }
             }

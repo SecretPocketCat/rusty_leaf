@@ -90,7 +90,7 @@ impl Board {
             }
         }
 
-        return res;
+        res
     }
 
     pub fn place_piece(

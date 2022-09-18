@@ -1,18 +1,14 @@
-use std::{collections::VecDeque, mem, time::Duration};
+use std::{mem, time::Duration};
 
 use bevy::prelude::*;
-use bevy_inspector_egui::Inspectable;
+
 use bevy_interact_2d::{
-    drag::{Draggable, Dragged, DropStrategy},
-    Group, Interactable,
+    Interactable,
 };
 
 use crate::{
-    board::BoardClear,
     card::Ingredient,
     drag::DragGroup,
-    render::WINDOW_SIZE,
-    tile_placement::{BOARD_SHIFT, SECTION_SIZE},
 };
 
 pub struct CauldronPlugin;
@@ -75,7 +71,7 @@ fn setup(mut cmd: Commands) {
 fn cook(mut cauldron_q: Query<&mut Cauldron>, time: Res<Time>) {
     for mut c in cauldron_q.iter_mut() {
         // there's smt. to cook
-        if c.ingredients.len() > 0 {
+        if !c.ingredients.is_empty() {
             let mult = if c.fire_boost.finished() {
                 1.
             } else {

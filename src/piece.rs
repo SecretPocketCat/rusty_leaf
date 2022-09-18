@@ -4,8 +4,7 @@ use bevy_inspector_egui::Inspectable;
 use bevy_interact_2d::{drag::Draggable, Interactable};
 use bevy_prototype_lyon::prelude::*;
 use std::{
-    iter,
-    ops::{Div, Mul, Range, Rem, Sub},
+    ops::{Div, Sub},
 };
 
 use crate::{
@@ -36,7 +35,7 @@ impl PieceFields {
             panic!("Piece is too wide {width} for the padded width {padded_width}");
         }
 
-        if fields.len() == 0 {
+        if fields.is_empty() {
             panic!("No fields");
         }
 

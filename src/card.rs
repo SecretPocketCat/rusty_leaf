@@ -1,10 +1,9 @@
-use std::{collections::VecDeque, time::Duration};
+use std::{time::Duration};
 
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_interact_2d::{
-    drag::{Draggable, Dragged, DropStrategy},
-    Group, Interactable, InteractionState,
+    drag::{Draggable, Dragged}, Interactable, InteractionState,
 };
 
 use crate::{
@@ -12,7 +11,6 @@ use crate::{
     cauldron::{Cauldron, FIRE_BOOST_TIME},
     drag::DragGroup,
     render::WINDOW_SIZE,
-    tile_placement::{BOARD_SHIFT, SECTION_SIZE},
 };
 
 pub struct CardPlugin;
@@ -205,7 +203,7 @@ fn drop_card(
                 cmd.entity(e).despawn_recursive();
             }
         } else {
-            for (dragged_e, card, _, dragged, mut card_t) in dragged_query.iter_mut() {
+            for (dragged_e, _card, _, dragged, mut card_t) in dragged_query.iter_mut() {
                 let mut e_cmd = cmd.entity(dragged_e);
                 e_cmd.remove::<Dragged>();
                 card_t.translation = dragged.origin.extend(card_t.translation.z);

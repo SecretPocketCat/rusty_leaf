@@ -16,7 +16,7 @@ use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::prelude::*;
 use bevy_inspector_egui::{RegisterInspectable, WorldInspectorPlugin};
-use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin, InteractionPlugin};
+use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin};
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use card::{Card, CardPlugin, Ingredient};
 use cauldron::CauldronPlugin;

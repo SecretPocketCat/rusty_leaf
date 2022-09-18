@@ -1,16 +1,15 @@
 use bevy::prelude::*;
-use bevy_inspector_egui::Inspectable;
+
 use bevy_interact_2d::{
-    drag::{Draggable, Dragged, DropStrategy},
+    drag::{Dragged},
     Group, Interactable,
 };
 
 use crate::{
-    board::{Board, BoardClear},
+    board::{Board},
     coords::{get_world_coords_from_tile, TileCoords},
     piece::Piece,
-    render::WINDOW_SIZE,
-    tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE_PX},
+    tile_placement::{Pieces, BOARD_SIZE_PX},
 };
 
 // todo: cancel tween if clicking on a draggable entity
@@ -45,7 +44,7 @@ pub struct Mover {
 }
 
 fn drag_piece(
-    mut cmd: Commands,
+    _cmd: Commands,
     mouse_input: Res<Input<MouseButton>>,
     board: Res<Board>,
     pieces: Res<Pieces>,
@@ -54,11 +53,11 @@ fn drag_piece(
     if mouse_input.pressed(MouseButton::Left) {
         if let Ok((_, piece, coords)) = dragged_query.get_single() {
             if let Some(coords) = coords.tile_coords {
-                if let Ok(_) = board.can_place_piece(
+                if board.can_place_piece(
                     coords.x as usize,
                     coords.y as usize,
                     pieces.pieces[piece.0].get_fields(),
-                ) {
+                ).is_ok() {
                     // todo: colour outline or smt.
                     info!("can place!");
                 }

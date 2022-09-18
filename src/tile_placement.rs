@@ -1,25 +1,19 @@
 use crate::{
     board::{Board, BoardClear, BoardClearQueue},
     card::{spawn_card, Card, MAX_CARDS},
-    coords::{get_world_coords_from_tile, TileCoords},
+    coords::{TileCoords},
     drag::Mover,
-    mouse::CursorWorldPosition,
     piece::{spawn_piece, FieldCoords, Piece, PieceFields, PlacedFieldIndex},
-    GameState,
 };
 use bevy::prelude::*;
-use bevy_inspector_egui::InspectorPlugin;
+
 use bevy_interact_2d::{
-    drag::{Draggable, Dragged},
-    Interactable, InteractionState,
+    drag::{Dragged},
 };
-use bevy_prototype_lyon::prelude::*;
+
 use iyes_loopless::prelude::*;
 use rand::Rng;
-use std::{
-    collections::VecDeque,
-    ops::{Add, Div, Sub},
-};
+
 
 pub const BOARD_SIZE_PX: f32 = 480.;
 pub const BOARD_SIZE: usize = 9;
