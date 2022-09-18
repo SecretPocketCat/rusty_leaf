@@ -35,6 +35,18 @@ pub struct Sprites {
     #[asset(path = "sprites/parchment.png")]
     pub parchment: Handle<Image>,
 
+    #[asset(path = "sprites/hint_tooltip.png")]
+    pub hint_tooltip: Handle<Image>,
+
+    #[asset(path = "sprites/order_tooltip.png")]
+    pub order_tooltip: Handle<Image>,
+
+    #[asset(path = "sprites/progress_tooltip.png")]
+    pub progress_tooltip: Handle<Image>,
+
+    #[asset(path = "sprites/progress_bar.png")]
+    pub progress_bar: Handle<Image>,
+
     #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 16., columns = 6, rows = 1))]
     #[asset(path = "sprites/veggies_sheet.png")]
     pub ingredients: Handle<TextureAtlas>,
