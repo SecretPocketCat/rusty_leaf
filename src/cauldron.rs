@@ -94,6 +94,8 @@ pub fn spawn_tooltip_ingredient(
         .add_child(txt_e.clone())
         .id();
 
+    // todo: tween the ingredient (fade in color?)
+
     (tooltip_e, txt_e)
 }
 
