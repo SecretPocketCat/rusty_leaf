@@ -5,6 +5,9 @@ use crate::{
     drag::DragGroup,
     progress::TooltipProgress,
     render::{NoRescale, ZIndex, SCALE_MULT},
+    tween::{
+        get_relative_fade_text_anim, get_relative_move_anim, FadeHierarchyBundle, FadeHierarchySet,
+    },
     GameState,
 };
 use bevy::{prelude::*, utils::HashMap};
@@ -72,7 +75,7 @@ pub fn spawn_tooltip_ingredient(
                 TextStyle {
                     font: fonts.tooltip.clone(),
                     font_size: 16.0 * SCALE_MULT,
-                    color: Color::rgb_u8(69, 61, 71),
+                    color: Color::NONE,
                 },
             )
             .with_alignment(TextAlignment::BOTTOM_CENTER),
@@ -80,12 +83,22 @@ pub fn spawn_tooltip_ingredient(
                 .with_translation(Vec3::new(0., 6., 0.)),
             ..default()
         })
+        .insert(get_relative_fade_text_anim(
+            // todo: from res/const
+            Color::rgb_u8(69, 61, 71),
+            400,
+            None,
+        ))
         .id();
 
     let tooltip_e = cmd
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: sprites.ingredients.clone(),
-            sprite: TextureAtlasSprite::new(ingredient.get_sprite_index()),
+            sprite: TextureAtlasSprite {
+                color: Color::NONE,
+                index: ingredient.get_sprite_index(),
+                ..default()
+            },
             transform: Transform::from_translation(Vec2::new(x, -4.5).extend(0.01)),
             ..default()
         })
@@ -93,8 +106,6 @@ pub fn spawn_tooltip_ingredient(
         .insert(Name::new("tooltip_ingredient"))
         .add_child(txt_e.clone())
         .id();
-
-    // todo: tween the ingredient (fade in color?)
 
     (tooltip_e, txt_e)
 }
@@ -122,7 +133,11 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
         let tooltip_e = cmd
             .spawn_bundle(SpriteBundle {
                 texture: sprites.progress_tooltip.clone(),
-                transform: Transform::from_xyz(0., 28., 0.),
+                sprite: Sprite {
+                    color: Color::NONE,
+                    ..default()
+                },
+                transform: Transform::from_xyz(0., 0., 0.),
                 ..default()
             })
             .insert(NoRescale)
@@ -205,6 +220,7 @@ fn cook(
 }
 
 fn show_progress_tooltip(
+    mut cmd: Commands,
     mut card_evr: EventReader<CardEffect>,
     cauldron_q: Query<(Entity, &Cauldron)>,
 ) {
@@ -223,6 +239,13 @@ fn show_progress_tooltip(
         .iter()
         .filter(|(c_e, ..)| cooking_cauldrons.contains(c_e))
     {
+        cmd.entity(c.tooltip_e)
+            .insert_bundle(FadeHierarchyBundle::new(
+                true,
+                450,
+                Color::rgb_u8(69, 61, 71),
+            ))
+            .insert(get_relative_move_anim(Vec3::new(0., 28., 0.01), 550, None));
         // todo: tween in
         info!("progress in");
 
@@ -256,9 +279,6 @@ fn add_ingredient_to_tooltip(
 
     if cooking_cauldrons.len() > 0 {
         for (c_e, c) in cauldron_q.iter() {
-            // todo: tween in
-            info!("progress in");
-
             let mut ingredient_list = tooltip_ingredient_q.get_mut(c.tooltip_e).unwrap();
 
             for (_, ingredient) in cooking_cauldrons.iter().filter(|(cc_e, ..)| *cc_e == c_e) {

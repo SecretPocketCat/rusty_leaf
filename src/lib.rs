@@ -21,6 +21,7 @@ mod piece;
 mod progress;
 mod render;
 mod tile_placement;
+mod tween;
 
 use crate::tile_placement::TilePlacementPlugin;
 use anim::AnimationPlugin;
@@ -29,8 +30,9 @@ use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::prelude::*;
 use bevy_inspector_egui::{RegisterInspectable, WorldInspectorPlugin};
-use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin};
+use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin, InteractionPlugin};
 use bevy_prototype_lyon::prelude::ShapePlugin;
+use bevy_tweening::TweeningPlugin;
 use card::{Card, CardPlugin, Ingredient};
 use cauldron::CauldronPlugin;
 use coords::CoordsPlugin;
@@ -55,6 +57,7 @@ enum GameState {
 }
 
 pub use render::WINDOW_SIZE;
+use tween::GameTweenPlugin;
 
 pub struct GamePlugin;
 
@@ -62,13 +65,13 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(AssetsPlugin)
             .add_plugin(RenderPlugin)
-            .add_plugin(WorldInspectorPlugin::new())
-            .register_inspectable::<Card>()
-            .register_inspectable::<Ingredient>()
+            // .add_plugin(WorldInspectorPlugin::new())
+            // .register_inspectable::<Card>()
+            // .register_inspectable::<Ingredient>()
             // .register_inspectable::<TileCoords>()
             // .add_system(log_coords)
-            // .add_plugin(InteractionPlugin)
-            .add_plugin(InteractionDebugPlugin)
+            .add_plugin(InteractionPlugin)
+            // .add_plugin(InteractionDebugPlugin)
             .add_plugin(DragPlugin)
             .add_plugin(GameDragPlugin)
             .add_plugin(AnimationPlugin)
@@ -79,6 +82,8 @@ impl Plugin for GamePlugin {
             .add_plugin(CauldronPlugin)
             .add_plugin(ProgressPlugin)
             .add_plugin(CoordsPlugin)
-            .add_plugin(MousePlugin);
+            .add_plugin(MousePlugin)
+            .add_plugin(TweeningPlugin)
+            .add_plugin(GameTweenPlugin);
     }
 }

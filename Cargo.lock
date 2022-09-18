@@ -447,6 +447,7 @@ dependencies = [
  "bevy_interact_2d",
  "bevy_kira_audio",
  "bevy_prototype_lyon",
+ "bevy_tweening",
  "embed-resource",
  "image 0.24.3",
  "iyes_loopless",
@@ -845,6 +846,15 @@ dependencies = [
  "bevy_hierarchy",
  "bevy_math",
  "bevy_reflect",
+]
+
+[[package]]
+name = "bevy_tweening"
+version = "0.5.0"
+source = "git+https://github.com/SecretPocketCat/bevy_tweening?branch=bevy_0_8#2c94cc40aaa74d408f1f0ccbd0234a1254b9bce5"
+dependencies = [
+ "bevy",
+ "interpolation",
 ]
 
 [[package]]
@@ -1944,6 +1954,12 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
 ]
+
+[[package]]
+name = "interpolation"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3b7357d2bbc5ee92f8e899ab645233e43d21407573cceb37fed8bc3dede2c02"
 
 [[package]]
 name = "itoa"

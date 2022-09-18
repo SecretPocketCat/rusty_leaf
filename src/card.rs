@@ -1,5 +1,12 @@
-use std::time::Duration;
-
+use crate::{
+    assets::Sprites,
+    board::BoardClear,
+    cauldron::{Cauldron, FIRE_BOOST_TIME},
+    drag::DragGroup,
+    render::{NoRescale, ZIndex, WINDOW_SIZE},
+    tween::{get_move_anim, get_relative_move_anim},
+    GameState,
+};
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_interact_2d::{
@@ -10,15 +17,7 @@ use iyes_loopless::{
     condition::IntoConditionalExclusiveSystem,
     prelude::{AppLooplessStateExt, ConditionSet},
 };
-
-use crate::{
-    assets::Sprites,
-    board::BoardClear,
-    cauldron::{Cauldron, FIRE_BOOST_TIME},
-    drag::DragGroup,
-    render::{NoRescale, ZIndex, WINDOW_SIZE},
-    GameState,
-};
+use std::time::Duration;
 
 pub struct CardPlugin;
 impl Plugin for CardPlugin {
@@ -38,6 +37,7 @@ impl Plugin for CardPlugin {
 pub const MAX_CARDS: usize = 4;
 pub const CARD_SIZE: Vec2 = Vec2::new(32., 48.);
 const CARD_INDEX_X_OFFSET: f32 = -145.;
+const CARD_TWEEN_OFFSET: f32 = 250.;
 
 #[derive(Component, Inspectable)]
 pub struct Card {}
@@ -104,13 +104,9 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
 
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.card.clone(),
-        sprite: Sprite {
-            color: Color::NONE,
-            ..default()
-        },
         transform: Transform::from_translation(Vec3::new(
             WINDOW_SIZE.x / 2. - CARD_SIZE.x - 60.,
-            WINDOW_SIZE.y / 2. - CARD_SIZE.y - 75.,
+            WINDOW_SIZE.y / 2. - CARD_SIZE.y - 75. + CARD_TWEEN_OFFSET,
             2.,
         )),
         ..default()
@@ -140,8 +136,8 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
 
 fn test_card_spawn(mut cmd: Commands, sprites: Res<Sprites>) {
     for i in 0..4 {
-        spawn_card(&mut cmd, &sprites, &BoardClear::Section(0));
-        // spawn_card(&mut cmd, &sprites, &BoardClear::Section(i));
+        // spawn_card(&mut cmd, &sprites, &BoardClear::Section(0));
+        spawn_card(&mut cmd, &sprites, &BoardClear::Section(i));
     }
 }
 
@@ -153,10 +149,21 @@ fn place_card(
     let mut card_i = card_q.iter().len() - new_card_q.iter().count();
 
     for (c_e, mut c_sprite, mut card_t) in new_card_q.iter_mut() {
-        // todo: tween
         c_sprite.color = Color::WHITE;
-        card_t.translation.x += CARD_INDEX_X_OFFSET * card_i as f32;
-        cmd.entity(c_e).insert(CardInventoryIndex(card_i));
+        let target_pos = Vec3::new(
+            card_t.translation.x + CARD_INDEX_X_OFFSET * card_i as f32,
+            card_t.translation.y - CARD_TWEEN_OFFSET,
+            card_t.translation.z,
+        );
+
+        cmd.entity(c_e)
+            .insert(CardInventoryIndex(card_i))
+            .insert(get_move_anim(
+                target_pos + Vec3::Y * 250.,
+                target_pos,
+                450,
+                None,
+            ));
         card_i += 1;
     }
 }
@@ -164,7 +171,7 @@ fn place_card(
 fn drop_card(
     mut cmd: Commands,
     mouse_input: Res<Input<MouseButton>>,
-    mut dragged_query: Query<(Entity, &Card, &Ingredient, &Dragged, &mut Transform)>,
+    dragged_query: Query<(Entity, &Card, &Ingredient, &Dragged, &Transform)>,
     interaction_state: Res<InteractionState>,
     parent_q: Query<&Parent>,
     mut cauldron_q: Query<&mut Cauldron>,
@@ -212,22 +219,26 @@ fn drop_card(
 
         if used {
             if let Ok((e, ..)) = dragged_query.get_single() {
-                // todo: tween
+                // todo: tween out, particles?
                 cmd.entity(e).despawn_recursive();
             }
         } else {
-            for (dragged_e, _card, _, dragged, mut card_t) in dragged_query.iter_mut() {
+            for (dragged_e, _card, _, dragged, card_t) in dragged_query.iter() {
                 let mut e_cmd = cmd.entity(dragged_e);
                 e_cmd.remove::<Dragged>();
-                card_t.translation = dragged.origin.extend(card_t.translation.z);
-                // todo: tween back
+                e_cmd.insert(get_relative_move_anim(
+                    dragged.origin.extend(card_t.translation.z),
+                    300,
+                    None,
+                ));
             }
         }
     }
 }
 
 fn shift_cards(
-    mut card_inventory_q: Query<(&mut CardInventoryIndex, &mut Transform)>,
+    mut cmd: Commands,
+    mut card_inventory_q: Query<(&mut CardInventoryIndex, &mut Transform, Entity)>,
     removed_cards: RemovedComponents<Card>,
 ) {
     if removed_cards.iter().len() > 0 {
@@ -241,9 +252,17 @@ fn shift_cards(
         if let Some(mut i) = lowest_free_index {
             let mut cards = card_inventory_q.iter_mut().collect::<Vec<_>>();
             cards.sort_by(|(x, ..), (y, ..)| x.0.cmp(&y.0));
-            for (ref mut c_index, ref mut c_t) in cards.iter_mut() {
+            for (ref mut c_index, ref mut c_t, ref c_e) in cards.iter_mut() {
                 if c_index.0 > i {
-                    c_t.translation.x -= (c_index.0 - i) as f32 * CARD_INDEX_X_OFFSET;
+                    cmd.entity(*c_e).insert(get_relative_move_anim(
+                        Vec3::new(
+                            c_t.translation.x - (c_index.0 - i) as f32 * CARD_INDEX_X_OFFSET,
+                            c_t.translation.y,
+                            c_t.translation.z,
+                        ),
+                        300,
+                        None,
+                    ));
                     c_index.0 = i;
                     i += 1;
                 }

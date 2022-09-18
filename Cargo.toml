@@ -40,6 +40,7 @@ bevy-inspector-egui = "0.12.1"
 bevy_interact_2d = { git = "https://github.com/Anshorei/bevy_rei", features = [
     "debug",
 ] }
+bevy_tweening = { git = "https://github.com/SecretPocketCat/bevy_tweening", branch = "bevy_0_8" }
 
 [build-dependencies]
 embed-resource = "1.4"
