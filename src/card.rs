@@ -4,7 +4,7 @@ use crate::{
     cauldron::{Cauldron, FIRE_BOOST_TIME},
     drag::DragGroup,
     render::{NoRescale, ZIndex, WINDOW_SIZE},
-    tween::{get_move_anim, get_relative_move_anim},
+    tween::{get_move_anim, get_relative_move_anim, FadeHierarchyBundle, TweenDoneAction},
     GameState,
 };
 use bevy::prelude::*;
@@ -219,8 +219,13 @@ fn drop_card(
 
         if used {
             if let Ok((e, ..)) = dragged_query.get_single() {
-                // todo: tween out, particles?
-                cmd.entity(e).despawn_recursive();
+                // todo: particles?
+                let mut cmd_e = cmd.entity(e);
+                cmd_e.remove::<Interactable>();
+                cmd_e.insert_bundle(
+                    FadeHierarchyBundle::new(false, 300, Color::NONE)
+                        .with_done_action(TweenDoneAction::DespawnRecursive),
+                );
             }
         } else {
             for (dragged_e, _card, _, dragged, card_t) in dragged_query.iter() {

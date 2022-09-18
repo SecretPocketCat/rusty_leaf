@@ -246,8 +246,6 @@ fn show_progress_tooltip(
                 Color::rgb_u8(69, 61, 71),
             ))
             .insert(get_relative_move_anim(Vec3::new(0., 28., 0.01), 550, None));
-        // todo: tween in
-        info!("progress in");
 
         // todo: progress out once the cooked food is used
     }

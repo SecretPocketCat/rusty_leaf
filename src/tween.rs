@@ -24,6 +24,7 @@ impl Plugin for GameTweenPlugin {
 }
 
 #[repr(u64)]
+#[derive(Clone)]
 pub enum TweenDoneAction {
     None = 0,
     DespawnRecursive = 1,
@@ -46,6 +47,7 @@ pub struct FadeHierarchy {
     fade_in: bool,
     duration_ms: u64,
     text_color: Color,
+    done_action: Option<TweenDoneAction>,
 }
 
 #[derive(Component, Default)]
@@ -64,9 +66,15 @@ impl FadeHierarchyBundle {
                 fade_in,
                 duration_ms,
                 text_color,
+                done_action: None,
             },
             set: Default::default(),
         }
+    }
+
+    pub fn with_done_action(mut self, action: TweenDoneAction) -> Self {
+        self.fade_hierarchy.done_action = Some(action);
+        self
     }
 }
 
@@ -113,7 +121,7 @@ fn fade_hierarchy(
                         cmd.entity(e).insert(get_relative_fade_sprite_anim(
                             col,
                             fade.duration_ms,
-                            None,
+                            fade.done_action.clone(),
                         ));
                     }
                 }
@@ -122,7 +130,7 @@ fn fade_hierarchy(
                         cmd.entity(e).insert(get_relative_fade_spritesheet_anim(
                             col,
                             fade.duration_ms,
-                            None,
+                            fade.done_action.clone(),
                         ));
                     }
                 }
@@ -131,7 +139,7 @@ fn fade_hierarchy(
                         cmd.entity(e).insert(get_relative_fade_text_anim(
                             fade.text_color,
                             fade.duration_ms,
-                            None,
+                            fade.done_action.clone(),
                         ));
                     }
                 }

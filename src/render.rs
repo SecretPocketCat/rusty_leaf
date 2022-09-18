@@ -7,7 +7,7 @@ impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup)
             .add_system(scale_sprites)
-            .add_system(set_z);
+            .add_system_to_stage(CoreStage::PostUpdate, set_z);
     }
 }
 
@@ -72,7 +72,7 @@ fn scale_sprites(
     }
 }
 
-fn set_z(mut z_query: Query<(&ZIndex, &mut Transform), Changed<ZIndex>>) {
+fn set_z(mut z_query: Query<(&ZIndex, &mut Transform), Or<(Changed<ZIndex>, Changed<Transform>)>>) {
     for (z, mut t) in z_query.iter_mut() {
         t.translation.z = (*z).into();
     }
