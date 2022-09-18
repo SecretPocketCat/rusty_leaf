@@ -8,7 +8,7 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_interact_2d::Interactable;
-use iyes_loopless::prelude::{AppLooplessStateExt, IntoConditionalSystem};
+use iyes_loopless::prelude::*;
 use std::{mem, time::Duration};
 
 pub struct CauldronPlugin;
@@ -31,11 +31,12 @@ pub struct Cauldron {
     pub cook_timer: Timer,
     pub fire_boost: Timer,
     pub fire_e: Entity,
+    pub tooltip_e: Entity,
 }
 
 fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
     for (x, firepit_x, sprite_index, flip_x, fire_x) in
-        [(65., -2.5, 0, false, 0.), (235., -6., 1, true, -2.0)].iter()
+        [(80., -2.5, 0, false, 0.), (295., -6., 1, true, -2.0)].iter()
     {
         let fire_e = cmd
             .spawn_bundle(SpriteSheetBundle {
@@ -53,6 +54,18 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             .insert(Name::new("Fire"))
             .id();
 
+        let tooltip_e = cmd
+            .spawn_bundle(SpriteBundle {
+                texture: sprites.progress_tooltip.clone(),
+                transform: Transform::from_xyz(0., 28., 0.),
+                ..default()
+            })
+            .insert(NoRescale)
+            .insert(ZIndex::Tooltip)
+            .insert(Name::new("Tooltip"))
+            // .insert(Progress::new())
+            .id();
+
         cmd.spawn_bundle(SpriteSheetBundle {
             texture_atlas: sprites.cauldron.clone(),
             sprite: TextureAtlasSprite::new(*sprite_index),
@@ -66,9 +79,11 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             fire_boost: Timer::default(),
             cooked: None,
             fire_e: fire_e.clone(),
+            tooltip_e: tooltip_e.clone(),
         })
         .insert(Name::new("Cauldron"))
         .add_child(fire_e)
+        .add_child(tooltip_e)
         .with_children(|b| {
             b.spawn_bundle(SpriteSheetBundle {
                 texture_atlas: sprites.firepit.clone(),
@@ -114,6 +129,32 @@ fn cook(mut cauldron_q: Query<&mut Cauldron>, time: Res<Time>) {
                 info!("Soup's done!");
             }
         }
+    }
+}
+
+fn show_progress_tooltip(
+    mut card_evr: EventReader<CardEffect>,
+    cauldron_q: Query<(Entity, &Cauldron)>,
+) {
+    let cooking_cauldrons: Vec<Entity> = card_evr
+        .iter()
+        .filter_map(|card_effect| {
+            if let CardEffect::Ingredient { cauldron_e, .. } = card_effect {
+                Some(*cauldron_e)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    for (c_e, c) in cauldron_q
+        .iter()
+        .filter(|(c_e, ..)| cooking_cauldrons.contains(c_e))
+    {
+        // todo: tween in
+        info!("progress in");
+
+        // todo: progress out once the cooked food is used
     }
 }
 

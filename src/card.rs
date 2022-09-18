@@ -57,7 +57,10 @@ pub enum Ingredient {
 
 pub enum CardEffect {
     FireBoost(Entity),
-    Ingredient,
+    Ingredient {
+        ingredient: Ingredient,
+        cauldron_e: Entity,
+    },
 }
 
 pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
@@ -190,7 +193,10 @@ fn drop_card(
                         info!("cook, plz!");
                         if let Ok((_, _, ingredient, ..)) = dragged_query.get_single() {
                             c.ingredients.push(*ingredient);
-                            card_evw.send(CardEffect::Ingredient);
+                            card_evw.send(CardEffect::Ingredient {
+                                cauldron_e: cauldron_e.get(),
+                                ingredient: *ingredient,
+                            });
 
                             used = true;
                         }
