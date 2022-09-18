@@ -28,9 +28,9 @@ pub enum DragGroup {
     Piece = 1,
     Card,
     Cauldron,
-    CauldronFire,
-    TileGrid,
-    TilePieces,
+    Fire,
+    Grid,
+    GridPieces,
 }
 
 impl Into<Group> for DragGroup {

@@ -22,7 +22,14 @@ fn setup(mut cmd: Commands) {
         // .insert(Transform::from_xyz(260., 0., 999.))
         .insert(MainCam)
         .insert(InteractionSource {
-            groups: vec![DragGroup::Card.into(), DragGroup::Piece.into()],
+            groups: vec![
+                DragGroup::Card.into(),
+                DragGroup::Piece.into(),
+                DragGroup::Cauldron.into(),
+                DragGroup::Fire.into(),
+                DragGroup::Grid.into(),
+                DragGroup::GridPieces.into(),
+            ],
             ..Default::default()
         });
 }

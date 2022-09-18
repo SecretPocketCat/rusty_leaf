@@ -1,14 +1,15 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, time::Duration};
 
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_interact_2d::{
     drag::{Draggable, Dragged, DropStrategy},
-    Group, Interactable,
+    Group, Interactable, InteractionState,
 };
 
 use crate::{
     board::BoardClear,
+    cauldron::{Cauldron, FIRE_BOOST_TIME},
     drag::DragGroup,
     render::WINDOW_SIZE,
     tile_placement::{BOARD_SHIFT, SECTION_SIZE},
@@ -38,7 +39,7 @@ pub struct Card {}
 #[derive(Component, Inspectable)]
 pub struct CardInventoryIndex(usize);
 
-#[derive(Component, Debug, Inspectable)]
+#[derive(Component, Debug, Inspectable, Clone, Copy)]
 pub enum Ingredient {
     Pumpkin,
     Potato,
@@ -160,14 +161,56 @@ fn place_card(
 fn drop_card(
     mut cmd: Commands,
     mouse_input: Res<Input<MouseButton>>,
-    mut dragged_query: Query<(Entity, &Card, &Dragged, &mut Transform)>,
+    mut dragged_query: Query<(Entity, &Card, &Ingredient, &Dragged, &mut Transform)>,
+    interaction_state: Res<InteractionState>,
+    parent_q: Query<&Parent>,
+    mut cauldron_q: Query<&mut Cauldron>,
 ) {
     if mouse_input.just_released(MouseButton::Left) {
-        for (dragged_e, card, dragged, mut card_t) in dragged_query.iter_mut() {
-            let mut e_cmd = cmd.entity(dragged_e);
-            e_cmd.remove::<Dragged>();
-            card_t.translation = dragged.origin.extend(card_t.translation.z);
-            // todo: tween back
+        let mut used = false;
+
+        if let Some((e, ..)) = interaction_state.get_group(DragGroup::Fire.into()).first() {
+            if let Ok(cauldron_e) = parent_q.get(*e) {
+                if let Ok(mut c) = cauldron_q.get_mut(cauldron_e.get()) {
+                    // increase fire boost
+                    let dur = c
+                        .fire_boost
+                        .duration()
+                        .saturating_add(Duration::from_secs_f32(FIRE_BOOST_TIME));
+                    c.fire_boost.set_duration(dur);
+                    used = true;
+                }
+            }
+        } else if let Some((e, ..)) = interaction_state
+            .get_group(DragGroup::Cauldron.into())
+            .first()
+        {
+            if let Ok(cauldron_e) = parent_q.get(*e) {
+                if let Ok(mut c) = cauldron_q.get_mut(cauldron_e.get()) {
+                    // there can't be a ready meal in the cauldron
+                    if c.cooked.is_none() {
+                        info!("cook, plz!");
+                        if let Ok((_, _, ingredient, ..)) = dragged_query.get_single() {
+                            c.ingredients.push(*ingredient);
+                            used = true;
+                        }
+                    }
+                }
+            }
+        };
+
+        if used {
+            if let Ok((e, ..)) = dragged_query.get_single() {
+                // todo: tween
+                cmd.entity(e).despawn_recursive();
+            }
+        } else {
+            for (dragged_e, card, _, dragged, mut card_t) in dragged_query.iter_mut() {
+                let mut e_cmd = cmd.entity(dragged_e);
+                e_cmd.remove::<Dragged>();
+                card_t.translation = dragged.origin.extend(card_t.translation.z);
+                // todo: tween back
+            }
         }
     }
 }
