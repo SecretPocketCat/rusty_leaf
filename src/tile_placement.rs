@@ -1,19 +1,18 @@
 use crate::{
+    assets::Sprites,
     board::{Board, BoardClear, BoardClearQueue},
     card::{spawn_card, Card, MAX_CARDS},
-    coords::{TileCoords},
+    coords::TileCoords,
     drag::Mover,
     piece::{spawn_piece, FieldCoords, Piece, PieceFields, PlacedFieldIndex},
+    GameState,
 };
 use bevy::prelude::*;
 
-use bevy_interact_2d::{
-    drag::{Dragged},
-};
+use bevy_interact_2d::drag::Dragged;
 
 use iyes_loopless::prelude::*;
 use rand::Rng;
-
 
 pub const BOARD_SIZE_PX: f32 = 480.;
 pub const BOARD_SIZE: usize = 9;
@@ -40,12 +39,12 @@ impl Plugin for TilePlacementPlugin {
                 ],
             })
             .init_resource::<BoardClearQueue>()
-            .add_system(fill_piece_queue.run_if_resource_exists::<Pieces>())
+            .add_system(fill_piece_queue.run_not_in_state(GameState::Loading))
             .add_system_to_stage(
                 CoreStage::Last,
-                clear_board.run_if_resource_exists::<Board>(),
+                clear_board.run_not_in_state(GameState::Loading),
             )
-            .add_system(drop_piece);
+            .add_system(drop_piece.run_not_in_state(GameState::Loading));
     }
 }
 
@@ -125,8 +124,7 @@ fn clear_board(
     mut cmd: Commands,
     mut queue: ResMut<BoardClearQueue>,
     mut board: ResMut<Board>,
-    ass: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    sprites: Res<Sprites>,
     field_q: Query<(Entity, &PlacedFieldIndex)>,
     card_q: Query<&Card>,
 ) {
@@ -137,7 +135,7 @@ fn clear_board(
 
         while let Some(c) = queue.queue.pop_front() {
             if allowed_card_spawn_count > 0 {
-                spawn_card(&mut cmd, &ass, &mut texture_atlases, &c);
+                spawn_card(&mut cmd, &sprites, &c);
                 allowed_card_spawn_count -= 1;
             }
 

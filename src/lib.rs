@@ -8,6 +8,7 @@
     dead_code
 )]
 
+mod assets;
 mod board;
 mod card;
 mod cauldron;
@@ -20,6 +21,7 @@ mod render;
 mod tile_placement;
 
 use crate::tile_placement::TilePlacementPlugin;
+use assets::AssetsPlugin;
 use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::prelude::*;
@@ -54,7 +56,7 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state(GameState::Playing)
+        app.add_plugin(AssetsPlugin)
             .add_plugin(RenderPlugin)
             .add_plugin(WorldInspectorPlugin::new())
             .register_inspectable::<Card>()

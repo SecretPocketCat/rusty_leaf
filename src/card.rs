@@ -1,28 +1,35 @@
-use std::{time::Duration};
+use std::time::Duration;
 
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_interact_2d::{
-    drag::{Draggable, Dragged}, Interactable, InteractionState,
+    drag::{Draggable, Dragged},
+    Interactable, InteractionState,
+};
+use iyes_loopless::{
+    condition::IntoConditionalExclusiveSystem,
+    prelude::{AppLooplessStateExt, ConditionSet},
 };
 
 use crate::{
+    assets::Sprites,
     board::BoardClear,
     cauldron::{Cauldron, FIRE_BOOST_TIME},
     drag::DragGroup,
     render::WINDOW_SIZE,
+    GameState,
 };
 
 pub struct CardPlugin;
 impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(CoreStage::Last, drop_card) // run after update to get precise dragged.origin
-            .add_system(place_card)
+        .add_system(place_card)
             .add_system_to_stage(CoreStage::PostUpdate,shift_cards) // works with removedComponents, so can't run during Last
             ;
 
         if cfg!(debug_assertions) {
-            app.add_startup_system(test_card_spawn);
+            app.add_enter_system(GameState::Playing, test_card_spawn);
         }
     }
 }
@@ -47,12 +54,7 @@ pub enum Ingredient {
     Garlic,
 }
 
-pub fn spawn_card(
-    cmd: &mut Commands,
-    ass: &Res<AssetServer>,
-    texture_atlases: &mut Assets<TextureAtlas>,
-    clear: &BoardClear,
-) {
+pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
     let corner = CARD_SIZE / 2.;
     let ingredient = match clear {
         BoardClear::Row(row) => match row {
@@ -88,7 +90,7 @@ pub fn spawn_card(
     };
 
     cmd.spawn_bundle(SpriteBundle {
-        texture: ass.load("sprites/card.png"),
+        texture: sprites.card.clone(),
         sprite: Sprite {
             color: Color::NONE,
             ..default()
@@ -112,12 +114,8 @@ pub fn spawn_card(
     })
     .insert(Name::new("Card"))
     .with_children(|b| {
-        let texture_handle = ass.load("sprites/veggies_sheet.png");
-        let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(16.0, 16.0), 6, 1);
-        let texture_atlas_handle = texture_atlases.add(texture_atlas);
-
         b.spawn_bundle(SpriteSheetBundle {
-            texture_atlas: texture_atlas_handle,
+            texture_atlas: sprites.ingredients.clone(),
             sprite: TextureAtlasSprite::new(sprite_index),
             transform: Transform::from_translation(Vec2::new(0., 10.).extend(0.0)),
             ..default()
@@ -125,18 +123,9 @@ pub fn spawn_card(
     });
 }
 
-fn test_card_spawn(
-    mut cmd: Commands,
-    ass: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-) {
+fn test_card_spawn(mut cmd: Commands, sprites: Res<Sprites>) {
     for i in 0..4 {
-        spawn_card(
-            &mut cmd,
-            &ass,
-            &mut texture_atlases,
-            &BoardClear::Section(i),
-        );
+        spawn_card(&mut cmd, &sprites, &BoardClear::Section(i));
     }
 }
 
