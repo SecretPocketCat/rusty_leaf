@@ -1,12 +1,9 @@
 use bevy::prelude::*;
 
-use bevy_interact_2d::{
-    drag::{Dragged},
-    Group, Interactable,
-};
+use bevy_interact_2d::{drag::Dragged, Group, Interactable};
 
 use crate::{
-    board::{Board},
+    board::Board,
     coords::{get_world_coords_from_tile, TileCoords},
     piece::Piece,
     tile_placement::{Pieces, BOARD_SIZE_PX},
@@ -32,9 +29,9 @@ pub enum DragGroup {
     GridPieces,
 }
 
-impl Into<Group> for DragGroup {
-    fn into(self) -> Group {
-        Group(self as u8)
+impl From<DragGroup> for Group {
+    fn from(g: DragGroup) -> Self {
+        Group(g as u8)
     }
 }
 
@@ -53,11 +50,14 @@ fn drag_piece(
     if mouse_input.pressed(MouseButton::Left) {
         if let Ok((_, piece, coords)) = dragged_query.get_single() {
             if let Some(coords) = coords.tile_coords {
-                if board.can_place_piece(
-                    coords.x as usize,
-                    coords.y as usize,
-                    pieces.pieces[piece.0].get_fields(),
-                ).is_ok() {
+                if board
+                    .can_place_piece(
+                        coords.x as usize,
+                        coords.y as usize,
+                        pieces.pieces[piece.0].get_fields(),
+                    )
+                    .is_ok()
+                {
                     // todo: colour outline or smt.
                     info!("can place!");
                 }

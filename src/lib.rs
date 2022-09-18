@@ -1,4 +1,12 @@
 #![feature(int_roundings)]
+#![allow(
+    clippy::type_complexity,
+    clippy::too_many_arguments,
+    clippy::cast_precision_loss,
+    clippy::needless_update,
+    // jam-code only!
+    dead_code
+)]
 
 mod board;
 mod card;
