@@ -2,20 +2,16 @@ use crate::{
     anim::SheetAnimation,
     assets::{Fonts, Sprites},
     card::{CardEffect, Ingredient},
-    drag::{DragGroup, Mover},
+    drag::DragGroup,
     progress::TooltipProgress,
-    render::{ForceRescale, NoRescale, ZIndex, OUTLINE_COL, SCALE_MULT},
+    render::{NoRescale, ZIndex, OUTLINE_COL, SCALE_MULT},
     tween::{
-        get_relative_fade_text_anim, get_relative_move_anim, FadeHierarchy, FadeHierarchyBundle,
-        FadeHierarchySet,
+        get_relative_fade_text_anim, get_relative_move_anim, FadeHierarchyBundle, FadeHierarchySet,
     },
     GameState,
 };
 use bevy::{prelude::*, utils::HashMap};
-use bevy_interact_2d::{
-    drag::{Draggable, Dragged},
-    Interactable,
-};
+use bevy_interact_2d::Interactable;
 use iyes_loopless::prelude::*;
 use std::{mem, time::Duration};
 
@@ -26,13 +22,11 @@ impl Plugin for CauldronPlugin {
             .add_system(cook)
             .add_system(set_fire_intensity.after(cook))
             .add_system(show_progress_tooltip)
-            .add_system(hide_progress_tooltip)
             .add_system(add_ingredient_to_tooltip.run_not_in_state(GameState::Loading));
     }
 }
 
-pub const COOK_TIME: f32 = 1.;
-// pub const COOK_TIME: f32 = 15.;
+pub const COOK_TIME: f32 = 15.;
 pub const FIRE_BOOST_TIME: f32 = 15.;
 pub const FIRE_BOOST_MULT: f32 = 2.5;
 
@@ -44,11 +38,7 @@ pub struct Cauldron {
     pub fire_boost: Timer,
     pub fire_e: Entity,
     pub tooltip_e: Entity,
-    pub sprite_e: Entity,
 }
-
-#[derive(Component)]
-pub struct CauldronSprite;
 
 pub struct TooltipIngredient {
     count: u8,
@@ -125,8 +115,6 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
     for (x, firepit_x, sprite_index, flip_x, fire_x) in
         [(80., -2.5, 0, false, 0.), (295., -6., 1, true, -2.0)].iter()
     {
-        let corner_x = 18.;
-
         let fire_e = cmd
             .spawn_bundle(SpriteSheetBundle {
                 texture_atlas: sprites.fire.clone(),
@@ -160,30 +148,12 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             .insert(TooltipIngridientList::default())
             .id();
 
-        let sprite_e = cmd
-            .spawn_bundle(SpriteSheetBundle {
-                texture_atlas: sprites.cauldron.clone(),
-                sprite: TextureAtlasSprite::new(*sprite_index),
-                transform: Transform::from_xyz(0., -1., -0.01),
-                ..default()
-            })
-            .insert(NoRescale)
-            .insert(Interactable {
-                bounding_box: (Vec2::new(-corner_x, -3.), Vec2::new(corner_x, 40.)),
-                groups: vec![DragGroup::Cauldron.into()],
-            })
-            .insert(Draggable::default())
-            // this hackily resets z to 0. (which is somehow messed up by dragging)
-            .insert(ZIndex::Default)
-            .insert(CauldronSprite)
-            .insert(Name::new("cauldron_sprite"))
-            .id();
-
-        cmd.spawn_bundle(SpatialBundle {
-            transform: Transform::from_xyz(*x, -176., 0.01),
+        cmd.spawn_bundle(SpriteSheetBundle {
+            texture_atlas: sprites.cauldron.clone(),
+            sprite: TextureAtlasSprite::new(*sprite_index),
+            transform: Transform::from_xyz(*x, -176., 0.5),
             ..default()
         })
-        .insert(ForceRescale)
         .insert(ZIndex::Cauldron)
         .insert(Cauldron {
             ingredients: Vec::with_capacity(10),
@@ -192,12 +162,10 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             cooked: None,
             fire_e: fire_e.clone(),
             tooltip_e: tooltip_e.clone(),
-            sprite_e: sprite_e.clone(),
         })
         .insert(Name::new("Cauldron"))
         .add_child(fire_e)
         .add_child(tooltip_e)
-        .add_child(sprite_e)
         .with_children(|b| {
             b.spawn_bundle(SpriteSheetBundle {
                 texture_atlas: sprites.firepit.clone(),
@@ -205,24 +173,29 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 transform: Transform::from_xyz(*firepit_x, -25., -0.01),
                 ..default()
             })
-            .insert(NoRescale)
-            .insert(Interactable {
-                bounding_box: (
-                    Vec2::new(-corner_x - *firepit_x, -18.),
-                    Vec2::new(corner_x - *firepit_x, 12.),
-                ),
-                groups: vec![DragGroup::Fire.into()],
-            })
-            .insert(Name::new("fire"));
+            .insert(NoRescale);
+
+            for (y, corner_x, corner_y, group) in [
+                (10., 18., 18., DragGroup::Cauldron),
+                (-28., 18., 16., DragGroup::Fire),
+            ] {
+                let corner = Vec2::new(corner_x, corner_y);
+                b.spawn_bundle(SpatialBundle {
+                    transform: Transform::from_xyz(0., y, 0.),
+                    ..default()
+                })
+                .insert(Interactable {
+                    bounding_box: (-corner, corner),
+                    groups: vec![group.into()],
+                });
+            }
         });
     }
 }
 
 fn cook(
-    mut cmd: Commands,
     mut cauldron_q: Query<&mut Cauldron>,
     mut progress_q: Query<&mut TooltipProgress>,
-    mut draggable_q: Query<&mut Draggable>,
     time: Res<Time>,
 ) {
     for mut c in cauldron_q.iter_mut() {
@@ -239,10 +212,6 @@ fn cook(
 
             if c.cook_timer.just_finished() {
                 c.cooked = Some(mem::take(&mut c.ingredients));
-                if let Ok(mut drag) = draggable_q.get_mut(c.sprite_e.clone()) {
-                    drag.groups = vec![DragGroup::Cauldron.into()];
-                }
-
                 info!("Soup's done!");
             } else if let Ok(mut p) = progress_q.get_mut(c.tooltip_e) {
                 p.value = c.cook_timer.percent();
@@ -276,19 +245,6 @@ fn show_progress_tooltip(
             .insert(get_relative_move_anim(Vec3::new(0., 28., 0.01), 550, None));
 
         // todo: progress out once the cooked food is used
-    }
-}
-
-fn hide_progress_tooltip(
-    mut cmd: Commands,
-    hide_q: Query<&Parent, (With<CauldronSprite>, Added<Dragged>)>,
-    cauldron_q: Query<&Cauldron>,
-) {
-    for p in hide_q.iter() {
-        if let Ok(c) = cauldron_q.get(p.get()) {
-            cmd.entity(c.tooltip_e)
-                .insert(FadeHierarchy::new(false, 400, Color::NONE));
-        }
     }
 }
 

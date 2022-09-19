@@ -50,22 +50,6 @@ pub struct FadeHierarchy {
     done_action: Option<TweenDoneAction>,
 }
 
-impl FadeHierarchy {
-    pub fn new(fade_in: bool, duration_ms: u64, text_color: Color) -> Self {
-        Self {
-            fade_in,
-            duration_ms,
-            text_color,
-            done_action: None,
-        }
-    }
-
-    pub fn with_done_action(mut self, action: TweenDoneAction) -> Self {
-        self.done_action = Some(action);
-        self
-    }
-}
-
 #[derive(Component, Default)]
 pub struct FadeHierarchySet(HashSet<FadeChild>);
 
@@ -78,7 +62,12 @@ pub struct FadeHierarchyBundle {
 impl FadeHierarchyBundle {
     pub fn new(fade_in: bool, duration_ms: u64, text_color: Color) -> Self {
         Self {
-            fade_hierarchy: FadeHierarchy::new(fade_in, duration_ms, text_color),
+            fade_hierarchy: FadeHierarchy {
+                fade_in,
+                duration_ms,
+                text_color,
+                done_action: None,
+            },
             set: Default::default(),
         }
     }
@@ -124,8 +113,6 @@ fn fade_hierarchy(
         } else {
             Color::NONE
         };
-
-        info!("i'm fading oveer here: {}", set.0.len());
 
         for sprite in set.0.iter() {
             match sprite {
