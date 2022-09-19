@@ -4,7 +4,7 @@ use crate::{
     card::{CardEffect, Ingredient},
     drag::DragGroup,
     progress::TooltipProgress,
-    render::{NoRescale, ZIndex, SCALE_MULT},
+    render::{NoRescale, ZIndex, OUTLINE_COL, SCALE_MULT},
     tween::{
         get_relative_fade_text_anim, get_relative_move_anim, FadeHierarchyBundle, FadeHierarchySet,
     },
@@ -85,7 +85,7 @@ pub fn spawn_tooltip_ingredient(
         })
         .insert(get_relative_fade_text_anim(
             // todo: from res/const
-            Color::rgb_u8(69, 61, 71),
+            OUTLINE_COL,
             400,
             None,
         ))
@@ -240,11 +240,7 @@ fn show_progress_tooltip(
         .filter(|(c_e, ..)| cooking_cauldrons.contains(c_e))
     {
         cmd.entity(c.tooltip_e)
-            .insert_bundle(FadeHierarchyBundle::new(
-                true,
-                450,
-                Color::rgb_u8(69, 61, 71),
-            ))
+            .insert_bundle(FadeHierarchyBundle::new(true, 450, OUTLINE_COL))
             .insert(get_relative_move_anim(Vec3::new(0., 28., 0.01), 550, None));
 
         // todo: progress out once the cooked food is used

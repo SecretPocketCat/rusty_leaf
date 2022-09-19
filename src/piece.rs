@@ -3,14 +3,15 @@ use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_interact_2d::{drag::Draggable, Interactable};
 use bevy_prototype_lyon::prelude::*;
-use std::{
-    ops::{Div, Sub},
-};
+use bevy_tweening::Animator;
+use std::ops::{Div, Sub};
 
 use crate::{
     coords::TileCoords,
     drag::{DragGroup, Mover},
+    render::OUTLINE_COL,
     tile_placement::TILE_SIZE,
+    tween::{delay_tween, get_relative_move_tween},
 };
 
 #[derive(Component)]
@@ -75,7 +76,13 @@ impl PieceFields {
     }
 }
 
-pub fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, position: Vec2) {
+pub fn spawn_piece(
+    cmd: &mut Commands,
+    piece: &PieceFields,
+    piece_index: usize,
+    position: Vec2,
+    tween_delay: u64,
+) {
     let size_h = TILE_SIZE / 2.;
     let corner = Vec2::new(
         piece.get_width() as f32 * size_h,
@@ -95,6 +102,11 @@ pub fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, 
                 let x = i % piece_padded_w;
                 let y = i / piece_padded_w;
 
+                let pos = Vec3::new(
+                    (x as f32 - piece_offset_x) * TILE_SIZE,
+                    (y as f32 - piece_offset_y) * -TILE_SIZE,
+                    0.,
+                );
                 b.spawn_bundle(GeometryBuilder::build_as(
                     &shapes::Rectangle {
                         extents: Vec2::splat(TILE_SIZE),
@@ -102,15 +114,16 @@ pub fn spawn_piece(cmd: &mut Commands, piece: &PieceFields, piece_index: usize, 
                     },
                     DrawMode::Outlined {
                         // fed171
-                        outline_mode: StrokeMode::new(Color::rgb_u8(141, 71, 46), 4.),
+                        outline_mode: StrokeMode::new(OUTLINE_COL, 4.),
                         fill_mode: FillMode::color(Color::rgb_u8(254, 209, 113)),
                     },
-                    Transform::from_xyz(
-                        (x as f32 - piece_offset_x) * TILE_SIZE,
-                        (y as f32 - piece_offset_y) * -TILE_SIZE,
-                        0.,
-                    ),
+                    Transform::from_translation(pos),
+                    // Transform::from_translation(Vec3::new(0., 250., pos.z)),
                 ))
+                // .insert(Animator::new(delay_tween(
+                //     get_relative_move_tween(pos, 450, None),
+                //     tween_delay,
+                // )))
                 .insert(FieldCoords(UVec2::new(x as u32, y as u32)));
             }
         })

@@ -71,6 +71,7 @@ fn fill_piece_queue(mut cmd: Commands, pieces: Res<Pieces>, pieces_q: Query<Enti
                         // + (piece.get_height() as f32 * TILE_SIZE) / 2.
                         + 100.,
                 ),
+                i * 150 + 100,
             );
         }
     }
