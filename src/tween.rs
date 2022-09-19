@@ -285,6 +285,36 @@ pub fn get_move_anim(
     ))
 }
 
+pub fn get_relative_move_by_anim(
+    move_by: Vec3,
+    duration_ms: u64,
+    on_completed: Option<TweenDoneAction>,
+) -> Animator<Transform> {
+    Animator::new(get_relative_move_by_tween(
+        move_by,
+        duration_ms,
+        on_completed,
+    ))
+}
+
+pub fn get_relative_move_by_tween(
+    move_by: Vec3,
+    duration_ms: u64,
+    on_completed: Option<TweenDoneAction>,
+) -> Tween<Transform> {
+    let mut tween = Tween::new(
+        EaseFunction::QuadraticInOut,
+        Duration::from_millis(duration_ms),
+        TransformRelativeByPositionLens::new(move_by),
+    );
+
+    if let Some(on_completed) = on_completed {
+        tween = tween.with_completed_event(on_completed.into());
+    }
+
+    tween
+}
+
 pub fn get_move_tween(
     start_pos: Vec3,
     end_pos: Vec3,
@@ -517,6 +547,35 @@ impl Lens<Transform> for TransformRelativePositionLens {
 
     fn update_on_tween_start(&mut self, target: &Transform) {
         self.start = target.translation;
+    }
+}
+
+#[derive(Default)]
+pub struct TransformRelativeByPositionLens {
+    start: Vec3,
+    end: Vec3,
+    pub move_by: Vec3,
+}
+
+impl TransformRelativeByPositionLens {
+    pub fn new(move_by: Vec3) -> Self {
+        Self {
+            move_by,
+            start: Vec3::ZERO,
+            end: Vec3::ZERO,
+        }
+    }
+}
+
+impl Lens<Transform> for TransformRelativeByPositionLens {
+    fn lerp(&mut self, target: &mut Transform, ratio: f32) {
+        let value = self.start + (self.end - self.start) * ratio;
+        target.translation = value;
+    }
+
+    fn update_on_tween_start(&mut self, target: &Transform) {
+        self.start = target.translation;
+        self.end = target.translation + self.move_by;
     }
 }
 
