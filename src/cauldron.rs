@@ -7,16 +7,16 @@ use crate::{
     progress::TooltipProgress,
     render::{NoRescale, ZIndex, OUTLINE_COL, SCALE_MULT},
     tween::{
-        get_relative_fade_sprite_anim, get_relative_fade_spritesheet_anim,
+        get_relative_fade_spritesheet_anim,
         get_relative_fade_text_anim, get_relative_move_anim, get_relative_move_by_anim,
-        FadeHierarchy, FadeHierarchyBundle, FadeHierarchySet, TweenDoneAction,
+        FadeHierarchy, FadeHierarchyBundle, TweenDoneAction,
     },
     GameState,
 };
 use bevy::{prelude::*, utils::HashMap};
 use bevy_interact_2d::Interactable;
 use iyes_loopless::prelude::*;
-use std::{mem, time::Duration};
+use std::{time::Duration};
 
 pub struct CauldronPlugin;
 impl Plugin for CauldronPlugin {
@@ -116,7 +116,7 @@ pub fn spawn_tooltip_ingredient(
         .insert(NoRescale)
         .insert(get_relative_fade_spritesheet_anim(Color::WHITE, 250, None))
         .insert(Name::new("tooltip_ingredient"))
-        .add_child(txt_e.clone())
+        .add_child(txt_e)
         .id();
 
     (tooltip_e, txt_e)
@@ -153,7 +153,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             ingredients: Vec::with_capacity(10),
             cook_timer: Timer::new(Duration::from_secs_f32(COOK_TIME), true),
             fire_boost: Timer::default(),
-            fire_e: fire_e.clone(),
+            fire_e,
             tooltip_e: None,
         })
         .insert(Name::new("Cauldron"))
@@ -209,7 +209,7 @@ fn cook(
             if c.cook_timer.just_finished() {
                 if let Some((order_e, _)) = order_q
                     .iter()
-                    .find(|(order_e, o)| o.is_equal(&c.ingredients))
+                    .find(|(_order_e, o)| o.is_equal(&c.ingredients))
                 {
                     // complete order
                     order_evw.send(OrderEv::Completed(order_e));
@@ -342,7 +342,7 @@ fn add_ingredient_to_tooltip(
                             );
 
                             cmd.entity(c.tooltip_e.unwrap())
-                                .add_child(ingredient_e.clone());
+                                .add_child(ingredient_e);
 
                             ingredient_list.ingredients.insert(
                                 *ingredient as u8,

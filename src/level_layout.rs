@@ -1,13 +1,11 @@
 use bevy::prelude::*;
-use bevy_tweening::Animator;
+
 use iyes_loopless::prelude::AppLooplessStateExt;
 
 use crate::{
     anim::SheetAnimation,
     assets::Sprites,
     render::ZIndex,
-    tile_placement::BOARD_SHIFT,
-    tween::{delay_tween, get_relative_move_anim, get_relative_move_tween},
     GameState,
 };
 
@@ -35,7 +33,7 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>) {
         .insert(Name::new(name));
     }
 
-    for (handle, z_index, x, y, name) in [
+    for (handle, _z_index, x, y, name) in [
         (
             sprites.ferris.clone(),
             ZIndex::Shopkeep,
@@ -65,7 +63,7 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>) {
     }
 }
 
-fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
+fn setup(_cmd: Commands, _sprites: Res<Sprites>) {
     // let pos = Vec3::new(BOARD_SHIFT.x + 25., -1500., 0.);
     // cmd.spawn_bundle(SpriteBundle {
     //     texture: sprites.parchment.clone(),

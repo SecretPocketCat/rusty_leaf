@@ -1,11 +1,11 @@
 use crate::{
     assets::Sprites,
     board::BoardClear,
-    cauldron::{Cauldron, TooltipIngridientList, FIRE_BOOST_TIME},
+    cauldron::{Cauldron, TooltipIngridientList},
     drag::DragGroup,
     list::{place_items, shift_items},
     render::{NoRescale, ZIndex, WINDOW_SIZE},
-    tween::{get_move_anim, get_relative_move_anim, FadeHierarchyBundle, TweenDoneAction},
+    tween::{get_relative_move_anim, FadeHierarchyBundle, TweenDoneAction},
     GameState,
 };
 use bevy::prelude::*;
@@ -15,10 +15,9 @@ use bevy_interact_2d::{
     Interactable, InteractionState,
 };
 use iyes_loopless::{
-    condition::IntoConditionalExclusiveSystem,
-    prelude::{AppLooplessStateExt, ConditionSet},
+    prelude::{AppLooplessStateExt},
 };
-use std::time::Duration;
+
 
 pub struct CardPlugin;
 impl Plugin for CardPlugin {
@@ -157,7 +156,7 @@ fn drop_card(
 
         if let Some((e, ..)) = interaction_state.get_group(DragGroup::Fire.into()).first() {
             if let Ok(cauldron_e) = parent_q.get(*e) {
-                if let Ok(mut c) = cauldron_q.get_mut(cauldron_e.get()) {
+                if let Ok(_c) = cauldron_q.get_mut(cauldron_e.get()) {
                     // increase fire boost
                     card_evw.send(CardEffect::FireBoost {
                         cauldron_e: cauldron_e.get(),

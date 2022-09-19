@@ -32,15 +32,15 @@ use assets::AssetsPlugin;
 use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::prelude::*;
-use bevy_inspector_egui::{RegisterInspectable, WorldInspectorPlugin};
-use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin, InteractionPlugin};
+use bevy_inspector_egui::{WorldInspectorPlugin};
+use bevy_interact_2d::{drag::DragPlugin, InteractionPlugin};
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use bevy_tweening::TweeningPlugin;
-use card::{Card, CardPlugin, Ingredient};
+use card::{CardPlugin};
 use cauldron::CauldronPlugin;
 use coords::CoordsPlugin;
 use drag::DragPlugin as GameDragPlugin;
-use iyes_loopless::prelude::*;
+
 use level_layout::LevelLayoutPlugin;
 use mouse::MousePlugin;
 use order::OrderPlugin;

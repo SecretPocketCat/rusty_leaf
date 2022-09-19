@@ -1,26 +1,24 @@
 use crate::{
-    anim::SheetAnimation,
     assets::{Fonts, Sprites},
-    card::{CardEffect, Ingredient},
-    cauldron::{spawn_tooltip_ingredient, TooltipIngridientList},
-    drag::DragGroup,
+    card::{Ingredient},
+    cauldron::{spawn_tooltip_ingredient},
     list::{place_items, shift_items},
     progress::TooltipProgress,
-    render::{NoRescale, ZIndex, OUTLINE_COL, SCALE_MULT},
+    render::{ZIndex, OUTLINE_COL},
     tween::{
-        get_relative_fade_text_anim, get_relative_move_anim, get_relative_move_by_anim,
-        FadeHierarchyBundle, FadeHierarchySet,
+        get_relative_move_by_anim,
+        FadeHierarchyBundle,
     },
     GameState,
 };
 use bevy::{
     prelude::*,
-    utils::{HashMap, HashSet},
+    utils::{HashMap},
 };
-use bevy_interact_2d::Interactable;
+
 use iyes_loopless::prelude::*;
 use rand::{thread_rng, Rng};
-use std::{mem, ops::Range, time::Duration};
+use std::{ops::Range, time::Duration};
 
 pub struct OrderPlugin;
 impl Plugin for OrderPlugin {
@@ -141,7 +139,7 @@ fn spawn_orders(
         }
     } else if order_count >= lvl.opts.max_simultaneous_orders as usize {
         // bail out if there're too many orders
-        return;
+        
     } else if lvl.order_count < (lvl.opts.total_order_count as usize) {
         lvl.next_customer_timer.tick(time.delta());
 
@@ -251,10 +249,8 @@ fn update_order_progress(
                 if o.timer.just_finished() {
                     // todo: game over
                     info!("Game over!");
-                } else {
-                    if let Ok(mut progress) = progress_q.get_mut(tooltip_e) {
-                        progress.value = o.timer.percent();
-                    }
+                } else if let Ok(mut progress) = progress_q.get_mut(tooltip_e) {
+                    progress.value = o.timer.percent();
                 }
             }
         }

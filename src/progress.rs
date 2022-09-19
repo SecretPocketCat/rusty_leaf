@@ -1,16 +1,13 @@
 use crate::{
-    anim::SheetAnimation,
     assets::Sprites,
-    card::{CardEffect, Ingredient},
-    drag::DragGroup,
-    render::{NoRescale, ZIndex},
+    render::{NoRescale},
     GameState,
 };
 use bevy::prelude::*;
-use bevy_interact_2d::Interactable;
-use image::Progress;
+
+
 use iyes_loopless::prelude::*;
-use std::{mem, time::Duration};
+
 
 pub struct ProgressPlugin;
 impl Plugin for ProgressPlugin {

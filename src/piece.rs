@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_interact_2d::{drag::Draggable, Interactable};
 use bevy_prototype_lyon::prelude::*;
-use bevy_tweening::Animator;
+
 use std::ops::{Div, Sub};
 
 use crate::{
@@ -11,7 +11,6 @@ use crate::{
     drag::{DragGroup, Mover},
     render::OUTLINE_COL,
     tile_placement::TILE_SIZE,
-    tween::{delay_tween, get_relative_move_tween},
 };
 
 #[derive(Component)]
@@ -81,7 +80,7 @@ pub fn spawn_piece(
     piece: &PieceFields,
     piece_index: usize,
     position: Vec2,
-    tween_delay: u64,
+    _tween_delay: u64,
 ) {
     let size_h = TILE_SIZE / 2.;
     let corner = Vec2::new(

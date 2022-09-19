@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::utils::HashSet;
 use bevy_prototype_lyon::prelude::DrawMode;
-use bevy_tweening::lens::{SpriteColorLens, TransformPositionLens, TransformScaleLens};
+use bevy_tweening::lens::{SpriteColorLens, TransformPositionLens};
 use bevy_tweening::*;
 use std::time::Duration;
 
