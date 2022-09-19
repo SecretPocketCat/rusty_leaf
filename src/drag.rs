@@ -15,7 +15,8 @@ impl Plugin for DragPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(CoreStage::Last, limit_drag_count)
             .add_system(drag_piece)
-            .add_system(process_movers);
+            // .add_system(process_movers)
+            .add_system(process_tilecoord_movers);
     }
 }
 
@@ -74,7 +75,7 @@ fn limit_drag_count(mut cmd: Commands, dragged_query: Query<Entity, With<Dragged
     }
 }
 
-fn process_movers(
+fn process_tilecoord_movers(
     mover_q: Query<(&Mover, &Transform, &TileCoords, &Interactable)>,
     mut moved_q: Query<&mut Transform, Without<Mover>>,
 ) {
@@ -92,6 +93,18 @@ fn process_movers(
             } else {
                 mover_t.translation
             };
+        }
+    }
+}
+
+fn process_movers(
+    mover_q: Query<(&Mover, &Transform), Without<TileCoords>>,
+    mut moved_q: Query<&mut Transform, Without<Mover>>,
+) {
+    for (mover, mover_t) in mover_q.iter() {
+        if let Ok(mut t) = moved_q.get_mut(mover.moved_e) {
+            let z = t.translation.z;
+            t.translation = mover_t.translation.truncate().extend(z);
         }
     }
 }

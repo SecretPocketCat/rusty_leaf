@@ -21,18 +21,22 @@ pub struct MainCam;
 #[derive(Component)]
 pub struct NoRescale;
 
+#[derive(Component)]
+pub struct ForceRescale;
+
 #[derive(Component, Clone, Copy)]
 pub enum ZIndex {
-    Bg = 0,
+    Default = 0,
+    Bg,
     Shopkeep,
     BgShop,
     Character,
     FirePit,
+    OrderTooltip,
     Cauldron,
     Fire,
     Grid,
     Piece,
-    OrderTooltip,
     Card,
     Tooltip,
 }
@@ -66,7 +70,11 @@ fn scale_sprites(
         &mut Transform,
         (
             Without<NoRescale>,
-            Or<(Added<Sprite>, Added<TextureAtlasSprite>)>,
+            Or<(
+                Added<ForceRescale>,
+                Added<Sprite>,
+                Added<TextureAtlasSprite>,
+            )>,
         ),
     >,
 ) {
