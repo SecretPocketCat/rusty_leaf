@@ -38,7 +38,7 @@ impl Plugin for OrderPlugin {
         let lvl = Level {
             name: "Test".into(),
             allowed_ingredients: vec![Ingredient::Pumpkin, Ingredient::Potato, Ingredient::Tomato],
-            ingredient_count_range: 1..4,
+            ingredient_count_range: 1..2,
             ingredient_type_range: 1..3,
             max_simultaneous_orders: 4,
             next_customer_delay_range_ms: 1000..1001,
@@ -115,6 +115,7 @@ pub struct Order {
 }
 
 impl Order {
+    // todo: test
     pub fn is_equal(&self, ingredients: &[Ingredient]) -> bool {
         self.ingredients
             .iter()

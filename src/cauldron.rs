@@ -7,7 +7,9 @@ use crate::{
     progress::TooltipProgress,
     render::{NoRescale, ZIndex, OUTLINE_COL, SCALE_MULT},
     tween::{
-        get_relative_fade_text_anim, get_relative_move_anim, FadeHierarchyBundle, FadeHierarchySet,
+        get_relative_fade_sprite_anim, get_relative_fade_spritesheet_anim,
+        get_relative_fade_text_anim, get_relative_move_anim, get_relative_move_by_anim,
+        FadeHierarchy, FadeHierarchyBundle, FadeHierarchySet, TweenDoneAction,
     },
     GameState,
 };
@@ -20,16 +22,23 @@ pub struct CauldronPlugin;
 impl Plugin for CauldronPlugin {
     fn build(&self, app: &mut App) {
         app.add_exit_system(GameState::Loading, setup)
+            .add_system_set(
+                ConditionSet::new()
+                    .run_not_in_state(GameState::Loading)
+                    .with_system(show_progress_tooltip)
+                    .with_system(add_ingredient_to_tooltip)
+                    .into(),
+            )
             .add_system(cook)
-            .add_system(set_fire_intensity.after(cook))
-            .add_system(show_progress_tooltip)
-            .add_system(add_ingredient_to_tooltip.run_not_in_state(GameState::Loading));
+            .add_system(set_fire_intensity.after(cook));
     }
 }
 
+// pub const COOK_TIME: f32 = 2.;
 pub const COOK_TIME: f32 = 15.;
 pub const FIRE_BOOST_TIME: f32 = 15.;
 pub const FIRE_BOOST_MULT: f32 = 2.5;
+const TOOLTIP_TWEEN_OFFSET: f32 = 28.;
 
 #[derive(Component)]
 pub struct Cauldron {
@@ -38,7 +47,7 @@ pub struct Cauldron {
     pub cook_timer: Timer,
     pub fire_boost: Timer,
     pub fire_e: Entity,
-    pub tooltip_e: Entity,
+    pub tooltip_e: Option<Entity>,
 }
 
 pub struct TooltipIngredient {
@@ -105,6 +114,7 @@ pub fn spawn_tooltip_ingredient(
             ..default()
         })
         .insert(NoRescale)
+        .insert(get_relative_fade_spritesheet_anim(Color::WHITE, 250, None))
         .insert(Name::new("tooltip_ingredient"))
         .add_child(txt_e.clone())
         .id();
@@ -132,23 +142,6 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             .insert(Name::new("Fire"))
             .id();
 
-        let tooltip_e = cmd
-            .spawn_bundle(SpriteBundle {
-                texture: sprites.progress_tooltip.clone(),
-                sprite: Sprite {
-                    color: Color::NONE,
-                    ..default()
-                },
-                transform: Transform::from_xyz(0., 0., 0.),
-                ..default()
-            })
-            .insert(NoRescale)
-            .insert(ZIndex::Tooltip)
-            .insert(Name::new("Tooltip"))
-            .insert(TooltipProgress::new(0.))
-            .insert(TooltipIngridientList::default())
-            .id();
-
         cmd.spawn_bundle(SpriteSheetBundle {
             texture_atlas: sprites.cauldron.clone(),
             sprite: TextureAtlasSprite::new(*sprite_index),
@@ -162,11 +155,10 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             fire_boost: Timer::default(),
             cooked: None,
             fire_e: fire_e.clone(),
-            tooltip_e: tooltip_e.clone(),
+            tooltip_e: None,
         })
         .insert(Name::new("Cauldron"))
         .add_child(fire_e)
-        .add_child(tooltip_e)
         .with_children(|b| {
             b.spawn_bundle(SpriteSheetBundle {
                 texture_atlas: sprites.firepit.clone(),
@@ -216,16 +208,25 @@ fn cook(
 
             if c.cook_timer.just_finished() {
                 c.cooked = Some(mem::take(&mut c.ingredients));
-            } else if let Ok(mut p) = progress_q.get_mut(c.tooltip_e) {
-                p.value = c.cook_timer.percent();
+            } else if let Some(tooltip_e) = c.tooltip_e {
+                if let Ok(mut p) = progress_q.get_mut(tooltip_e) {
+                    p.value = c.cook_timer.percent();
+                }
             }
         }
 
         if let Some(cooked) = &c.cooked {
             if let Some((order_e, _)) = order_q.iter().find(|(order_e, o)| o.is_equal(cooked)) {
-                order_evw.send(OrderEv::Completed(order_e));
+                c.cooked = None;
+                let mut tooltip_cmd_e = cmd.entity(c.tooltip_e.unwrap());
+                tooltip_cmd_e.insert(FadeHierarchy::new(false, 350, Color::NONE));
+                tooltip_cmd_e.insert(get_relative_move_by_anim(
+                    Vec3::Y * -TOOLTIP_TWEEN_OFFSET,
+                    400,
+                    Some(TweenDoneAction::DespawnRecursive),
+                ));
 
-                // todo: cleanup cauldron tooltip
+                order_evw.send(OrderEv::Completed(order_e));
             }
         }
     }
@@ -234,28 +235,67 @@ fn cook(
 fn show_progress_tooltip(
     mut cmd: Commands,
     mut card_evr: EventReader<CardEffect>,
-    cauldron_q: Query<(Entity, &Cauldron)>,
+    mut cauldron_q: Query<&mut Cauldron>,
+    sprites: Res<Sprites>,
+    fonts: Res<Fonts>,
 ) {
-    let cooking_cauldrons: Vec<Entity> = card_evr
-        .iter()
-        .filter_map(|card_effect| {
-            if let CardEffect::Ingredient { cauldron_e, .. } = card_effect {
-                Some(*cauldron_e)
-            } else {
-                None
+    for ev in card_evr.iter() {
+        if let CardEffect::Ingredient {
+            ingredient,
+            cauldron_e,
+        } = ev
+        {
+            if let Ok(mut c) = cauldron_q.get_mut(*cauldron_e) {
+                if c.tooltip_e.is_none() {
+                    let (ingredient_e, ingridient_txt_e) = spawn_tooltip_ingredient(
+                        *ingredient,
+                        1,
+                        0,
+                        -4.5,
+                        &mut cmd,
+                        &sprites,
+                        &fonts,
+                    );
+
+                    cmd.entity(*cauldron_e).with_children(|b| {
+                        let mut ingredient_list = TooltipIngridientList::default();
+                        ingredient_list.ingredients.insert(
+                            *ingredient as u8,
+                            TooltipIngredient {
+                                count: 1,
+                                entity: ingredient_e,
+                                text_e: ingridient_txt_e,
+                            },
+                        );
+
+                        c.tooltip_e = Some(
+                            b.spawn_bundle(SpriteBundle {
+                                texture: sprites.progress_tooltip.clone(),
+                                sprite: Sprite {
+                                    color: Color::NONE,
+                                    ..default()
+                                },
+                                transform: Transform::from_xyz(0., 0., 0.),
+                                ..default()
+                            })
+                            .insert(NoRescale)
+                            .insert(ZIndex::Tooltip)
+                            .insert(Name::new("Tooltip"))
+                            .insert(TooltipProgress::new(0.))
+                            .insert(ingredient_list)
+                            .insert_bundle(FadeHierarchyBundle::new(true, 450, OUTLINE_COL))
+                            .insert(get_relative_move_anim(
+                                Vec3::new(0., TOOLTIP_TWEEN_OFFSET, 0.01),
+                                550,
+                                None,
+                            ))
+                            .add_child(ingredient_e)
+                            .id(),
+                        );
+                    });
+                }
             }
-        })
-        .collect();
-
-    for (c_e, c) in cauldron_q
-        .iter()
-        .filter(|(c_e, ..)| cooking_cauldrons.contains(c_e))
-    {
-        cmd.entity(c.tooltip_e)
-            .insert_bundle(FadeHierarchyBundle::new(true, 450, OUTLINE_COL))
-            .insert(get_relative_move_anim(Vec3::new(0., 28., 0.01), 550, None));
-
-        // todo: progress out once the cooked food is used
+        }
     }
 }
 
@@ -264,57 +304,49 @@ fn add_ingredient_to_tooltip(
     sprites: Res<Sprites>,
     fonts: Res<Fonts>,
     mut card_evr: EventReader<CardEffect>,
-    cauldron_q: Query<(Entity, &Cauldron)>,
+    cauldron_q: Query<&Cauldron>,
     mut tooltip_ingredient_q: Query<&mut TooltipIngridientList>,
     mut txt_q: Query<&mut Text>,
 ) {
-    let cooking_cauldrons: Vec<_> = card_evr
-        .iter()
-        .filter_map(|card_effect| {
-            if let CardEffect::Ingredient {
-                cauldron_e,
-                ingredient,
-            } = card_effect
-            {
-                Some((*cauldron_e, *ingredient))
-            } else {
-                None
-            }
-        })
-        .collect();
+    for ev in card_evr.iter() {
+        if let CardEffect::Ingredient {
+            ingredient,
+            cauldron_e,
+        } = ev
+        {
+            if let Ok(c) = cauldron_q.get(*cauldron_e) {
+                if let Some(tooltip_e) = c.tooltip_e {
+                    if let Ok(mut ingredient_list) = tooltip_ingredient_q.get_mut(tooltip_e) {
+                        if let Some(tooltip_ingredient) =
+                            ingredient_list.ingredients.get_mut(&(*ingredient as u8))
+                        {
+                            tooltip_ingredient.count += 1;
+                            let mut txt = txt_q.get_mut(tooltip_ingredient.text_e).unwrap();
+                            txt.sections[0].value = format!("{}x", tooltip_ingredient.count);
+                        } else {
+                            let (ingredient_e, ingredient_txt_e) = spawn_tooltip_ingredient(
+                                *ingredient,
+                                1,
+                                ingredient_list.ingredients.len(),
+                                -4.5,
+                                &mut cmd,
+                                &sprites,
+                                &fonts,
+                            );
 
-    if cooking_cauldrons.len() > 0 {
-        for (c_e, c) in cauldron_q.iter() {
-            let mut ingredient_list = tooltip_ingredient_q.get_mut(c.tooltip_e).unwrap();
+                            cmd.entity(c.tooltip_e.unwrap())
+                                .add_child(ingredient_e.clone());
 
-            for (_, ingredient) in cooking_cauldrons.iter().filter(|(cc_e, ..)| *cc_e == c_e) {
-                if let Some(tooltip_ingredient) =
-                    ingredient_list.ingredients.get_mut(&(*ingredient as u8))
-                {
-                    tooltip_ingredient.count += 1;
-                    let mut txt = txt_q.get_mut(tooltip_ingredient.text_e).unwrap();
-                    txt.sections[0].value = format!("{}x", tooltip_ingredient.count);
-                } else {
-                    let (ingridient_e, ingridient_txt_e) = spawn_tooltip_ingredient(
-                        *ingredient,
-                        1,
-                        ingredient_list.ingredients.len(),
-                        -4.5,
-                        &mut cmd,
-                        &sprites,
-                        &fonts,
-                    );
-
-                    cmd.entity(c.tooltip_e).add_child(ingridient_e.clone());
-
-                    ingredient_list.ingredients.insert(
-                        *ingredient as u8,
-                        TooltipIngredient {
-                            count: 1,
-                            entity: ingridient_e,
-                            text_e: ingridient_txt_e,
-                        },
-                    );
+                            ingredient_list.ingredients.insert(
+                                *ingredient as u8,
+                                TooltipIngredient {
+                                    count: 1,
+                                    entity: ingredient_e,
+                                    text_e: ingredient_txt_e,
+                                },
+                            );
+                        }
+                    }
                 }
             }
         }

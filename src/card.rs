@@ -1,7 +1,7 @@
 use crate::{
     assets::Sprites,
     board::BoardClear,
-    cauldron::{Cauldron, FIRE_BOOST_TIME},
+    cauldron::{Cauldron, TooltipIngridientList, FIRE_BOOST_TIME},
     drag::DragGroup,
     list::{place_items, shift_items},
     render::{NoRescale, ZIndex, WINDOW_SIZE},
@@ -134,7 +134,7 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
 
 fn test_card_spawn(mut cmd: Commands, sprites: Res<Sprites>) {
     for i in 0..4 {
-        // spawn_card(&mut cmd, &sprites, &BoardClear::Section(0));
+        // spawn_card(&mut cmd, &sprites, &BoardClear::Column(0));
         spawn_card(&mut cmd, &sprites, &BoardClear::Section(i));
     }
 }
@@ -146,6 +146,7 @@ fn drop_card(
     interaction_state: Res<InteractionState>,
     parent_q: Query<&Parent>,
     mut cauldron_q: Query<&mut Cauldron>,
+    tooltip_q: Query<&TooltipIngridientList>,
     mut card_evw: EventWriter<CardEffect>,
 ) {
     if mouse_input.just_released(MouseButton::Left) {
@@ -174,13 +175,27 @@ fn drop_card(
                     // there can't be a ready meal in the cauldron
                     if c.cooked.is_none() {
                         if let Ok((_, _, ingredient, ..)) = dragged_query.get_single() {
-                            c.ingredients.push(*ingredient);
-                            card_evw.send(CardEffect::Ingredient {
-                                cauldron_e: cauldron_e.get(),
-                                ingredient: *ingredient,
-                            });
+                            let mut can_use_ingredient = true;
 
-                            used = true;
+                            if let Some(tooltip_e) = c.tooltip_e {
+                                if let Ok(tooltip) = tooltip_q.get(tooltip_e) {
+                                    if tooltip.ingredients.len() >= 3
+                                        && !tooltip.ingredients.contains_key(&(*ingredient as u8))
+                                    {
+                                        can_use_ingredient = false;
+                                    }
+                                }
+                            }
+
+                            if can_use_ingredient {
+                                c.ingredients.push(*ingredient);
+                                card_evw.send(CardEffect::Ingredient {
+                                    cauldron_e: cauldron_e.get(),
+                                    ingredient: *ingredient,
+                                });
+
+                                used = true;
+                            }
                         }
                     }
                 }
