@@ -59,7 +59,6 @@ fn drag_piece(
                     .is_ok()
                 {
                     // todo: colour outline or smt.
-                    info!("can place!");
                 }
             }
         }

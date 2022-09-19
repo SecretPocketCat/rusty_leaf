@@ -173,7 +173,6 @@ fn drop_card(
                 if let Ok(mut c) = cauldron_q.get_mut(cauldron_e.get()) {
                     // there can't be a ready meal in the cauldron
                     if c.cooked.is_none() {
-                        info!("cook, plz!");
                         if let Ok((_, _, ingredient, ..)) = dragged_query.get_single() {
                             c.ingredients.push(*ingredient);
                             card_evw.send(CardEffect::Ingredient {

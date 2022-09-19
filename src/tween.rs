@@ -125,8 +125,6 @@ fn fade_hierarchy(
             Color::NONE
         };
 
-        info!("i'm fading oveer here: {}", set.0.len());
-
         for sprite in set.0.iter() {
             match sprite {
                 FadeChild::Sprite(e) => {

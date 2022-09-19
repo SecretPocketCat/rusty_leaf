@@ -212,7 +212,6 @@ fn cook(
 
             if c.cook_timer.just_finished() {
                 c.cooked = Some(mem::take(&mut c.ingredients));
-                info!("Soup's done!");
             } else if let Ok(mut p) = progress_q.get_mut(c.tooltip_e) {
                 p.value = c.cook_timer.percent();
             }

@@ -37,8 +37,8 @@ impl Plugin for OrderPlugin {
         let lvl = Level {
             name: "Test".into(),
             allowed_ingredients: vec![Ingredient::Pumpkin, Ingredient::Potato, Ingredient::Tomato],
-            ingredient_count_range: 1..4,
-            ingredient_type_range: 1..3,
+            ingredient_count_range: 8..12,
+            ingredient_type_range: 3..4,
             max_simultaneous_orders: 4,
             next_customer_delay_range_ms: 1000..1001,
             total_order_count: 4,
@@ -123,8 +123,6 @@ fn spawn_orders(
         lvl.next_customer_timer.tick(time.delta());
 
         if lvl.next_customer_timer.finished() {
-            info!("creating a new order");
-
             let mut rng = thread_rng();
 
             // setup next timer
@@ -139,18 +137,20 @@ fn spawn_orders(
             let ingredient_count = rng.gen_range(lvl.opts.ingredient_count_range.clone());
             let type_count = rng.gen_range(lvl.opts.ingredient_type_range.clone());
             let mut ingredient_types = Vec::new();
-            let mut available_ingredients = lvl.opts.allowed_ingredients.clone();
 
-            for _ in 0..type_count {
-                ingredient_types.push(
-                    available_ingredients
-                        .swap_remove(rng.gen_range(0..available_ingredients.len())),
-                );
+            {
+                let mut available_ingredients = lvl.opts.allowed_ingredients.clone();
+                for _ in 0..type_count {
+                    ingredient_types.push(
+                        available_ingredients
+                            .swap_remove(rng.gen_range(0..available_ingredients.len())),
+                    );
+                }
             }
 
             let mut ingredients = HashMap::new();
             for _ in 0..ingredient_count {
-                let i = available_ingredients[rng.gen_range(0..available_ingredients.len())];
+                let i = ingredient_types[rng.gen_range(0..ingredient_types.len())];
 
                 if let Some(count) = ingredients.get_mut(&i) {
                     *count += 1;
@@ -181,16 +181,7 @@ fn show_order_tooltip(
             .iter()
             .enumerate()
             .map(|(i, (ingredient, count))| {
-                spawn_tooltip_ingredient(
-                    *ingredient,
-                    *count,
-                    i + 1,
-                    -6.0,
-                    &mut cmd,
-                    &sprites,
-                    &fonts,
-                )
-                .0
+                spawn_tooltip_ingredient(*ingredient, *count, i, -6.0, &mut cmd, &sprites, &fonts).0
             })
             .collect();
 

@@ -132,8 +132,6 @@ fn clear_board(
     if queue.is_changed() {
         let mut cleared_indices: Vec<usize> = Vec::default();
         let mut allowed_card_spawn_count = MAX_CARDS.saturating_sub(card_q.iter().len());
-        info!("Can spawn {allowed_card_spawn_count} cards");
-
         while let Some(c) = queue.queue.pop_front() {
             if allowed_card_spawn_count > 0 {
                 spawn_card(&mut cmd, &sprites, &c);
