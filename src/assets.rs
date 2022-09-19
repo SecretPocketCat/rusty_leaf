@@ -30,8 +30,11 @@ pub struct Sprites {
     #[asset(path = "sprites/card.png")]
     pub card: Handle<Image>,
 
-    #[asset(path = "sprites/bg.png")]
+    #[asset(path = "sprites/bg_1.png")]
     pub bg: Handle<Image>,
+
+    #[asset(path = "sprites/bg_2.png")]
+    pub bg_shop: Handle<Image>,
 
     #[asset(path = "sprites/parchment.png")]
     pub parchment: Handle<Image>,
@@ -47,6 +50,14 @@ pub struct Sprites {
 
     #[asset(path = "sprites/progress_bar.png")]
     pub progress_bar: Handle<Image>,
+
+    #[asset(texture_atlas(tile_size_x = 28., tile_size_y = 24., columns = 6, rows = 1))]
+    #[asset(path = "sprites/ferris.png")]
+    pub ferris: Handle<TextureAtlas>,
+
+    #[asset(texture_atlas(tile_size_x = 24., tile_size_y = 24., columns = 4, rows = 8))]
+    #[asset(path = "sprites/characters.png")]
+    pub characters: Handle<TextureAtlas>,
 
     #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 16., columns = 6, rows = 1))]
     #[asset(path = "sprites/veggies_sheet.png")]

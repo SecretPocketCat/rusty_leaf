@@ -65,7 +65,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(AssetsPlugin)
             .add_plugin(RenderPlugin)
-            // .add_plugin(WorldInspectorPlugin::new())
+            .add_plugin(WorldInspectorPlugin::new())
             // .register_inspectable::<Card>()
             // .register_inspectable::<Ingredient>()
             // .register_inspectable::<TileCoords>()

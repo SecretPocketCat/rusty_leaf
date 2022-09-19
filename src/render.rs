@@ -24,11 +24,12 @@ pub struct NoRescale;
 #[derive(Component, Clone, Copy)]
 pub enum ZIndex {
     Bg = 0,
+    Shopkeep,
+    BgShop,
     Character,
     FirePit,
     Cauldron,
     Fire,
-    Fg,
     Grid,
     Piece,
     Card,
