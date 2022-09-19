@@ -27,6 +27,7 @@ impl Plugin for CauldronPlugin {
                     .run_not_in_state(GameState::Loading)
                     .with_system(show_progress_tooltip)
                     .with_system(add_ingredient_to_tooltip)
+                    .with_system(boost_fire)
                     .into(),
             )
             .add_system(cook)
@@ -43,7 +44,6 @@ const TOOLTIP_TWEEN_OFFSET: f32 = 28.;
 #[derive(Component)]
 pub struct Cauldron {
     pub ingredients: Vec<Ingredient>,
-    pub cooked: Option<Vec<Ingredient>>,
     pub cook_timer: Timer,
     pub fire_boost: Timer,
     pub fire_e: Entity,
@@ -153,7 +153,6 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             ingredients: Vec::with_capacity(10),
             cook_timer: Timer::new(Duration::from_secs_f32(COOK_TIME), true),
             fire_boost: Timer::default(),
-            cooked: None,
             fire_e: fire_e.clone(),
             tooltip_e: None,
         })
@@ -188,13 +187,14 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
 
 fn cook(
     mut cmd: Commands,
-    mut cauldron_q: Query<&mut Cauldron>,
+    mut cauldron_q: Query<(Entity, &mut Cauldron)>,
     mut progress_q: Query<&mut TooltipProgress>,
     order_q: Query<(Entity, &Order)>,
     time: Res<Time>,
     mut order_evw: EventWriter<OrderEv>,
+    mut card_evw: EventWriter<CardEffect>,
 ) {
-    for mut c in cauldron_q.iter_mut() {
+    for (c_e, mut c) in cauldron_q.iter_mut() {
         c.fire_boost.tick(time.delta());
 
         // there's smt. to cook
@@ -207,17 +207,20 @@ fn cook(
             c.cook_timer.tick(time.delta().mul_f32(mult));
 
             if c.cook_timer.just_finished() {
-                c.cooked = Some(mem::take(&mut c.ingredients));
-            } else if let Some(tooltip_e) = c.tooltip_e {
-                if let Ok(mut p) = progress_q.get_mut(tooltip_e) {
-                    p.value = c.cook_timer.percent();
+                if let Some((order_e, _)) = order_q
+                    .iter()
+                    .find(|(order_e, o)| o.is_equal(&c.ingredients))
+                {
+                    // complete order
+                    order_evw.send(OrderEv::Completed(order_e));
+                } else {
+                    // burn the invalid soup
+                    card_evw.send(CardEffect::FireBoost {
+                        cauldron_e: c_e,
+                        boost_dur_multiplier: Some(2.),
+                    });
                 }
-            }
-        }
 
-        if let Some(cooked) = &c.cooked {
-            if let Some((order_e, _)) = order_q.iter().find(|(order_e, o)| o.is_equal(cooked)) {
-                c.cooked = None;
                 let mut tooltip_cmd_e = cmd.entity(c.tooltip_e.unwrap());
                 tooltip_cmd_e.insert(FadeHierarchy::new(false, 350, Color::NONE));
                 tooltip_cmd_e.insert(get_relative_move_by_anim(
@@ -225,8 +228,12 @@ fn cook(
                     400,
                     Some(TweenDoneAction::DespawnRecursive),
                 ));
-
-                order_evw.send(OrderEv::Completed(order_e));
+                c.tooltip_e = None;
+                c.ingredients.clear();
+            } else if let Some(tooltip_e) = c.tooltip_e {
+                if let Ok(mut p) = progress_q.get_mut(tooltip_e) {
+                    p.value = c.cook_timer.percent();
+                }
             }
         }
     }
@@ -353,6 +360,27 @@ fn add_ingredient_to_tooltip(
     }
 }
 
+fn boost_fire(mut cauldron_q: Query<&mut Cauldron>, mut card_evr: EventReader<CardEffect>) {
+    for ev in card_evr.iter() {
+        if let CardEffect::FireBoost {
+            cauldron_e,
+            boost_dur_multiplier,
+        } = ev
+        {
+            if let Ok(mut c) = cauldron_q.get_mut(*cauldron_e) {
+                let dur = c
+                    .fire_boost
+                    .duration()
+                    .saturating_add(Duration::from_secs_f32(
+                        FIRE_BOOST_TIME * boost_dur_multiplier.unwrap_or(1.),
+                    ));
+                c.fire_boost.set_duration(dur);
+                c.fire_boost.reset();
+            }
+        }
+    }
+}
+
 fn set_fire_intensity(
     cauldron_q: Query<(Entity, &Cauldron)>,
     mut fire_anim_q: Query<&mut SheetAnimation>,
@@ -361,7 +389,7 @@ fn set_fire_intensity(
     let boosted_cauldrons: Vec<_> = card_evr
         .iter()
         .filter_map(|card_effect| {
-            if let CardEffect::FireBoost(cauldron_e) = card_effect {
+            if let CardEffect::FireBoost { cauldron_e, .. } = card_effect {
                 Some(*cauldron_e)
             } else {
                 None
