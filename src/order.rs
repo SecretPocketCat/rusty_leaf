@@ -1,20 +1,14 @@
 use crate::{
     assets::{Fonts, Sprites},
-    card::{Ingredient},
-    cauldron::{spawn_tooltip_ingredient},
+    card::Ingredient,
+    cauldron::spawn_tooltip_ingredient,
     list::{place_items, shift_items},
     progress::TooltipProgress,
     render::{ZIndex, OUTLINE_COL},
-    tween::{
-        get_relative_move_by_anim,
-        FadeHierarchyBundle,
-    },
+    tween::{get_relative_move_by_anim, FadeHierarchyBundle},
     GameState,
 };
-use bevy::{
-    prelude::*,
-    utils::{HashMap},
-};
+use bevy::{prelude::*, utils::HashMap};
 
 use iyes_loopless::prelude::*;
 use rand::{thread_rng, Rng};
@@ -115,9 +109,11 @@ pub struct Order {
 impl Order {
     // todo: test
     pub fn is_equal(&self, ingredients: &[Ingredient]) -> bool {
-        self.ingredients
-            .iter()
-            .all(|(i, count)| ingredients.iter().filter(|i2| i == *i2).count() as u8 == *count)
+        self.ingredients.values().sum::<u8>() == ingredients.len() as u8
+            && self
+                .ingredients
+                .iter()
+                .all(|(i, count)| ingredients.iter().filter(|i2| i == *i2).count() as u8 == *count)
     }
 }
 
@@ -139,7 +135,6 @@ fn spawn_orders(
         }
     } else if order_count >= lvl.opts.max_simultaneous_orders as usize {
         // bail out if there're too many orders
-        
     } else if lvl.order_count < (lvl.opts.total_order_count as usize) {
         lvl.next_customer_timer.tick(time.delta());
 
@@ -275,5 +270,32 @@ fn on_order_completed(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case(vec![(Ingredient::Tomato, 1)], vec![Ingredient::Tomato] => true)]
+    #[test_case(vec![(Ingredient::Tomato, 2)], vec![Ingredient::Tomato, Ingredient::Tomato] => true)]
+    #[test_case(vec![(Ingredient::Tomato, 2), (Ingredient::Potato, 1)], vec![Ingredient::Tomato, Ingredient::Potato, Ingredient::Tomato] => true)]
+    #[test_case(vec![(Ingredient::Tomato, 2)], vec![Ingredient::Tomato] => false)]
+    #[test_case(vec![(Ingredient::Tomato, 1)], vec![Ingredient::Tomato, Ingredient::Tomato] => false)]
+    #[test_case(vec![(Ingredient::Tomato, 2), (Ingredient::Potato, 1)], vec![Ingredient::Tomato, Ingredient::Potato] => false)]
+    #[test_case(vec![(Ingredient::Tomato, 1)], vec![Ingredient::Tomato, Ingredient::Potato] => false)]
+    fn is_equal(
+        order_ingredients: Vec<(Ingredient, u8)>,
+        flat_ingredient_list: Vec<Ingredient>,
+    ) -> bool {
+        let order = Order {
+            ingredients: order_ingredients.into_iter().collect(),
+            delay: None,
+            timer: Timer::default(),
+            tooltip_e: None,
+        };
+
+        order.is_equal(&flat_ingredient_list)
     }
 }
