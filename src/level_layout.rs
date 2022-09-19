@@ -11,9 +11,9 @@ use crate::{
     GameState,
 };
 
-pub struct LevelPlugin;
+pub struct LevelLayoutPlugin;
 
-impl Plugin for LevelPlugin {
+impl Plugin for LevelLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.add_exit_system(GameState::Loading, setup_app)
             .add_enter_system(GameState::Playing, setup);

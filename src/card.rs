@@ -3,6 +3,7 @@ use crate::{
     board::BoardClear,
     cauldron::{Cauldron, FIRE_BOOST_TIME},
     drag::DragGroup,
+    list::{place_items, shift_items},
     render::{NoRescale, ZIndex, WINDOW_SIZE},
     tween::{get_move_anim, get_relative_move_anim, FadeHierarchyBundle, TweenDoneAction},
     GameState,
@@ -24,8 +25,8 @@ impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<CardEffect>()
         .add_system_to_stage(CoreStage::Last, drop_card) // run after update to get precise dragged.origin
-        .add_system(place_card)
-            .add_system_to_stage(CoreStage::PostUpdate,shift_cards) // works with removedComponents, so can't run during Last
+        .add_system(place_items::<Card, CARD_INDEX_X_OFFSET, CARD_OFFSCREEN_OFFSET, true>)
+            .add_system_to_stage(CoreStage::PostUpdate,shift_items::<Card, CARD_INDEX_X_OFFSET, true>) // works with removedComponents, so can't run during Last
             ;
 
         if cfg!(debug_assertions) {
@@ -36,16 +37,13 @@ impl Plugin for CardPlugin {
 
 pub const MAX_CARDS: usize = 4;
 pub const CARD_SIZE: Vec2 = Vec2::new(32., 48.);
-const CARD_INDEX_X_OFFSET: f32 = -145.;
-const CARD_TWEEN_OFFSET: f32 = 250.;
+const CARD_INDEX_X_OFFSET: i32 = -145;
+const CARD_OFFSCREEN_OFFSET: i32 = 250;
 
 #[derive(Component, Inspectable)]
 pub struct Card {}
 
-#[derive(Component, Inspectable)]
-pub struct CardInventoryIndex(usize);
-
-#[derive(Component, Debug, Inspectable, Clone, Copy)]
+#[derive(Component, Debug, Inspectable, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Ingredient {
     Pumpkin = 1,
     Potato,
@@ -106,7 +104,7 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
         texture: sprites.card.clone(),
         transform: Transform::from_translation(Vec3::new(
             WINDOW_SIZE.x / 2. - CARD_SIZE.x - 60.,
-            WINDOW_SIZE.y / 2. - CARD_SIZE.y - 75. + CARD_TWEEN_OFFSET,
+            WINDOW_SIZE.y / 2. - CARD_SIZE.y - 75. + CARD_OFFSCREEN_OFFSET as f32,
             2.,
         )),
         ..default()
@@ -138,33 +136,6 @@ fn test_card_spawn(mut cmd: Commands, sprites: Res<Sprites>) {
     for i in 0..4 {
         // spawn_card(&mut cmd, &sprites, &BoardClear::Section(0));
         spawn_card(&mut cmd, &sprites, &BoardClear::Section(i));
-    }
-}
-
-fn place_card(
-    mut cmd: Commands,
-    mut new_card_q: Query<(Entity, &mut Sprite, &mut Transform), Added<Card>>,
-    card_q: Query<(), With<Card>>,
-) {
-    let mut card_i = card_q.iter().len() - new_card_q.iter().count();
-
-    for (c_e, mut c_sprite, mut card_t) in new_card_q.iter_mut() {
-        c_sprite.color = Color::WHITE;
-        let target_pos = Vec3::new(
-            card_t.translation.x + CARD_INDEX_X_OFFSET * card_i as f32,
-            card_t.translation.y - CARD_TWEEN_OFFSET,
-            card_t.translation.z,
-        );
-
-        cmd.entity(c_e)
-            .insert(CardInventoryIndex(card_i))
-            .insert(get_move_anim(
-                target_pos + Vec3::Y * 250.,
-                target_pos,
-                450,
-                None,
-            ));
-        card_i += 1;
     }
 }
 
@@ -236,41 +207,6 @@ fn drop_card(
                     300,
                     None,
                 ));
-            }
-        }
-    }
-}
-
-fn shift_cards(
-    mut cmd: Commands,
-    mut card_inventory_q: Query<(&mut CardInventoryIndex, &mut Transform, Entity)>,
-    removed_cards: RemovedComponents<Card>,
-) {
-    if removed_cards.iter().len() > 0 {
-        let used_indices: Vec<usize> = card_inventory_q.iter().map(|(i, ..)| i.0).collect();
-        let card_count = card_inventory_q.iter().len();
-        let lowest_free_index = (0..card_count)
-            .into_iter()
-            .filter(|i| !used_indices.contains(i))
-            .min();
-
-        if let Some(mut i) = lowest_free_index {
-            let mut cards = card_inventory_q.iter_mut().collect::<Vec<_>>();
-            cards.sort_by(|(x, ..), (y, ..)| x.0.cmp(&y.0));
-            for (ref mut c_index, ref mut c_t, ref c_e) in cards.iter_mut() {
-                if c_index.0 > i {
-                    cmd.entity(*c_e).insert(get_relative_move_anim(
-                        Vec3::new(
-                            c_t.translation.x - (c_index.0 - i) as f32 * CARD_INDEX_X_OFFSET,
-                            c_t.translation.y,
-                            c_t.translation.z,
-                        ),
-                        300,
-                        None,
-                    ));
-                    c_index.0 = i;
-                    i += 1;
-                }
             }
         }
     }

@@ -14,9 +14,12 @@ mod board;
 mod card;
 mod cauldron;
 mod coords;
+mod customer;
 mod drag;
-mod level;
+mod level_layout;
+mod list;
 mod mouse;
+mod order;
 mod piece;
 mod progress;
 mod render;
@@ -38,8 +41,9 @@ use cauldron::CauldronPlugin;
 use coords::CoordsPlugin;
 use drag::DragPlugin as GameDragPlugin;
 use iyes_loopless::prelude::*;
-use level::LevelPlugin;
+use level_layout::LevelLayoutPlugin;
 use mouse::MousePlugin;
+use order::OrderPlugin;
 use progress::ProgressPlugin;
 use render::RenderPlugin;
 
@@ -77,12 +81,13 @@ impl Plugin for GamePlugin {
             .add_plugin(AnimationPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(TilePlacementPlugin)
-            .add_plugin(LevelPlugin)
+            .add_plugin(LevelLayoutPlugin)
             .add_plugin(CardPlugin)
             .add_plugin(CauldronPlugin)
             .add_plugin(ProgressPlugin)
             .add_plugin(CoordsPlugin)
             .add_plugin(MousePlugin)
+            .add_plugin(OrderPlugin)
             .add_plugin(TweeningPlugin)
             .add_plugin(GameTweenPlugin);
     }

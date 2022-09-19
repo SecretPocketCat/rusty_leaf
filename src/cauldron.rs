@@ -55,6 +55,7 @@ pub fn spawn_tooltip_ingredient(
     ingredient: Ingredient,
     count: u8,
     current_list_len: usize,
+    y_offset: f32,
     cmd: &mut Commands,
     sprites: &Sprites,
     fonts: &Fonts,
@@ -99,7 +100,7 @@ pub fn spawn_tooltip_ingredient(
                 index: ingredient.get_sprite_index(),
                 ..default()
             },
-            transform: Transform::from_translation(Vec2::new(x, -4.5).extend(0.01)),
+            transform: Transform::from_translation(Vec2::new(x, y_offset).extend(0.01)),
             ..default()
         })
         .insert(NoRescale)
@@ -287,6 +288,7 @@ fn add_ingredient_to_tooltip(
                         *ingredient,
                         1,
                         ingredient_list.ingredients.len(),
+                        -4.5,
                         &mut cmd,
                         &sprites,
                         &fonts,
