@@ -3,6 +3,7 @@ use crate::{
     assets::{Fonts, Sprites},
     card::{CardEffect, Ingredient},
     drag::DragGroup,
+    order::{Order, OrderEv},
     progress::TooltipProgress,
     render::{NoRescale, ZIndex, OUTLINE_COL, SCALE_MULT},
     tween::{
@@ -194,9 +195,12 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
 }
 
 fn cook(
+    mut cmd: Commands,
     mut cauldron_q: Query<&mut Cauldron>,
     mut progress_q: Query<&mut TooltipProgress>,
+    order_q: Query<(Entity, &Order)>,
     time: Res<Time>,
+    mut order_evw: EventWriter<OrderEv>,
 ) {
     for mut c in cauldron_q.iter_mut() {
         c.fire_boost.tick(time.delta());
@@ -214,6 +218,14 @@ fn cook(
                 c.cooked = Some(mem::take(&mut c.ingredients));
             } else if let Ok(mut p) = progress_q.get_mut(c.tooltip_e) {
                 p.value = c.cook_timer.percent();
+            }
+        }
+
+        if let Some(cooked) = &c.cooked {
+            if let Some((order_e, _)) = order_q.iter().find(|(order_e, o)| o.is_equal(cooked)) {
+                order_evw.send(OrderEv::Completed(order_e));
+
+                // todo: cleanup cauldron tooltip
             }
         }
     }

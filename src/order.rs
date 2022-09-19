@@ -8,7 +8,8 @@ use crate::{
     progress::TooltipProgress,
     render::{NoRescale, ZIndex, OUTLINE_COL, SCALE_MULT},
     tween::{
-        get_relative_fade_text_anim, get_relative_move_anim, FadeHierarchyBundle, FadeHierarchySet,
+        get_relative_fade_text_anim, get_relative_move_anim, get_relative_move_by_anim,
+        FadeHierarchyBundle, FadeHierarchySet,
     },
     GameState,
 };
@@ -45,13 +46,18 @@ impl Plugin for OrderPlugin {
         };
 
         app.insert_resource(CurrentLevel::new(lvl))
-            .add_system(
-                spawn_orders
+            .add_event::<OrderEv>()
+            .add_system_set(
+                ConditionSet::new()
                     .run_in_state(GameState::Playing)
-                    .run_if_resource_exists::<CurrentLevel>(),
+                    .with_system(spawn_orders.run_if_resource_exists::<CurrentLevel>())
+                    .with_system(update_order_progress)
+                    .with_system(show_order_tooltip)
+                    .with_system(on_order_completed)
+                    .with_system(on_order_completed)
+                    .with_system(on_order_completed)
+                    .into(),
             )
-            .add_system(update_order_progress.run_in_state(GameState::Playing))
-            .add_system(show_order_tooltip.run_in_state(GameState::Playing))
             .add_system(place_items::<OrderTooltip, ORDER_TOOLTIP_OFFSET, 0, false>)
             .add_system_to_stage(
                 CoreStage::PostUpdate,
@@ -64,6 +70,10 @@ impl Plugin for OrderPlugin {
 pub const ORDER_TIME_S: f32 = 60.;
 pub const ORDER_DELAY_S: f32 = 0.5;
 const ORDER_TOOLTIP_OFFSET: i32 = -122;
+
+pub enum OrderEv {
+    Completed(Entity),
+}
 
 #[derive(Clone)]
 pub struct Level {
@@ -102,6 +112,14 @@ pub struct Order {
     timer: Timer,
     delay: Option<Timer>,
     tooltip_e: Option<Entity>,
+}
+
+impl Order {
+    pub fn is_equal(&self, ingredients: &[Ingredient]) -> bool {
+        self.ingredients
+            .iter()
+            .all(|(i, count)| ingredients.iter().filter(|i2| i == *i2).count() as u8 == *count)
+    }
 }
 
 #[derive(Component)]
@@ -179,9 +197,9 @@ fn show_order_tooltip(
     mut cmd: Commands,
     sprites: Res<Sprites>,
     fonts: Res<Fonts>,
-    mut order_q: Query<&mut Order, Added<Order>>,
+    mut order_q: Query<(Entity, &mut Order), Added<Order>>,
 ) {
-    for mut o in order_q.iter_mut() {
+    for (o_e, mut o) in order_q.iter_mut() {
         let tooltip_ingredients: Vec<_> = o
             .ingredients
             .iter()
@@ -207,6 +225,7 @@ fn show_order_tooltip(
             .insert(OrderTooltip)
             .insert(Name::new("order_tooltip"))
             .push_children(&tooltip_ingredients)
+            .add_child(o_e)
             .id();
 
         o.tooltip_e = Some(tooltip_e);
@@ -235,6 +254,27 @@ fn update_order_progress(
                     if let Ok(mut progress) = progress_q.get_mut(tooltip_e) {
                         progress.value = o.timer.percent();
                     }
+                }
+            }
+        }
+    }
+}
+
+fn on_order_completed(
+    mut cmd: Commands,
+    mut order_evr: EventReader<OrderEv>,
+    order_q: Query<(Entity, &Parent)>,
+) {
+    for ev in order_evr.iter() {
+        match ev {
+            OrderEv::Completed(o_e) => {
+                if let Ok((o_e, o_p)) = order_q.get(*o_e) {
+                    cmd.entity(o_e).despawn_recursive();
+                    cmd.entity(o_p.get()).insert(get_relative_move_by_anim(
+                        Vec3::X * 250.,
+                        300,
+                        Some(crate::tween::TweenDoneAction::DespawnRecursive),
+                    ));
                 }
             }
         }
