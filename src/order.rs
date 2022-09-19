@@ -37,8 +37,8 @@ impl Plugin for OrderPlugin {
         let lvl = Level {
             name: "Test".into(),
             allowed_ingredients: vec![Ingredient::Pumpkin, Ingredient::Potato, Ingredient::Tomato],
-            ingredient_count_range: 8..12,
-            ingredient_type_range: 3..4,
+            ingredient_count_range: 1..4,
+            ingredient_type_range: 1..3,
             max_simultaneous_orders: 4,
             next_customer_delay_range_ms: 1000..1001,
             total_order_count: 4,
@@ -50,6 +50,7 @@ impl Plugin for OrderPlugin {
                     .run_in_state(GameState::Playing)
                     .run_if_resource_exists::<CurrentLevel>(),
             )
+            .add_system(update_order_progress.run_in_state(GameState::Playing))
             .add_system(show_order_tooltip.run_in_state(GameState::Playing))
             .add_system(place_items::<OrderTooltip, ORDER_TOOLTIP_OFFSET, 0, false>)
             .add_system_to_stage(
@@ -61,6 +62,7 @@ impl Plugin for OrderPlugin {
 }
 
 pub const ORDER_TIME_S: f32 = 60.;
+pub const ORDER_DELAY_S: f32 = 0.5;
 const ORDER_TOOLTIP_OFFSET: i32 = -122;
 
 #[derive(Clone)]
@@ -98,6 +100,8 @@ impl CurrentLevel {
 pub struct Order {
     ingredients: HashMap<Ingredient, u8>,
     timer: Timer,
+    delay: Option<Timer>,
+    tooltip_e: Option<Entity>,
 }
 
 #[derive(Component)]
@@ -163,6 +167,8 @@ fn spawn_orders(
                 .insert(Order {
                     ingredients,
                     timer: Timer::from_seconds(ORDER_TIME_S, false),
+                    delay: Some(Timer::from_seconds(ORDER_DELAY_S, false)),
+                    tooltip_e: None,
                 })
                 .insert(Name::new("order"));
         }
@@ -173,9 +179,9 @@ fn show_order_tooltip(
     mut cmd: Commands,
     sprites: Res<Sprites>,
     fonts: Res<Fonts>,
-    order_q: Query<&Order, Added<Order>>,
+    mut order_q: Query<&mut Order, Added<Order>>,
 ) {
-    for o in order_q.iter() {
+    for mut o in order_q.iter_mut() {
         let tooltip_ingredients: Vec<_> = o
             .ingredients
             .iter()
@@ -185,20 +191,52 @@ fn show_order_tooltip(
             })
             .collect();
 
-        cmd.spawn_bundle(SpriteBundle {
-            texture: sprites.order_tooltip.clone(),
-            sprite: Sprite {
-                color: Color::NONE,
+        let tooltip_e = cmd
+            .spawn_bundle(SpriteBundle {
+                texture: sprites.order_tooltip.clone(),
+                sprite: Sprite {
+                    color: Color::NONE,
+                    ..default()
+                },
+                transform: Transform::from_xyz(510., 70., 0.),
                 ..default()
-            },
-            transform: Transform::from_xyz(510., 70., 0.),
-            ..default()
-        })
-        .insert(ZIndex::OrderTooltip)
-        .insert(TooltipProgress::new())
-        .insert_bundle(FadeHierarchyBundle::new(true, 450, OUTLINE_COL))
-        .insert(OrderTooltip)
-        .insert(Name::new("order_tooltip"))
-        .push_children(&tooltip_ingredients);
+            })
+            .insert(ZIndex::OrderTooltip)
+            .insert(TooltipProgress::new(-1.5))
+            .insert_bundle(FadeHierarchyBundle::new(true, 450, OUTLINE_COL))
+            .insert(OrderTooltip)
+            .insert(Name::new("order_tooltip"))
+            .push_children(&tooltip_ingredients)
+            .id();
+
+        o.tooltip_e = Some(tooltip_e);
+    }
+}
+
+fn update_order_progress(
+    mut order_q: Query<&mut Order>,
+    mut progress_q: Query<&mut TooltipProgress>,
+    time: Res<Time>,
+) {
+    for mut o in order_q.iter_mut().filter(|o| o.tooltip_e.is_some()) {
+        if let Some(tooltip_e) = o.tooltip_e {
+            // initial delay before the actual timed progress starts
+            if let Some(delay) = &mut o.delay {
+                delay.tick(time.delta());
+                if delay.just_finished() {
+                    o.delay = None;
+                }
+            } else {
+                o.timer.tick(time.delta());
+                if o.timer.just_finished() {
+                    // todo: game over
+                    info!("Game over!");
+                } else {
+                    if let Ok(mut progress) = progress_q.get_mut(tooltip_e) {
+                        progress.value = o.timer.percent();
+                    }
+                }
+            }
+        }
     }
 }

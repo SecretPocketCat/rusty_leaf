@@ -24,11 +24,15 @@ impl Plugin for ProgressPlugin {
 pub struct TooltipProgress {
     pub value: f32,
     progress_sprite_e: Option<Entity>,
+    offset: f32,
 }
 
 impl TooltipProgress {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(offset: f32) -> Self {
+        Self {
+            offset,
+            ..default()
+        }
     }
 }
 
@@ -41,11 +45,8 @@ fn on_progress_added(
         let bar_e = cmd
             .spawn_bundle(SpriteBundle {
                 texture: sprites.progress_bar.clone(),
-                transform: Transform::from_xyz(-24.6, 14., 0.1).with_scale(Vec3::new(
-                    progress.value,
-                    1.,
-                    1.,
-                )),
+                transform: Transform::from_xyz(-24.6, 14. + progress.offset, 0.1)
+                    .with_scale(Vec3::new(progress.value, 1., 1.)),
                 sprite: Sprite {
                     anchor: bevy::sprite::Anchor::CenterLeft,
                     ..default()

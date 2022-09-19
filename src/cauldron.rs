@@ -144,7 +144,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             .insert(NoRescale)
             .insert(ZIndex::Tooltip)
             .insert(Name::new("Tooltip"))
-            .insert(TooltipProgress::new())
+            .insert(TooltipProgress::new(0.))
             .insert(TooltipIngridientList::default())
             .id();
 
