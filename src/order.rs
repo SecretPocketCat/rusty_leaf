@@ -107,7 +107,6 @@ pub struct Order {
 }
 
 impl Order {
-    // todo: test
     pub fn is_equal(&self, ingredients: &[Ingredient]) -> bool {
         self.ingredients.values().sum::<u8>() == ingredients.len() as u8
             && self

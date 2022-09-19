@@ -32,11 +32,11 @@ use assets::AssetsPlugin;
 use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::prelude::*;
-use bevy_inspector_egui::{WorldInspectorPlugin};
+use bevy_inspector_egui::WorldInspectorPlugin;
 use bevy_interact_2d::{drag::DragPlugin, InteractionPlugin};
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use bevy_tweening::TweeningPlugin;
-use card::{CardPlugin};
+use card::CardPlugin;
 use cauldron::CauldronPlugin;
 use coords::CoordsPlugin;
 use drag::DragPlugin as GameDragPlugin;
@@ -69,7 +69,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(AssetsPlugin)
             .add_plugin(RenderPlugin)
-            .add_plugin(WorldInspectorPlugin::new())
+            // .add_plugin(WorldInspectorPlugin::new())
             // .register_inspectable::<Card>()
             // .register_inspectable::<Ingredient>()
             // .register_inspectable::<TileCoords>()
