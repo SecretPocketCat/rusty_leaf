@@ -25,6 +25,7 @@ mod pause;
 mod piece;
 mod progress;
 mod render;
+mod save;
 mod tile_placement;
 mod tools;
 mod tween;
@@ -43,7 +44,6 @@ use card::CardPlugin;
 use cauldron::CauldronPlugin;
 use coords::CoordsPlugin;
 use drag::DragPlugin as GameDragPlugin;
-
 use level::LevelPlugin;
 use mouse::MousePlugin;
 use order::OrderPlugin;
@@ -65,6 +65,7 @@ enum GameState {
 }
 
 pub use render::WINDOW_SIZE;
+use save::SavePlugin;
 use tween::GameTweenPlugin;
 
 pub struct GamePlugin;
@@ -93,6 +94,7 @@ impl Plugin for GamePlugin {
             .add_plugin(MousePlugin)
             .add_plugin(OrderPlugin)
             .add_plugin(TweeningPlugin)
-            .add_plugin(GameTweenPlugin);
+            .add_plugin(GameTweenPlugin)
+            .add_plugin(SavePlugin);
     }
 }

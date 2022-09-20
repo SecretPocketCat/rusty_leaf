@@ -215,7 +215,6 @@ impl Plugin for LevelPlugin {
 
         app.add_event::<LevelEv>()
             // todo: restore from somewhere
-            .insert_resource(CurrentLevel::new(0, false))
             .insert_resource(Levels(levels))
             .add_exit_system(GameState::Loading, setup_app)
             .add_enter_system(GameState::Playing, on_level_in)
@@ -275,7 +274,7 @@ pub struct CurrentLevel {
 }
 
 impl CurrentLevel {
-    fn new(level_index: usize, retry: bool) -> Self {
+    pub fn new(level_index: usize, retry: bool) -> Self {
         Self {
             level_index,
             start_timer: Some(Timer::from_seconds(2.5, false)),
