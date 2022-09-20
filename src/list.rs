@@ -18,13 +18,12 @@ pub fn place_items<
     const IS_HORIZONTAL: bool,
 >(
     mut cmd: Commands,
-    mut new_item_q: Query<(Entity, &mut Sprite, &Transform), Added<T>>,
+    mut new_item_q: Query<(Entity, &mut Sprite, &mut Transform), Added<T>>,
     item_q: Query<(), With<T>>,
 ) {
     let mut item_i = item_q.iter().len() - new_item_q.iter().count();
 
-    for (c_e, mut c_sprite, item_t) in new_item_q.iter_mut() {
-        c_sprite.color = Color::WHITE;
+    for (c_e, mut c_sprite, mut item_t) in new_item_q.iter_mut() {
         let target_pos = get_item_target_position(
             item_t.translation,
             item_i,
@@ -32,15 +31,14 @@ pub fn place_items<
             Some(OFFSCREEN_OFFSET),
             IS_HORIZONTAL,
         );
+        let start_pos = target_pos + if IS_HORIZONTAL { Vec3::Y } else { Vec3::X } * 250.;
+
+        c_sprite.color = Color::WHITE;
+        item_t.translation = start_pos;
 
         cmd.entity(c_e)
             .insert(ListIndex::<T>::new(item_i))
-            .insert(get_move_anim(
-                target_pos + if IS_HORIZONTAL { Vec3::Y } else { Vec3::X } * 250.,
-                target_pos,
-                450,
-                None,
-            ));
+            .insert(get_move_anim(start_pos, target_pos, 450, None));
         item_i += 1;
     }
 }
