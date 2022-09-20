@@ -3,20 +3,20 @@ use crate::{
     assets::{Fonts, Sprites},
     card::{CardEffect, Ingredient},
     drag::DragGroup,
+    level::LevelEv,
     order::{Order, OrderEv},
     progress::TooltipProgress,
     render::{NoRescale, ZIndex, OUTLINE_COL, SCALE_MULT},
     tween::{
-        get_relative_fade_spritesheet_anim,
-        get_relative_fade_text_anim, get_relative_move_anim, get_relative_move_by_anim,
-        FadeHierarchy, FadeHierarchyBundle, TweenDoneAction,
+        get_relative_fade_spritesheet_anim, get_relative_fade_text_anim, get_relative_move_anim,
+        get_relative_move_by_anim, FadeHierarchy, FadeHierarchyBundle, TweenDoneAction,
     },
     GameState,
 };
 use bevy::{prelude::*, utils::HashMap};
 use bevy_interact_2d::Interactable;
 use iyes_loopless::prelude::*;
-use std::{time::Duration};
+use std::time::Duration;
 
 pub struct CauldronPlugin;
 impl Plugin for CauldronPlugin {
@@ -341,8 +341,7 @@ fn add_ingredient_to_tooltip(
                                 &fonts,
                             );
 
-                            cmd.entity(c.tooltip_e.unwrap())
-                                .add_child(ingredient_e);
+                            cmd.entity(c.tooltip_e.unwrap()).add_child(ingredient_e);
 
                             ingredient_list.ingredients.insert(
                                 *ingredient as u8,

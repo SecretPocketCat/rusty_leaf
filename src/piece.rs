@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_interact_2d::{drag::Draggable, Interactable};
 use bevy_prototype_lyon::prelude::*;
+use bevy_tweening::Animator;
 
 use std::ops::{Div, Sub};
 
@@ -11,6 +12,7 @@ use crate::{
     drag::{DragGroup, Mover},
     render::OUTLINE_COL,
     tile_placement::TILE_SIZE,
+    tween::{delay_tween, get_relative_move_tween},
 };
 
 #[derive(Component)]
@@ -112,7 +114,6 @@ pub fn spawn_piece(
                         ..default()
                     },
                     DrawMode::Outlined {
-                        // fed171
                         outline_mode: StrokeMode::new(OUTLINE_COL, 4.),
                         fill_mode: FillMode::color(Color::rgb_u8(254, 209, 113)),
                     },
@@ -121,7 +122,7 @@ pub fn spawn_piece(
                 ))
                 // .insert(Animator::new(delay_tween(
                 //     get_relative_move_tween(pos, 450, None),
-                //     tween_delay,
+                //     300,
                 // )))
                 .insert(FieldCoords(UVec2::new(x as u32, y as u32)));
             }

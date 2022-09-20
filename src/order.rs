@@ -2,6 +2,7 @@ use crate::{
     assets::{Fonts, Sprites},
     card::Ingredient,
     cauldron::spawn_tooltip_ingredient,
+    level::{CurrentLevel, LevelEv, Levels},
     list::{place_items, shift_items},
     progress::TooltipProgress,
     render::{ZIndex, OUTLINE_COL},
@@ -17,200 +18,9 @@ use std::{ops::Range, time::Duration};
 pub struct OrderPlugin;
 impl Plugin for OrderPlugin {
     fn build(&self, app: &mut App) {
-        // titles
-        // Soup 101
-        // Starter
-        // Smells like Halloween
-        // Hot potato
-        // Turning up the heat
-        // A Recipe for Disaster
-        // Souped up
-
-        // let lvl = Level {
-        //     name: "Test".into(),
-        //     allowed_ingredients: vec![Ingredient::Pumpkin, Ingredient::Potato, Ingredient::Tomato],
-        //     ingredient_count_range: 1..4,
-        //     ingredient_type_range: 1..3,
-        //     max_simultaneous_orders: 2,
-        //     next_customer_delay_range_ms: 10000..15000,
-        //     total_order_count: 4,
-        // };
-
-        let levels = vec![
-            Level {
-                name: "Soup 101".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                ],
-                required_ingredients: Vec::new(),
-                ingredient_count_range: 1..2,
-                ingredient_type_range: 1..2,
-                max_simultaneous_orders: 2,
-                next_customer_delay_range_ms: 10000..15000,
-                total_order_count: 5,
-                special_order: None,
-            },
-            Level {
-                name: "Starter".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                ],
-                required_ingredients: Vec::new(),
-                ingredient_count_range: 1..3,
-                ingredient_type_range: 1..3,
-                max_simultaneous_orders: 2,
-                next_customer_delay_range_ms: 10000..15000,
-                total_order_count: 6,
-                special_order: None,
-            },
-            Level {
-                name: "Smells like Halloween".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                ],
-                required_ingredients: vec![Ingredient::Pumpkin],
-                ingredient_count_range: 1..3,
-                ingredient_type_range: 1..3,
-                max_simultaneous_orders: 2,
-                next_customer_delay_range_ms: 9000..14000,
-                total_order_count: 7,
-                special_order: None,
-            },
-            Level {
-                name: "Vampire's Best Friend".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![Ingredient::Garlic],
-                ingredient_count_range: 1..4,
-                ingredient_type_range: 1..4,
-                max_simultaneous_orders: 3,
-                next_customer_delay_range_ms: 8000..13000,
-                total_order_count: 9,
-                special_order: None,
-            },
-            Level {
-                name: "Turning Up the Heat".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 2..4,
-                ingredient_type_range: 1..4,
-                max_simultaneous_orders: 3,
-                next_customer_delay_range_ms: 7000..12000,
-                total_order_count: 9,
-                special_order: None,
-            },
-            Level {
-                name: "A Recipe for Disaster".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Eggplant,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 2..5,
-                ingredient_type_range: 2..4,
-                max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 10000..15000,
-                total_order_count: 10,
-                special_order: None,
-            },
-            Level {
-                name: "Fast Food".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Eggplant,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 1..2,
-                ingredient_type_range: 1..2,
-                max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 5000..7000,
-                total_order_count: 15,
-                special_order: None,
-            },
-            Level {
-                name: "Souped Up".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Eggplant,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 3..6,
-                ingredient_type_range: 2..4,
-                max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 10000..15000,
-                total_order_count: 10,
-                special_order: None,
-            },
-            Level {
-                name: "Food Critic".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Eggplant,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 1..2,
-                ingredient_type_range: 1..2,
-                max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 5000..7000,
-                total_order_count: 15,
-                special_order: Some(SpecialOrder {
-                    index_range: 9..13,
-                    ingredients: [
-                        (Ingredient::Tomato, 3),
-                        (Ingredient::Garlic, 3),
-                        (Ingredient::Eggplant, 3),
-                    ]
-                    .into(),
-                }),
-            },
-        ];
-
-        // let test_lvl = Level {
-        //     name: "Soup 101".into(),
-        //     allowed_ingredients: vec![Ingredient::Pumpkin, Ingredient::Potato, Ingredient::Tomato],
-        //     ingredient_count_range: 1..2,
-        //     ingredient_type_range: 1..3,
-        //     max_simultaneous_orders: 4,
-        //     next_customer_delay_range_ms: 1000..1001,
-        //     total_order_count: 4,
-        // };
-
-        app.insert_resource(Levels(levels))
+        app.add_event::<OrderEv>()
             // todo: try to restore last reached lvl
-            .insert_resource(CurrentLevel::new(0))
-            .add_event::<OrderEv>()
+            // .insert_resource(CurrentLevel::new(0))
             .add_system_set(
                 ConditionSet::new()
                     .run_in_state(GameState::Playing)
@@ -231,7 +41,7 @@ impl Plugin for OrderPlugin {
     }
 }
 
-pub const ORDER_TIME_S: f32 = 60.;
+pub const ORDER_TIME_S: f32 = 80.;
 pub const ORDER_DELAY_S: f32 = 0.5;
 const ORDER_TOOLTIP_OFFSET: i32 = -122;
 
@@ -240,44 +50,8 @@ pub enum OrderEv {
 }
 
 pub struct SpecialOrder {
-    index_range: Range<u8>,
-    ingredients: HashMap<Ingredient, u8>,
-}
-
-pub struct Level {
-    pub name: String,
-    pub max_simultaneous_orders: u8,
-    total_order_count: u8,
-    allowed_ingredients: Vec<Ingredient>,
-    // todo:
-    required_ingredients: Vec<Ingredient>,
-    ingredient_count_range: Range<u8>,
-    ingredient_type_range: Range<u8>,
-    next_customer_delay_range_ms: Range<u64>,
-    // todo:
-    special_order: Option<SpecialOrder>,
-}
-
-#[derive(Deref, DerefMut)]
-pub struct Levels(Vec<Level>);
-
-pub struct CurrentLevel {
-    level_index: usize,
-    start_timer: Option<Timer>,
-    next_customer_timer: Timer,
-    order_count: usize,
-}
-
-impl CurrentLevel {
-    fn new(level_index: usize) -> Self {
-        Self {
-            level_index,
-            start_timer: None,
-            // start_timer: Some(Timer::from(5.)),
-            next_customer_timer: Timer::from_seconds(0., false),
-            order_count: 0,
-        }
-    }
+    pub index_range: Range<u8>,
+    pub ingredients: HashMap<Ingredient, u8>,
 }
 
 #[derive(Debug, Component)]
@@ -297,7 +71,6 @@ impl Order {
                 .all(|(i, count)| ingredients.iter().filter(|i2| i == *i2).count() as u8 == *count)
     }
 }
-
 #[derive(Component)]
 pub struct OrderTooltip;
 
@@ -307,7 +80,12 @@ fn spawn_orders(
     mut lvl: ResMut<CurrentLevel>,
     time: Res<Time>,
     order_q: Query<(), With<Order>>,
+    mut order_evw: EventWriter<LevelEv>,
 ) {
+    if lvl.over {
+        return;
+    }
+
     let lvl_opts = &lvls[lvl.level_index];
 
     let active_order_count = order_q.iter().len();
@@ -322,7 +100,7 @@ fn spawn_orders(
     } else if lvl.order_count < (lvl_opts.total_order_count as usize) {
         lvl.next_customer_timer.tick(time.delta());
 
-        if lvl.next_customer_timer.finished() {
+        if lvl.next_customer_timer.finished() || active_order_count == 0 {
             let mut rng = thread_rng();
 
             // setup next timer
@@ -373,8 +151,12 @@ fn spawn_orders(
         info!("Next lvl");
         // todo handle victory screen/thx for playing
         // todo: clear board
-        cmd.insert_resource(CurrentLevel::new(lvl.level_index + 1));
         // todo: permanently store last reached lvl
+        lvl.over = true;
+        order_evw.send(LevelEv::LevelOver(lvl.level_index));
+
+        // todo: only when next lvl has started
+        // cmd.insert_resource(CurrentLevel::new(lvl.level_index + 1));
     }
 }
 
@@ -449,16 +231,14 @@ fn on_order_completed(
     order_q: Query<(Entity, &Parent)>,
 ) {
     for ev in order_evr.iter() {
-        match ev {
-            OrderEv::Completed(o_e) => {
-                if let Ok((o_e, o_p)) = order_q.get(*o_e) {
-                    cmd.entity(o_e).despawn_recursive();
-                    cmd.entity(o_p.get()).insert(get_relative_move_by_anim(
-                        Vec3::X * 250.,
-                        300,
-                        Some(crate::tween::TweenDoneAction::DespawnRecursive),
-                    ));
-                }
+        if let OrderEv::Completed(o_e) = ev {
+            if let Ok((o_e, o_p)) = order_q.get(*o_e) {
+                cmd.entity(o_e).despawn_recursive();
+                cmd.entity(o_p.get()).insert(get_relative_move_by_anim(
+                    Vec3::X * 250.,
+                    300,
+                    Some(crate::tween::TweenDoneAction::DespawnRecursive),
+                ));
             }
         }
     }

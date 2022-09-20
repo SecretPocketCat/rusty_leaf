@@ -4,6 +4,7 @@
     clippy::too_many_arguments,
     clippy::cast_precision_loss,
     clippy::needless_update,
+    irrefutable_let_patterns,
     // jam-code only!
     // dead_code
 )]
@@ -16,14 +17,16 @@ mod cauldron;
 mod coords;
 mod customer;
 mod drag;
-mod level_layout;
+mod level;
 mod list;
 mod mouse;
 mod order;
+mod pause;
 mod piece;
 mod progress;
 mod render;
 mod tile_placement;
+mod tools;
 mod tween;
 
 use crate::tile_placement::TilePlacementPlugin;
@@ -41,7 +44,7 @@ use cauldron::CauldronPlugin;
 use coords::CoordsPlugin;
 use drag::DragPlugin as GameDragPlugin;
 
-use level_layout::LevelLayoutPlugin;
+use level::LevelPlugin;
 use mouse::MousePlugin;
 use order::OrderPlugin;
 use progress::ProgressPlugin;
@@ -69,7 +72,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(AssetsPlugin)
             .add_plugin(RenderPlugin)
-            // .add_plugin(WorldInspectorPlugin::new())
+            .add_plugin(WorldInspectorPlugin::new())
             // .register_inspectable::<Card>()
             // .register_inspectable::<Ingredient>()
             // .register_inspectable::<TileCoords>()
@@ -81,7 +84,7 @@ impl Plugin for GamePlugin {
             .add_plugin(AnimationPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(TilePlacementPlugin)
-            .add_plugin(LevelLayoutPlugin)
+            .add_plugin(LevelPlugin)
             .add_plugin(CardPlugin)
             .add_plugin(CauldronPlugin)
             .add_plugin(ProgressPlugin)

@@ -293,6 +293,7 @@ pub fn get_relative_move_by_anim(
     Animator::new(get_relative_move_by_tween(
         move_by,
         duration_ms,
+        EaseFunction::QuadraticInOut,
         on_completed,
     ))
 }
@@ -300,10 +301,11 @@ pub fn get_relative_move_by_anim(
 pub fn get_relative_move_by_tween(
     move_by: Vec3,
     duration_ms: u64,
+    ease: EaseFunction,
     on_completed: Option<TweenDoneAction>,
 ) -> Tween<Transform> {
     let mut tween = Tween::new(
-        EaseFunction::QuadraticInOut,
+        ease,
         Duration::from_millis(duration_ms),
         TransformRelativeByPositionLens::new(move_by),
     );
@@ -375,16 +377,22 @@ pub fn get_relative_fade_text_anim(
     duration_ms: u64,
     on_completed: Option<TweenDoneAction>,
 ) -> Animator<Text> {
-    Animator::new(get_relative_fade_text_tween(col, duration_ms, on_completed))
+    Animator::new(get_relative_fade_text_tween(
+        col,
+        duration_ms,
+        EaseFunction::QuadraticInOut,
+        on_completed,
+    ))
 }
 
 pub fn get_relative_fade_text_tween(
     col: Color,
     duration_ms: u64,
+    ease: EaseFunction,
     on_completed: Option<TweenDoneAction>,
 ) -> Tween<Text> {
     let mut tween = Tween::new(
-        EaseFunction::QuadraticInOut,
+        ease,
         Duration::from_millis(duration_ms),
         TextRelativeColorLens {
             start: Vec::new(),
