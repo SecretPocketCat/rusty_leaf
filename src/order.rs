@@ -134,24 +134,6 @@ impl Plugin for OrderPlugin {
                 special_order: None,
             },
             Level {
-                name: "Souped Up".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Eggplant,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 3..6,
-                ingredient_type_range: 2..4,
-                max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 10000..15000,
-                total_order_count: 10,
-                special_order: None,
-            },
-            Level {
                 name: "Fast Food".into(),
                 allowed_ingredients: vec![
                     Ingredient::Pumpkin,
@@ -167,6 +149,24 @@ impl Plugin for OrderPlugin {
                 max_simultaneous_orders: 4,
                 next_customer_delay_range_ms: 5000..7000,
                 total_order_count: 15,
+                special_order: None,
+            },
+            Level {
+                name: "Souped Up".into(),
+                allowed_ingredients: vec![
+                    Ingredient::Pumpkin,
+                    Ingredient::Potato,
+                    Ingredient::Tomato,
+                    Ingredient::Mushroom,
+                    Ingredient::Eggplant,
+                    Ingredient::Garlic,
+                ],
+                required_ingredients: vec![],
+                ingredient_count_range: 3..6,
+                ingredient_type_range: 2..4,
+                max_simultaneous_orders: 4,
+                next_customer_delay_range_ms: 10000..15000,
+                total_order_count: 10,
                 special_order: None,
             },
             Level {
@@ -208,6 +208,7 @@ impl Plugin for OrderPlugin {
         // };
 
         app.insert_resource(Levels(levels))
+            // todo: try to restore last reached lvl
             .insert_resource(CurrentLevel::new(0))
             .add_event::<OrderEv>()
             .add_system_set(
@@ -257,15 +258,15 @@ pub struct Level {
     special_order: Option<SpecialOrder>,
 }
 
+#[derive(Deref, DerefMut)]
+pub struct Levels(Vec<Level>);
+
 pub struct CurrentLevel {
     level_index: usize,
     start_timer: Option<Timer>,
     next_customer_timer: Timer,
     order_count: usize,
 }
-
-#[derive(Deref, DerefMut)]
-pub struct Levels(Vec<Level>);
 
 impl CurrentLevel {
     fn new(level_index: usize) -> Self {
@@ -309,14 +310,14 @@ fn spawn_orders(
 ) {
     let lvl_opts = &lvls[lvl.level_index];
 
-    let order_count = order_q.iter().len();
+    let active_order_count = order_q.iter().len();
     if let Some(ref mut timer) = lvl.start_timer {
         timer.tick(time.delta());
 
         if timer.finished() {
             lvl.start_timer = None;
         }
-    } else if order_count >= lvl_opts.max_simultaneous_orders as usize {
+    } else if active_order_count >= lvl_opts.max_simultaneous_orders as usize {
         // bail out if there're too many orders
     } else if lvl.order_count < (lvl_opts.total_order_count as usize) {
         lvl.next_customer_timer.tick(time.delta());
@@ -367,6 +368,13 @@ fn spawn_orders(
                 })
                 .insert(Name::new("order"));
         }
+    } else if lvl.order_count >= (lvl_opts.total_order_count as usize) && active_order_count == 0 {
+        // orders are done
+        info!("Next lvl");
+        // todo handle victory screen/thx for playing
+        // todo: clear board
+        cmd.insert_resource(CurrentLevel::new(lvl.level_index + 1));
+        // todo: permanently store last reached lvl
     }
 }
 
