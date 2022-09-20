@@ -6,7 +6,7 @@ use crate::{
     level::LevelEv,
     order::{Order, OrderEv},
     progress::TooltipProgress,
-    render::{NoRescale, ZIndex, OUTLINE_COL, SCALE_MULT},
+    render::{NoRescale, ZIndex, COL_DARK, SCALE_MULT},
     tween::{
         get_relative_fade_spritesheet_anim, get_relative_fade_text_anim, get_relative_move_anim,
         get_relative_move_by_anim, FadeHierarchy, FadeHierarchyBundle, TweenDoneAction,
@@ -96,9 +96,7 @@ pub fn spawn_tooltip_ingredient(
         })
         .insert(get_relative_fade_text_anim(
             // todo: from res/const
-            OUTLINE_COL,
-            400,
-            None,
+            COL_DARK, 400, None,
         ))
         .id();
 
@@ -290,7 +288,7 @@ fn show_progress_tooltip(
                             .insert(Name::new("Tooltip"))
                             .insert(TooltipProgress::new(0.))
                             .insert(ingredient_list)
-                            .insert_bundle(FadeHierarchyBundle::new(true, 450, OUTLINE_COL))
+                            .insert_bundle(FadeHierarchyBundle::new(true, 450, COL_DARK))
                             .insert(get_relative_move_anim(
                                 Vec3::new(0., TOOLTIP_TWEEN_OFFSET, 0.01),
                                 550,

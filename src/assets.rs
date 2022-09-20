@@ -51,6 +51,9 @@ pub struct Sprites {
     #[asset(path = "sprites/progress_bar.png")]
     pub progress_bar: Handle<Image>,
 
+    #[asset(path = "sprites/title_tooltip.png")]
+    pub title_tooltip: Handle<Image>,
+
     #[asset(texture_atlas(tile_size_x = 28., tile_size_y = 24., columns = 6, rows = 1))]
     #[asset(path = "sprites/ferris.png")]
     pub ferris: Handle<TextureAtlas>,

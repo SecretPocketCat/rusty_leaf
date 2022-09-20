@@ -10,7 +10,7 @@ use std::ops::{Div, Sub};
 use crate::{
     coords::TileCoords,
     drag::{DragGroup, Mover},
-    render::OUTLINE_COL,
+    render::COL_DARK,
     tile_placement::TILE_SIZE,
     tween::{delay_tween, get_relative_move_tween},
 };
@@ -114,7 +114,7 @@ pub fn spawn_piece(
                         ..default()
                     },
                     DrawMode::Outlined {
-                        outline_mode: StrokeMode::new(OUTLINE_COL, 4.),
+                        outline_mode: StrokeMode::new(COL_DARK, 4.),
                         fill_mode: FillMode::color(Color::rgb_u8(254, 209, 113)),
                     },
                     Transform::from_translation(pos),

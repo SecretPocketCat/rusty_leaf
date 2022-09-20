@@ -2,10 +2,10 @@ use std::ops::Range;
 
 use crate::{
     anim::SheetAnimation,
-    assets::Sprites,
+    assets::{Fonts, Sprites},
     card::Ingredient,
     order::SpecialOrder,
-    render::ZIndex,
+    render::{ZIndex, COL_DARK, COL_LIGHT, SCALE_MULT},
     tile_placement::BOARD_SHIFT,
     tools::enum_variant_eq,
     tween::{
@@ -16,7 +16,7 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_tweening::{Animator, EaseFunction};
-use iyes_loopless::prelude::AppLooplessStateExt;
+use iyes_loopless::prelude::*;
 
 pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
@@ -212,10 +212,13 @@ impl Plugin for LevelPlugin {
         // };
 
         app.add_event::<LevelEv>()
+            // todo: restore from somewhere
+            .insert_resource(CurrentLevel::new(0))
             .insert_resource(Levels(levels))
             .add_exit_system(GameState::Loading, setup_app)
-            .add_enter_system(GameState::Playing, setup_lvl)
-            .add_exit_system(GameState::Playing, teardown_lvl)
+            .add_enter_system(GameState::Playing, on_level_in)
+            .add_exit_system(GameState::Playing, on_level_out)
+            .add_system(start_day.run_if_resource_exists::<StartDayDelay>())
             .add_system(tween_on_level_ev);
     }
 }
@@ -255,7 +258,7 @@ pub struct CurrentLevel {
     pub start_timer: Option<Timer>,
     pub next_customer_timer: Timer,
     pub order_count: usize,
-    pub over: bool,
+    pub stopped: bool,
 }
 
 impl CurrentLevel {
@@ -266,7 +269,7 @@ impl CurrentLevel {
             // start_timer: Some(Timer::from(5.)),
             next_customer_timer: Timer::from_seconds(0., false),
             order_count: 0,
-            over: false,
+            stopped: true,
         }
     }
 }
@@ -336,7 +339,13 @@ impl LevelEvTween {
     }
 }
 
-fn setup_app(mut cmd: Commands, sprites: Res<Sprites>) {
+#[derive(Deref, DerefMut)]
+struct StartDayDelay(Timer);
+
+#[derive(Component)]
+struct LevelTooltiptext;
+
+fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
     for (handle, z_index, name) in [
         (sprites.bg.clone(), ZIndex::Bg, "bg"),
         (sprites.bg_shop.clone(), ZIndex::BgShop, "bg_shop"),
@@ -380,10 +389,9 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>) {
         .insert(Name::new(name));
     }
 
-    let pos = Vec3::new(BOARD_SHIFT.x + 25., -1500., 0.);
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.parchment.clone(),
-        transform: Transform::from_translation(pos),
+        transform: Transform::from_xyz(BOARD_SHIFT.x + 25., -1500., 0.),
         ..default()
     })
     .insert(ZIndex::Grid)
@@ -398,13 +406,106 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>) {
         .with_ease_in(EaseFunction::CircularOut),
     )
     .insert(Name::new("Parchment"));
+
+    cmd.spawn_bundle(SpriteBundle {
+        texture: sprites.title_tooltip.clone(),
+        transform: Transform::from_xyz(0., 450., 0.),
+        ..default()
+    })
+    .insert(ZIndex::Tooltip)
+    .insert(
+        LevelEvTween::new(
+            LevelEventTweenType::MoveByY(-240.),
+            LevelEv::LevelIn,
+            LevelEv::LevelStart,
+            1200,
+        )
+        .with_delay_in(1000)
+        .with_ease_in(EaseFunction::QuadraticOut)
+        .with_duration_out(800),
+    )
+    .insert(Name::new("lvl_title"))
+    .with_children(|b| {
+        b.spawn_bundle(Text2dBundle {
+            text: Text::from_section(
+                "",
+                TextStyle {
+                    font: fonts.tooltip.clone(),
+                    font_size: 16.0 * SCALE_MULT,
+                    color: COL_DARK,
+                },
+            )
+            .with_alignment(TextAlignment::CENTER),
+            transform: Transform::from_xyz(0., 2., 0.01)
+                .with_scale(Vec2::splat(1. / SCALE_MULT).extend(1.)),
+            ..default()
+        })
+        .insert(LevelTooltiptext);
+    });
+
+    cmd.spawn_bundle(Text2dBundle {
+        text: Text::from_section(
+            format!("Click anywhere to start the day..."),
+            TextStyle {
+                font: fonts.tooltip.clone(),
+                font_size: 16.0 * SCALE_MULT,
+                color: Color::NONE,
+            },
+        )
+        .with_alignment(TextAlignment::CENTER_LEFT),
+        transform: Transform::from_xyz(-50., -321., 0.),
+        ..default()
+    })
+    .insert(ZIndex::Tooltip)
+    .insert(
+        LevelEvTween::new(
+            LevelEventTweenType::FadeText(COL_LIGHT),
+            LevelEv::LevelIn,
+            LevelEv::LevelStart,
+            500,
+        )
+        .with_delay_in(1500)
+        .with_ease_in(EaseFunction::QuadraticInOut),
+    )
+    .insert(Name::new("continue_text"));
 }
 
-fn setup_lvl(mut lvl_evw: EventWriter<LevelEv>) {
+fn on_level_in(
+    mut cmd: Commands,
+    mut lvl_evw: EventWriter<LevelEv>,
+    lvl: Res<CurrentLevel>,
+    lvls: Res<Levels>,
+    mut title_txt_q: Query<&mut Text, With<LevelTooltiptext>>,
+) {
+    title_txt_q.single_mut().sections[0].value = format!(
+        "Day {}: {}",
+        lvl.level_index + 1,
+        lvls[lvl.level_index].name
+    );
+
+    // todo: set lvl txt
     lvl_evw.send(LevelEv::LevelIn);
+    cmd.insert_resource(StartDayDelay(Timer::from_seconds(2.5, false)));
 }
 
-fn teardown_lvl(mut lvl_evw: EventWriter<LevelEv>) {
+fn start_day(
+    mut cmd: Commands,
+    mut lvl_evw: EventWriter<LevelEv>,
+    mut delay: ResMut<StartDayDelay>,
+    time: Res<Time>,
+    mouse_input: Res<Input<MouseButton>>,
+) {
+    delay.tick(time.delta());
+
+    if delay.finished() {
+        if mouse_input.any_just_pressed([MouseButton::Left, MouseButton::Right]) {
+            cmd.remove_resource::<StartDayDelay>();
+            lvl_evw.send(LevelEv::LevelStart);
+        }
+    }
+}
+
+fn on_level_out(mut lvl_evw: EventWriter<LevelEv>) {
     lvl_evw.send(LevelEv::LevelOut);
 }
 

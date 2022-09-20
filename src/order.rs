@@ -5,12 +5,11 @@ use crate::{
     level::{CurrentLevel, LevelEv, Levels},
     list::{place_items, shift_items},
     progress::TooltipProgress,
-    render::{ZIndex, OUTLINE_COL},
+    render::{ZIndex, COL_DARK},
     tween::{get_relative_move_by_anim, FadeHierarchyBundle},
     GameState,
 };
 use bevy::{prelude::*, utils::HashMap};
-
 use iyes_loopless::prelude::*;
 use rand::{thread_rng, Rng};
 use std::{ops::Range, time::Duration};
@@ -24,7 +23,7 @@ impl Plugin for OrderPlugin {
             .add_system_set(
                 ConditionSet::new()
                     .run_in_state(GameState::Playing)
-                    .with_system(spawn_orders.run_if_resource_exists::<CurrentLevel>())
+                    .with_system(spawn_orders)
                     .with_system(update_order_progress)
                     .with_system(show_order_tooltip)
                     .with_system(on_order_completed)
@@ -82,7 +81,7 @@ fn spawn_orders(
     order_q: Query<(), With<Order>>,
     mut order_evw: EventWriter<LevelEv>,
 ) {
-    if lvl.over {
+    if lvl.stopped {
         return;
     }
 
@@ -152,7 +151,7 @@ fn spawn_orders(
         // todo handle victory screen/thx for playing
         // todo: clear board
         // todo: permanently store last reached lvl
-        lvl.over = true;
+        lvl.stopped = true;
         order_evw.send(LevelEv::LevelOver(lvl.level_index));
 
         // todo: only when next lvl has started
@@ -188,7 +187,7 @@ fn show_order_tooltip(
             })
             .insert(ZIndex::OrderTooltip)
             .insert(TooltipProgress::new(-1.5))
-            .insert_bundle(FadeHierarchyBundle::new(true, 450, OUTLINE_COL))
+            .insert_bundle(FadeHierarchyBundle::new(true, 450, COL_DARK))
             .insert(OrderTooltip)
             .insert(Name::new("order_tooltip"))
             .push_children(&tooltip_ingredients)
