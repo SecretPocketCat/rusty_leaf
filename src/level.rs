@@ -17,6 +17,7 @@ use crate::{
 use bevy::prelude::*;
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
+use rand::{thread_rng, Rng};
 
 pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
@@ -53,7 +54,8 @@ impl Plugin for LevelPlugin {
                 ingredient_type_range: 1..2,
                 max_simultaneous_orders: 2,
                 next_customer_delay_range_ms: 10000..15000,
-                total_order_count: 5,
+                total_order_count: 1,
+                // total_order_count: 5,
                 special_order: None,
             },
             Level {
@@ -213,20 +215,30 @@ impl Plugin for LevelPlugin {
 
         app.add_event::<LevelEv>()
             // todo: restore from somewhere
-            .insert_resource(CurrentLevel::new(0))
+            .insert_resource(CurrentLevel::new(0, false))
             .insert_resource(Levels(levels))
             .add_exit_system(GameState::Loading, setup_app)
             .add_enter_system(GameState::Playing, on_level_in)
             .add_exit_system(GameState::Playing, on_level_out)
             .add_system(start_day.run_if_resource_exists::<StartDayDelay>())
+            .add_system(on_level_over)
             .add_system(tween_on_level_ev);
     }
 }
 
+const FAIL_MSGS: [&str; 6] = [
+    "Oh no, you've lost a customer!\nWe can't have that...",
+    "Don't cry over spilled milk\nand try again.",
+    "Come on, use your noodle!",
+    "That's a tough nut to crack.",
+    "Well, aren't you in a pickle",
+    "Don't be such a couch potato.",
+];
+
 pub enum LevelEv {
     LevelIn,
     LevelStart,
-    LevelOver(usize),
+    LevelOver { won: bool },
     LevelOut,
 }
 
@@ -259,17 +271,18 @@ pub struct CurrentLevel {
     pub next_customer_timer: Timer,
     pub order_count: usize,
     pub stopped: bool,
+    pub retry: bool,
 }
 
 impl CurrentLevel {
-    fn new(level_index: usize) -> Self {
+    fn new(level_index: usize, retry: bool) -> Self {
         Self {
             level_index,
-            start_timer: None,
-            // start_timer: Some(Timer::from(5.)),
+            start_timer: Some(Timer::from_seconds(2.5, false)),
             next_customer_timer: Timer::from_seconds(0., false),
             order_count: 0,
             stopped: true,
+            retry,
         }
     }
 }
@@ -391,7 +404,7 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
 
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.parchment.clone(),
-        transform: Transform::from_xyz(BOARD_SHIFT.x + 25., -1500., 0.),
+        transform: Transform::from_xyz(BOARD_SHIFT.x + 23., -1500., 0.),
         ..default()
     })
     .insert(ZIndex::Grid)
@@ -477,21 +490,25 @@ fn on_level_in(
     lvls: Res<Levels>,
     mut title_txt_q: Query<&mut Text, With<LevelTooltiptext>>,
 ) {
-    title_txt_q.single_mut().sections[0].value = format!(
-        "Day {}: {}",
-        lvl.level_index + 1,
-        lvls[lvl.level_index].name
-    );
+    title_txt_q.single_mut().sections[0].value = if lvl.retry {
+        FAIL_MSGS[thread_rng().gen_range(0..FAIL_MSGS.len())].into()
+    } else {
+        format!(
+            "Day {}: {}",
+            lvl.level_index + 1,
+            lvls[lvl.level_index].name
+        )
+    };
 
-    // todo: set lvl txt
     lvl_evw.send(LevelEv::LevelIn);
-    cmd.insert_resource(StartDayDelay(Timer::from_seconds(2.5, false)));
+    cmd.insert_resource(StartDayDelay(Timer::from_seconds(2.15, false)));
 }
 
 fn start_day(
     mut cmd: Commands,
     mut lvl_evw: EventWriter<LevelEv>,
     mut delay: ResMut<StartDayDelay>,
+    mut lvl: ResMut<CurrentLevel>,
     time: Res<Time>,
     mouse_input: Res<Input<MouseButton>>,
 ) {
@@ -501,6 +518,35 @@ fn start_day(
         if mouse_input.any_just_pressed([MouseButton::Left, MouseButton::Right]) {
             cmd.remove_resource::<StartDayDelay>();
             lvl_evw.send(LevelEv::LevelStart);
+            lvl.stopped = false;
+        }
+    }
+}
+
+fn on_level_over(
+    mut cmd: Commands,
+    mut lvl_evr: EventReader<LevelEv>,
+    lvl: Res<CurrentLevel>,
+    lvls: ResMut<Levels>,
+) {
+    for ev in lvl_evr.iter() {
+        if let LevelEv::LevelOver { won } = ev {
+            if *won {
+                if lvl.level_index >= lvls.len() - 1 {
+                    // restart current lvl if the player wants to go again
+                    cmd.insert_resource(CurrentLevel::new(0, false));
+                    cmd.insert_resource(NextState::<GameState>(GameState::Won));
+                } else {
+                    // next lvl
+                    cmd.insert_resource(CurrentLevel::new(lvl.level_index + 1, false));
+                    cmd.insert_resource(NextState::<GameState>(GameState::Playing));
+                }
+            } else {
+                cmd.insert_resource(CurrentLevel::new(lvl.level_index, true));
+                cmd.insert_resource(NextState::<GameState>(GameState::Playing));
+            }
+
+            break;
         }
     }
 }

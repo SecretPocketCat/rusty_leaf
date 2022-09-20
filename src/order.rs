@@ -40,7 +40,8 @@ impl Plugin for OrderPlugin {
     }
 }
 
-pub const ORDER_TIME_S: f32 = 80.;
+pub const ORDER_TIME_S: f32 = 3.;
+// pub const ORDER_TIME_S: f32 = 80.;
 pub const ORDER_DELAY_S: f32 = 0.5;
 const ORDER_TOOLTIP_OFFSET: i32 = -122;
 
@@ -151,8 +152,7 @@ fn spawn_orders(
         // todo handle victory screen/thx for playing
         // todo: clear board
         // todo: permanently store last reached lvl
-        lvl.stopped = true;
-        order_evw.send(LevelEv::LevelOver(lvl.level_index));
+        order_evw.send(LevelEv::LevelOver { won: true });
 
         // todo: only when next lvl has started
         // cmd.insert_resource(CurrentLevel::new(lvl.level_index + 1));
@@ -202,6 +202,7 @@ fn update_order_progress(
     mut order_q: Query<&mut Order>,
     mut progress_q: Query<&mut TooltipProgress>,
     time: Res<Time>,
+    mut order_evw: EventWriter<LevelEv>,
 ) {
     for mut o in order_q.iter_mut().filter(|o| o.tooltip_e.is_some()) {
         if let Some(tooltip_e) = o.tooltip_e {
@@ -214,8 +215,8 @@ fn update_order_progress(
             } else {
                 o.timer.tick(time.delta());
                 if o.timer.just_finished() {
-                    // todo: game over
                     info!("Game over!");
+                    order_evw.send(LevelEv::LevelOver { won: false });
                 } else if let Ok(mut progress) = progress_q.get_mut(tooltip_e) {
                     progress.value = o.timer.percent();
                 }

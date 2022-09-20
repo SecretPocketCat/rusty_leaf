@@ -18,7 +18,7 @@ pub const BOARD_SIZE_PX: f32 = 480.;
 pub const BOARD_SIZE: usize = 9;
 pub const TILE_SIZE: f32 = BOARD_SIZE_PX / BOARD_SIZE as f32;
 pub const SECTION_SIZE: usize = 3;
-pub const BOARD_SHIFT: Vec3 = Vec3::new(-365.0, -95., 0.);
+pub const BOARD_SHIFT: Vec3 = Vec3::new(-362.0, -103., 0.);
 
 pub struct TilePlacementPlugin;
 impl Plugin for TilePlacementPlugin {
