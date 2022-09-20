@@ -852,7 +852,7 @@ dependencies = [
 [[package]]
 name = "bevy_tweening"
 version = "0.5.0"
-source = "git+https://github.com/SecretPocketCat/bevy_tweening?branch=bevy_0_8#2c94cc40aaa74d408f1f0ccbd0234a1254b9bce5"
+source = "git+https://github.com/SecretPocketCat/bevy_tweening?branch=bevy_0_8#68ac8ad609777dbff18a0910c185853d9865830e"
 dependencies = [
  "bevy",
  "interpolation",
