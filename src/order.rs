@@ -51,8 +51,9 @@ pub enum OrderEv {
 }
 
 pub struct SpecialOrder {
-    pub index_range: Range<u8>,
+    pub index_range: Range<usize>,
     pub ingredients: HashMap<Ingredient, u8>,
+    pub duration_s: f32,
 }
 
 #[derive(Debug, Component)]
@@ -104,6 +105,11 @@ fn spawn_orders(
         if lvl.next_customer_timer.finished() || active_order_count == 0 {
             let mut rng = thread_rng();
 
+            // randomize special order index
+            if let Some(special) = &lvl_opts.special_order && lvl.special_order_index.is_none() {
+                lvl.special_order_index = Some(rng.gen_range(special.index_range.clone()));
+            }
+
             // setup next timer
             let delay = rng.gen_range(lvl_opts.next_customer_delay_range_ms.clone());
             lvl.next_customer_timer
@@ -111,41 +117,57 @@ fn spawn_orders(
             lvl.next_customer_timer.reset();
 
             // create order
-            lvl.order_count += 1;
-
-            let ingredient_count = rng.gen_range(lvl_opts.ingredient_count_range.clone());
-            let type_count = rng.gen_range(lvl_opts.ingredient_type_range.clone());
-            let mut ingredient_types = Vec::new();
-
-            {
-                let mut available_ingredients = lvl_opts.allowed_ingredients.clone();
-                for _ in 0..type_count {
-                    ingredient_types.push(
-                        available_ingredients
-                            .swap_remove(rng.gen_range(0..available_ingredients.len())),
-                    );
-                }
-            }
-
             let mut ingredients = HashMap::new();
-            for _ in 0..ingredient_count {
-                let i = ingredient_types[rng.gen_range(0..ingredient_types.len())];
+            let mut duration = ORDER_TIME_S;
 
-                if let Some(count) = ingredients.get_mut(&i) {
-                    *count += 1;
-                } else {
-                    ingredients.insert(i, 1);
+            if let Some(i) = lvl.special_order_index && i == lvl.order_count {
+               // special
+               let special = lvl_opts.special_order.as_ref().unwrap();
+                ingredients = special.ingredients.clone();
+                duration = special.duration_s;
+            }
+            else {
+                // regular order
+                let ingredient_count = rng.gen_range(lvl_opts.ingredient_count_range.clone());
+                let type_count = rng.gen_range(lvl_opts.ingredient_type_range.clone());
+                let mut ingredient_types = Vec::new();
+    
+                {
+                    let mut available_ingredients = lvl_opts.allowed_ingredients.clone();
+                    for _ in 0..type_count {
+                        ingredient_types.push(
+                            available_ingredients
+                                .swap_remove(rng.gen_range(0..available_ingredients.len())),
+                        );
+                    }
                 }
+    
+                for i in 0..ingredient_count {
+                    let ingredient = match 
+                     lvl_opts.required_ingredients.get(i as usize) {
+                        Some(i) => *i,
+                        None => ingredient_types[rng.gen_range(0..ingredient_types.len())],
+                    };
+
+                    if let Some(count) = ingredients.get_mut(&ingredient) {
+                        *count += 1;
+                    } else {
+                        ingredients.insert(ingredient, 1);
+                    }
+                }
+    
             }
 
             cmd.spawn()
-                .insert(Order {
-                    ingredients,
-                    timer: Timer::from_seconds(ORDER_TIME_S, false),
-                    delay: Some(Timer::from_seconds(ORDER_DELAY_S, false)),
-                    tooltip_e: None,
-                })
-                .insert(Name::new("order"));
+            .insert(Order {
+                ingredients,
+                timer: Timer::from_seconds(duration, false),
+                delay: Some(Timer::from_seconds(ORDER_DELAY_S, false)),
+                tooltip_e: None,
+            })
+            .insert(Name::new("order"));
+
+            lvl.order_count += 1;
         }
     } else if lvl.order_count >= (lvl_opts.total_order_count as usize) && active_order_count == 0 {
         // orders are done

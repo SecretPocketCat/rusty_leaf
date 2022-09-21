@@ -4,7 +4,7 @@ use crate::{
     anim::SheetAnimation,
     assets::{Fonts, Sprites},
     card::Ingredient,
-    order::SpecialOrder,
+    order::{SpecialOrder, ORDER_TIME_S},
     render::{ZIndex, COL_DARK, COL_LIGHT, SCALE_MULT},
     tile_placement::BOARD_SHIFT,
     tools::enum_variant_eq,
@@ -44,10 +44,9 @@ impl Plugin for LevelPlugin {
                 required_ingredients: Vec::new(),
                 ingredient_count_range: 1..2,
                 ingredient_type_range: 1..2,
-                max_simultaneous_orders: 2,
+                max_simultaneous_orders: 1,
                 next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 1,
-                // total_order_count: 5,
+                total_order_count: 2,
                 special_order: None,
             },
             Level {
@@ -191,19 +190,10 @@ impl Plugin for LevelPlugin {
                         (Ingredient::Eggplant, 3),
                     ]
                     .into(),
+                    duration_s: ORDER_TIME_S * 1.5,
                 }),
             },
         ];
-
-        // let test_lvl = Level {
-        //     name: "Soup 101".into(),
-        //     allowed_ingredients: vec![Ingredient::Pumpkin, Ingredient::Potato, Ingredient::Tomato],
-        //     ingredient_count_range: 1..2,
-        //     ingredient_type_range: 1..3,
-        //     max_simultaneous_orders: 4,
-        //     next_customer_delay_range_ms: 1000..1001,
-        //     total_order_count: 4,
-        // };
 
         app.add_event::<LevelEv>()
             // todo: restore from somewhere
@@ -263,6 +253,7 @@ pub struct CurrentLevel {
     pub order_count: usize,
     pub stopped: bool,
     pub retry: bool,
+    pub special_order_index: Option<usize>,
 }
 
 impl CurrentLevel {
@@ -274,6 +265,7 @@ impl CurrentLevel {
             order_count: 0,
             stopped: true,
             retry,
+            special_order_index: None,
         }
     }
 

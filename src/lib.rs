@@ -1,4 +1,5 @@
 #![feature(int_roundings)]
+#![feature(let_chains)]
 #![allow(
     clippy::type_complexity,
     clippy::too_many_arguments,
