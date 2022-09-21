@@ -275,12 +275,14 @@ pub fn get_move_anim(
     start_pos: Vec3,
     end_pos: Vec3,
     duration_ms: u64,
+    ease: EaseFunction,
     on_completed: Option<TweenDoneAction>,
 ) -> Animator<Transform> {
     Animator::new(get_move_tween(
         start_pos,
         end_pos,
         duration_ms,
+        ease,
         on_completed,
     ))
 }
@@ -321,10 +323,11 @@ pub fn get_move_tween(
     start_pos: Vec3,
     end_pos: Vec3,
     duration_ms: u64,
+    ease: EaseFunction,
     on_completed: Option<TweenDoneAction>,
 ) -> Tween<Transform> {
     let mut tween = Tween::new(
-        EaseFunction::QuadraticInOut,
+        ease,
         Duration::from_millis(duration_ms),
         TransformPositionLens {
             start: start_pos,

@@ -1,5 +1,6 @@
 use crate::tween::{get_move_anim, get_relative_move_anim};
 use bevy::prelude::*;
+use bevy_tweening::EaseFunction;
 use std::marker::PhantomData;
 
 #[derive(Component)]
@@ -38,7 +39,13 @@ pub fn place_items<
 
         cmd.entity(c_e)
             .insert(ListIndex::<T>::new(item_i))
-            .insert(get_move_anim(start_pos, target_pos, 450, None));
+            .insert(get_move_anim(
+                start_pos,
+                target_pos,
+                450,
+                EaseFunction::CircularOut,
+                None,
+            ));
         item_i += 1;
     }
 }
