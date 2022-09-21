@@ -7,6 +7,7 @@ use crate::{
     board::Board,
     coords::{get_world_coords_from_tile, TileCoords},
     piece::Piece,
+    render::ZIndex,
     tile_placement::{Pieces, BOARD_SIZE_PX},
 };
 
@@ -17,8 +18,16 @@ impl Plugin for DragPlugin {
         app.add_system_to_stage(CoreStage::Last, limit_drag_count)
             .add_system_to_stage(CoreStage::Last, disable_drag_during_tween)
             .add_system(drag_piece)
+            .add_system(raise_z_index)
+            .add_system(restore_z_index)
             .add_system(process_movers);
     }
+}
+
+#[derive(Component)]
+pub struct DragZOffset {
+    original_z: f32,
+    original_z_index: Option<ZIndex>,
 }
 
 #[derive(Clone, Copy)]
@@ -71,6 +80,40 @@ fn limit_drag_count(mut cmd: Commands, dragged_query: Query<Entity, With<Dragged
     if dragged_query.iter().len() > 1 {
         for e in dragged_query.iter().skip(1) {
             cmd.entity(e).remove::<Dragged>();
+        }
+    }
+}
+
+fn raise_z_index(
+    mut cmd: Commands,
+    dragged_q: Query<(Entity, &Transform, Option<&ZIndex>), Added<Dragged>>,
+) {
+    for (e, dragged_t, dragged_z) in dragged_q.iter() {
+        let mut cmd_e = cmd.entity(e);
+        cmd_e.insert(DragZOffset {
+            original_z: dragged_t.translation.z,
+            original_z_index: dragged_z.cloned(),
+        });
+        cmd_e.insert(ZIndex::Dragged);
+    }
+}
+
+fn restore_z_index(
+    mut cmd: Commands,
+    drag_removed: RemovedComponents<Dragged>,
+    mut dragged_q: Query<(&DragZOffset, &mut Transform, &mut ZIndex)>,
+) {
+    for e in drag_removed.iter() {
+        if let Ok((z_offset, mut t, mut dragged_z)) = dragged_q.get_mut(e) {
+            // todo: might wanna put this on a timer or till animators are done...
+            if let Some(z_index) = z_offset.original_z_index {
+                *dragged_z = z_index;
+            } else {
+                t.translation.z = z_offset.original_z;
+                cmd.entity(e).remove::<ZIndex>();
+            }
+
+            cmd.entity(e).remove::<DragZOffset>();
         }
     }
 }
