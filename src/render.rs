@@ -36,6 +36,7 @@ pub enum ZIndex {
     Piece,
     Card,
     Tooltip,
+    Dragged,
 }
 
 impl From<ZIndex> for f32 {
