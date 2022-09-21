@@ -44,6 +44,7 @@ use bevy_tweening::TweeningPlugin;
 use card::CardPlugin;
 use cauldron::CauldronPlugin;
 use coords::CoordsPlugin;
+use customer::CustomerPlugin;
 use drag::DragPlugin as GameDragPlugin;
 use level::LevelPlugin;
 use mouse::MousePlugin;
@@ -75,7 +76,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(AssetsPlugin)
             .add_plugin(RenderPlugin)
-            // .add_plugin(WorldInspectorPlugin::new())
+            .add_plugin(WorldInspectorPlugin::new())
             // .register_inspectable::<Card>()
             // .register_inspectable::<Ingredient>()
             // .register_inspectable::<TileCoords>()
@@ -90,6 +91,7 @@ impl Plugin for GamePlugin {
             .add_plugin(LevelPlugin)
             .add_plugin(CardPlugin)
             .add_plugin(CauldronPlugin)
+            .add_plugin(CustomerPlugin)
             .add_plugin(ProgressPlugin)
             .add_plugin(CoordsPlugin)
             .add_plugin(MousePlugin)
