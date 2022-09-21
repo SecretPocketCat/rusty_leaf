@@ -35,8 +35,7 @@ fn write_save(level: usize) {
 
 // todo: handle non-wasm, also error handling...
 fn read_save() -> usize {
-    return 0;
-
+    // return 0;
     let storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
 
     match storage.get_item(SAVE_KEY).unwrap() {
