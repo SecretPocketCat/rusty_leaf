@@ -85,7 +85,7 @@ fn fill_piece_queue(
                         // + (piece.get_height() as f32 * TILE_SIZE) / 2.
                         + 100.,
                 ),
-                i * 150 + 100,
+                i * 150,
             );
         }
     }

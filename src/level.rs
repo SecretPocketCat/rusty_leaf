@@ -277,7 +277,7 @@ impl CurrentLevel {
     pub fn new(level_index: usize, retry: bool) -> Self {
         Self {
             level_index,
-            start_timer: Some(Timer::from_seconds(2.5, false)),
+            start_timer: Some(Timer::from_seconds(1.1, false)),
             next_customer_timer: Timer::from_seconds(0., false),
             order_count: 0,
             stopped: true,
@@ -418,7 +418,7 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
             LevelEv::LevelOut,
             800,
         )
-        .with_delay_in(1000)
+        .with_delay_in(500)
         .with_ease_in(EaseFunction::CircularOut),
     )
     .insert(Name::new("Parchment"));
