@@ -37,13 +37,14 @@ use assets::AssetsPlugin;
 use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::prelude::*;
+use bevy_inspector_egui::prelude::*;
 use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_interact_2d::{drag::DragPlugin, InteractionPlugin};
+use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin, InteractionPlugin};
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use bevy_tweening::TweeningPlugin;
-use card::CardPlugin;
+use card::{Card, CardPlugin, Ingredient};
 use cauldron::CauldronPlugin;
-use coords::CoordsPlugin;
+use coords::{CoordsPlugin, TileCoords};
 use customer::CustomerPlugin;
 use drag::DragPlugin as GameDragPlugin;
 use level::LevelPlugin;
@@ -77,12 +78,6 @@ impl Plugin for GamePlugin {
         app.add_plugin(AssetsPlugin)
             .add_plugin(RenderPlugin)
             .add_plugin(WorldInspectorPlugin::new())
-            // .register_inspectable::<Card>()
-            // .register_inspectable::<Ingredient>()
-            // .register_inspectable::<TileCoords>()
-            // .add_system(log_coords)
-            .add_plugin(InteractionPlugin)
-            // .add_plugin(InteractionDebugPlugin)
             .add_plugin(DragPlugin)
             .add_plugin(GameDragPlugin)
             .add_plugin(AnimationPlugin)
@@ -99,5 +94,16 @@ impl Plugin for GamePlugin {
             .add_plugin(TweeningPlugin)
             .add_plugin(GameTweenPlugin)
             .add_plugin(SavePlugin);
+
+        if cfg!(debug_assertions) {
+            app.add_plugin(WorldInspectorPlugin::new());
+            app.register_inspectable::<Card>()
+                .register_inspectable::<Ingredient>()
+                .register_inspectable::<TileCoords>();
+            // app.add_plugin(InteractionDebugPlugin);
+            app.add_plugin(InteractionPlugin);
+        } else {
+            app.add_plugin(InteractionPlugin);
+        }
     }
 }
