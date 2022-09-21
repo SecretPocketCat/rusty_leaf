@@ -31,6 +31,7 @@ mod save;
 mod tile_placement;
 mod tools;
 mod tween;
+mod interaction;
 
 use crate::tile_placement::TilePlacementPlugin;
 use anim::AnimationPlugin;
