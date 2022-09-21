@@ -190,7 +190,6 @@ impl Plugin for LevelPlugin {
                         (Ingredient::Eggplant, 3),
                     ]
                     .into(),
-                    duration_s: ORDER_TIME_S * 1.5,
                 }),
             },
         ];

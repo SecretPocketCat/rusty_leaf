@@ -53,7 +53,6 @@ pub enum OrderEv {
 pub struct SpecialOrder {
     pub index_range: Range<usize>,
     pub ingredients: HashMap<Ingredient, u8>,
-    pub duration_s: f32,
 }
 
 #[derive(Debug, Component)]
@@ -118,13 +117,11 @@ fn spawn_orders(
 
             // create order
             let mut ingredients = HashMap::new();
-            let mut duration = ORDER_TIME_S;
 
             if let Some(i) = lvl.special_order_index && i == lvl.order_count {
                // special
                let special = lvl_opts.special_order.as_ref().unwrap();
                 ingredients = special.ingredients.clone();
-                duration = special.duration_s;
             }
             else {
                 // regular order
@@ -158,6 +155,7 @@ fn spawn_orders(
     
             }
 
+            let mut duration = ingredients.len() as f32 * 20. + 30.;
             cmd.spawn()
             .insert(Order {
                 ingredients,
