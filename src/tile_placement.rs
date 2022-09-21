@@ -25,6 +25,7 @@ pub const BOARD_SIZE: usize = 9;
 pub const TILE_SIZE: f32 = BOARD_SIZE_PX / BOARD_SIZE as f32;
 pub const SECTION_SIZE: usize = 3;
 pub const BOARD_SHIFT: Vec3 = Vec3::new(-362.0, -103., 0.);
+pub const CARDS_PER_CLEAR: usize = 2;
 
 pub struct TilePlacementPlugin;
 impl Plugin for TilePlacementPlugin {
@@ -156,9 +157,11 @@ fn process_clear_queue(
         let mut cleared_indices: Vec<usize> = Vec::default();
         let mut allowed_card_spawn_count = MAX_CARDS.saturating_sub(card_q.iter().len());
         while let Some(c) = queue.queue.pop_front() {
-            if allowed_card_spawn_count > 0 {
-                spawn_card(&mut cmd, &sprites, &c);
-                allowed_card_spawn_count -= 1;
+            for _ in 0..CARDS_PER_CLEAR {
+                if allowed_card_spawn_count > 0 {
+                    spawn_card(&mut cmd, &sprites, &c);
+                    allowed_card_spawn_count -= 1;
+                }
             }
 
             match c {
