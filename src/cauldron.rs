@@ -3,13 +3,14 @@ use crate::{
     assets::{Fonts, Sprites},
     card::{CardEffect, Ingredient},
     drag::DragGroup,
+    highlight::Highligtable,
     level::LevelEv,
     order::{Order, OrderEv},
     progress::TooltipProgress,
-    render::{NoRescale, ZIndex, COL_DARK, SCALE_MULT},
+    render::{NoRescale, ZIndex, COL_DARK, COL_LIGHT, SCALE_MULT},
     tween::{
-        get_relative_fade_spritesheet_anim, get_relative_fade_text_anim, get_relative_move_anim,
-        get_relative_move_by_anim, FadeHierarchy, FadeHierarchyBundle, TweenDoneAction,
+        get_relative_fade_text_anim, get_relative_move_anim, get_relative_move_by_anim,
+        get_relative_spritesheet_color_anim, FadeHierarchy, FadeHierarchyBundle, TweenDoneAction,
     },
     GameState,
 };
@@ -112,7 +113,7 @@ pub fn spawn_tooltip_ingredient(
             ..default()
         })
         .insert(NoRescale)
-        .insert(get_relative_fade_spritesheet_anim(Color::WHITE, 250, None))
+        .insert(get_relative_spritesheet_color_anim(Color::WHITE, 250, None))
         .insert(Name::new("tooltip_ingredient"))
         .add_child(txt_e)
         .id();
@@ -153,6 +154,12 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             fire_boost: Timer::default(),
             fire_e,
             tooltip_e: None,
+        })
+        .insert(Highligtable {
+            sprite_e: None,
+            hightlight_color: COL_LIGHT,
+            normal_color: COL_DARK,
+            drag_groups: vec![DragGroup::Card],
         })
         .insert(Name::new("Cauldron"))
         .add_child(fire_e)
