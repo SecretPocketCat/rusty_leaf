@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use bevy_interact_2d::{drag::Dragged, Group, Interactable};
+use bevy_tweening::{Animator, AnimatorState};
 
 use crate::{
     board::Board,
@@ -14,6 +15,7 @@ pub struct DragPlugin;
 impl Plugin for DragPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(CoreStage::Last, limit_drag_count)
+            .add_system_to_stage(CoreStage::Last, disable_drag_during_tween)
             .add_system(drag_piece)
             .add_system(process_movers);
     }
@@ -68,6 +70,17 @@ fn drag_piece(
 fn limit_drag_count(mut cmd: Commands, dragged_query: Query<Entity, With<Dragged>>) {
     if dragged_query.iter().len() > 1 {
         for e in dragged_query.iter().skip(1) {
+            cmd.entity(e).remove::<Dragged>();
+        }
+    }
+}
+
+fn disable_drag_during_tween(
+    mut cmd: Commands,
+    dragged_q: Query<(Entity, &Animator<Transform>), With<Dragged>>,
+) {
+    for (e, anim) in dragged_q.iter() {
+        if anim.tweenable().progress() < 1. {
             cmd.entity(e).remove::<Dragged>();
         }
     }
