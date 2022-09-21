@@ -22,37 +22,18 @@ use rand::{thread_rng, Rng};
 pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
-        // titles
-        // Soup 101
-        // Starter
-        // Smells like Halloween
-        // Hot potato
-        // Turning up the heat
-        // A Recipe for Disaster
-        // Souped up
-
-        // let lvl = Level {
-        //     name: "Test".into(),
-        //     allowed_ingredients: vec![Ingredient::Pumpkin, Ingredient::Potato, Ingredient::Tomato],
-        //     ingredient_count_range: 1..4,
-        //     ingredient_type_range: 1..3,
-        //     max_simultaneous_orders: 2,
-        //     next_customer_delay_range_ms: 10000..15000,
-        //     total_order_count: 4,
-        // };
-
         let levels = vec![
-            Level {
-                name: "TEST".into(),
-                allowed_ingredients: vec![Ingredient::Pumpkin],
-                required_ingredients: Vec::new(),
-                ingredient_count_range: 1..2,
-                ingredient_type_range: 1..2,
-                max_simultaneous_orders: 3,
-                next_customer_delay_range_ms: 5000..5001,
-                total_order_count: 3,
-                special_order: None,
-            },
+            // Level {
+            //     name: "TEST".into(),
+            //     allowed_ingredients: vec![Ingredient::Pumpkin],
+            //     required_ingredients: Vec::new(),
+            //     ingredient_count_range: 1..2,
+            //     ingredient_type_range: 1..2,
+            //     max_simultaneous_orders: 3,
+            //     next_customer_delay_range_ms: 5000..5001,
+            //     total_order_count: 3,
+            //     special_order: None,
+            // },
             Level {
                 name: "Soup 101".into(),
                 allowed_ingredients: vec![
