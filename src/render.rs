@@ -32,8 +32,8 @@ pub enum ZIndex {
     Cauldron,
     Fire,
     Grid,
-    Piece,
     OrderTooltip,
+    Piece,
     Card,
     Tooltip,
 }
