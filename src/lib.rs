@@ -35,7 +35,6 @@ use crate::tile_placement::TilePlacementPlugin;
 use anim::AnimationPlugin;
 use assets::AssetsPlugin;
 use bevy::app::App;
-#[cfg(debug_assertions)]
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
 use bevy_inspector_egui::WorldInspectorPlugin;
