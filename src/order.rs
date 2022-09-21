@@ -42,7 +42,7 @@ impl Plugin for OrderPlugin {
 }
 
 // pub const ORDER_TIME_S: f32 = 5.;
-pub const ORDER_TIME_S: f32 = 80.;
+pub const ORDER_TIME_S: f32 = 90.;
 pub const ORDER_DELAY_S: f32 = 0.5;
 const ORDER_TOOLTIP_OFFSET: i32 = -122;
 
