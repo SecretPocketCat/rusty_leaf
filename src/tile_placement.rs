@@ -188,7 +188,7 @@ fn on_level_over(
     mut lvl_evr: EventReader<LevelEv>,
     mut board: ResMut<Board>,
     field_q: Query<Entity, With<PlacedFieldIndex>>,
-    piece_q: Query<Entity, With<Piece>>,
+    piece_q: Query<(Entity, &Mover), With<Piece>>,
 ) {
     for ev in lvl_evr.iter() {
         if let LevelEv::LevelOver { .. } = ev {
@@ -207,8 +207,9 @@ fn on_level_over(
                 )));
             }
 
-            for (i, e) in piece_q.iter().enumerate() {
-                cmd.entity(e).insert(Animator::new(delay_tween(
+            for (i, (e, mover)) in piece_q.iter().enumerate() {
+                cmd.entity(e).despawn_recursive();
+                cmd.entity(mover.moved_e).insert(Animator::new(delay_tween(
                     get_relative_move_by_tween(
                         Vec3::Y * 450.,
                         350,

@@ -41,7 +41,7 @@ impl Plugin for CardPlugin {
 
 pub const MAX_CARDS: usize = 4;
 pub const CARD_SIZE: Vec2 = Vec2::new(32., 48.);
-const CARD_INDEX_X_OFFSET: i32 = -130;
+const CARD_INDEX_X_OFFSET: i32 = -140;
 const CARD_OFFSCREEN_OFFSET: i32 = 250;
 
 #[derive(Component, Inspectable)]

@@ -117,7 +117,6 @@ pub fn spawn_piece(
                         outline_mode: StrokeMode::new(COL_DARK, 4.),
                         fill_mode: FillMode::color(Color::rgb_u8(254, 209, 113)),
                     },
-                    // Transform::from_translation(pos),
                     Transform::from_translation(Vec3::new(0., 250., pos.z)),
                 ))
                 .insert(Animator::new(delay_tween(
