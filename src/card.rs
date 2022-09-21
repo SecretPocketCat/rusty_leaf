@@ -246,6 +246,8 @@ fn on_level_over(
                     ),
                     i as u64 * 100,
                 )));
+
+                // prevent shifting on cleanup
                 e_cmd.remove::<Card>();
             }
 

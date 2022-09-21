@@ -6,10 +6,14 @@ use crate::{
     list::{place_items, shift_items},
     progress::TooltipProgress,
     render::{ZIndex, COL_DARK},
-    tween::{get_relative_move_by_anim, FadeHierarchyBundle},
+    tween::{
+        delay_tween, get_relative_move_by_anim, get_relative_move_by_tween, FadeHierarchyBundle,
+        TweenDoneAction,
+    },
     GameState,
 };
 use bevy::{prelude::*, utils::HashMap};
+use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
 use rand::{thread_rng, Rng};
 use std::{ops::Range, time::Duration};
@@ -18,8 +22,6 @@ pub struct OrderPlugin;
 impl Plugin for OrderPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<OrderEv>()
-            // todo: try to restore last reached lvl
-            // .insert_resource(CurrentLevel::new(0))
             .add_system_set(
                 ConditionSet::new()
                     .run_in_state(GameState::Playing)
@@ -27,8 +29,7 @@ impl Plugin for OrderPlugin {
                     .with_system(update_order_progress)
                     .with_system(show_order_tooltip)
                     .with_system(on_order_completed)
-                    .with_system(on_order_completed)
-                    .with_system(on_order_completed)
+                    .with_system(on_level_over)
                     .into(),
             )
             .add_system(place_items::<OrderTooltip, ORDER_TOOLTIP_OFFSET, 0, false>)
@@ -40,8 +41,8 @@ impl Plugin for OrderPlugin {
     }
 }
 
-// pub const ORDER_TIME_S: f32 = 3.;
-pub const ORDER_TIME_S: f32 = 80.;
+pub const ORDER_TIME_S: f32 = 15.;
+// pub const ORDER_TIME_S: f32 = 80.;
 pub const ORDER_DELAY_S: f32 = 0.5;
 const ORDER_TOOLTIP_OFFSET: i32 = -122;
 
@@ -240,6 +241,39 @@ fn on_order_completed(
                     Some(crate::tween::TweenDoneAction::DespawnRecursive),
                 ));
             }
+        }
+    }
+}
+
+fn on_level_over(
+    mut cmd: Commands,
+    mut lvl_evr: EventReader<LevelEv>,
+    order_q: Query<Entity, With<Order>>,
+    order_tooltip_q: Query<Entity, With<OrderTooltip>>,
+) {
+    for ev in lvl_evr.iter() {
+        if let LevelEv::LevelOver { .. } = ev {
+            for e in order_q.iter() {
+                cmd.entity(e).despawn();
+            }
+
+            for (i, e) in order_tooltip_q.iter().enumerate() {
+                let mut e_cmd = cmd.entity(e);
+                e_cmd.insert(Animator::new(delay_tween(
+                    get_relative_move_by_tween(
+                        Vec3::X * 300.,
+                        350,
+                        EaseFunction::CircularIn,
+                        Some(TweenDoneAction::DespawnRecursive),
+                    ),
+                    i as u64 * 100,
+                )));
+
+                // prevent shifting on cleanup
+                e_cmd.remove::<OrderTooltip>();
+            }
+
+            break;
         }
     }
 }
