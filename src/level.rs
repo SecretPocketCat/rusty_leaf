@@ -62,7 +62,7 @@ impl Plugin for LevelPlugin {
                 ingredient_type_range: 1..3,
                 max_simultaneous_orders: 2,
                 next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 6,
+                total_order_count: 3,
                 special_order: None,
             },
             Level {
@@ -77,7 +77,7 @@ impl Plugin for LevelPlugin {
                 ingredient_type_range: 1..3,
                 max_simultaneous_orders: 2,
                 next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 7,
+                total_order_count: 4,
                 special_order: None,
             },
             Level {
@@ -93,7 +93,7 @@ impl Plugin for LevelPlugin {
                 ingredient_type_range: 1..4,
                 max_simultaneous_orders: 3,
                 next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 9,
+                total_order_count: 5,
                 special_order: None,
             },
             Level {
@@ -110,7 +110,7 @@ impl Plugin for LevelPlugin {
                 ingredient_type_range: 1..4,
                 max_simultaneous_orders: 3,
                 next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 9,
+                total_order_count: 7,
                 special_order: None,
             },
             Level {
@@ -128,7 +128,7 @@ impl Plugin for LevelPlugin {
                 ingredient_type_range: 2..4,
                 max_simultaneous_orders: 4,
                 next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 10,
+                total_order_count: 7,
                 special_order: None,
             },
             Level {
@@ -146,7 +146,7 @@ impl Plugin for LevelPlugin {
                 ingredient_type_range: 1..2,
                 max_simultaneous_orders: 4,
                 next_customer_delay_range_ms: 13000..17000,
-                total_order_count: 15,
+                total_order_count: 10,
                 special_order: None,
             },
             Level {
