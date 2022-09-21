@@ -3,7 +3,7 @@ use crate::{
     card::Ingredient,
     cauldron::spawn_tooltip_ingredient,
     level::{CurrentLevel, LevelEv, Levels},
-    list::{place_items, shift_items},
+    list::{ListPlugin, ListPluginOptions},
     progress::TooltipProgress,
     render::{ZIndex, COL_DARK},
     tween::{
@@ -22,6 +22,11 @@ pub struct OrderPlugin;
 impl Plugin for OrderPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<OrderEv>()
+            .add_plugin(ListPlugin::<OrderTooltip>::new(ListPluginOptions {
+                horizontal: false,
+                offscreen_offset: 0.,
+                offset: ORDER_TOOLTIP_OFFSET as f32,
+            }))
             .add_system_set(
                 ConditionSet::new()
                     .run_in_state(GameState::Playing)
@@ -31,11 +36,6 @@ impl Plugin for OrderPlugin {
                     .with_system(on_order_completed)
                     .with_system(on_level_over)
                     .into(),
-            )
-            .add_system(place_items::<OrderTooltip, ORDER_TOOLTIP_OFFSET, 0, false>)
-            .add_system_to_stage(
-                CoreStage::PostUpdate,
-                shift_items::<OrderTooltip, ORDER_TOOLTIP_OFFSET, false>,
             );
         // works with removedComponents, so can't run during Last;
     }
@@ -149,7 +149,6 @@ fn spawn_orders(
         }
     } else if lvl.order_count >= (lvl_opts.total_order_count as usize) && active_order_count == 0 {
         // orders are done
-        info!("Next lvl");
         lvl.stopped = true;
         order_evw.send(LevelEv::LevelOver { won: true });
     }
@@ -212,7 +211,6 @@ fn update_order_progress(
             } else {
                 o.timer.tick(time.delta());
                 if o.timer.just_finished() {
-                    info!("Game over!");
                     lvl.stopped = true;
                     order_evw.send(LevelEv::LevelOver { won: false });
                     break;

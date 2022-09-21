@@ -4,7 +4,7 @@ use crate::{
     cauldron::{Cauldron, TooltipIngridientList},
     drag::DragGroup,
     level::LevelEv,
-    list::{place_items, shift_items},
+    list::{ListPlugin, ListPluginOptions},
     render::{NoRescale, ZIndex, WINDOW_SIZE},
     tween::{
         delay_tween, get_relative_move_anim, get_relative_move_by_tween, FadeHierarchyBundle,
@@ -25,12 +25,12 @@ pub struct CardPlugin;
 impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<CardEffect>()
+            .add_plugin(ListPlugin::<Card>::new(ListPluginOptions {
+                offset: CARD_INDEX_X_OFFSET as f32,
+                offscreen_offset: CARD_OFFSCREEN_OFFSET as f32,
+                horizontal: true,
+            }))
             .add_system_to_stage(CoreStage::Last, drop_card) // run after update to get precise dragged.origin
-            .add_system(place_items::<Card, CARD_INDEX_X_OFFSET, CARD_OFFSCREEN_OFFSET, true>)
-            .add_system_to_stage(
-                CoreStage::PostUpdate,
-                shift_items::<Card, CARD_INDEX_X_OFFSET, true>,
-            ) // works with removedComponents, so can't run during Last
             .add_system(on_level_over.run_not_in_state(GameState::Loading));
 
         if cfg!(debug_assertions) {
@@ -107,13 +107,15 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
         },
     };
 
+    let pos = Vec3::new(
+        WINDOW_SIZE.x / 2. - CARD_SIZE.x - 60.,
+        WINDOW_SIZE.y / 2. - CARD_SIZE.y - 75. + CARD_OFFSCREEN_OFFSET as f32,
+        2.,
+    );
+
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.card.clone(),
-        transform: Transform::from_translation(Vec3::new(
-            WINDOW_SIZE.x / 2. - CARD_SIZE.x - 60.,
-            WINDOW_SIZE.y / 2. - CARD_SIZE.y - 75. + CARD_OFFSCREEN_OFFSET as f32,
-            2.,
-        )),
+        transform: Transform::from_translation(pos),
         ..default()
     })
     .insert(ZIndex::Card)
