@@ -3,9 +3,13 @@ use crate::{
     board::BoardClear,
     cauldron::{Cauldron, TooltipIngridientList},
     drag::DragGroup,
+    level::LevelEv,
     list::{place_items, shift_items},
     render::{NoRescale, ZIndex, WINDOW_SIZE},
-    tween::{get_relative_move_anim, FadeHierarchyBundle, TweenDoneAction},
+    tween::{
+        delay_tween, get_relative_move_anim, get_relative_move_by_tween, FadeHierarchyBundle,
+        TweenDoneAction,
+    },
     GameState,
 };
 use bevy::prelude::*;
@@ -14,16 +18,20 @@ use bevy_interact_2d::{
     drag::{Draggable, Dragged},
     Interactable, InteractionState,
 };
-use iyes_loopless::prelude::AppLooplessStateExt;
+use bevy_tweening::{Animator, EaseFunction};
+use iyes_loopless::prelude::*;
 
 pub struct CardPlugin;
 impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<CardEffect>()
-        .add_system_to_stage(CoreStage::Last, drop_card) // run after update to get precise dragged.origin
-        .add_system(place_items::<Card, CARD_INDEX_X_OFFSET, CARD_OFFSCREEN_OFFSET, true>)
-            .add_system_to_stage(CoreStage::PostUpdate,shift_items::<Card, CARD_INDEX_X_OFFSET, true>) // works with removedComponents, so can't run during Last
-            ;
+            .add_system_to_stage(CoreStage::Last, drop_card) // run after update to get precise dragged.origin
+            .add_system(place_items::<Card, CARD_INDEX_X_OFFSET, CARD_OFFSCREEN_OFFSET, true>)
+            .add_system_to_stage(
+                CoreStage::PostUpdate,
+                shift_items::<Card, CARD_INDEX_X_OFFSET, true>,
+            ) // works with removedComponents, so can't run during Last
+            .add_system(on_level_over.run_not_in_state(GameState::Loading));
 
         if cfg!(debug_assertions) {
             app.add_enter_system(GameState::Playing, test_card_spawn);
@@ -216,6 +224,32 @@ fn drop_card(
                     None,
                 ));
             }
+        }
+    }
+}
+
+fn on_level_over(
+    mut cmd: Commands,
+    mut lvl_evr: EventReader<LevelEv>,
+    card_q: Query<Entity, With<Card>>,
+) {
+    for ev in lvl_evr.iter() {
+        if let LevelEv::LevelOver { .. } = ev {
+            for (i, e) in card_q.iter().enumerate() {
+                let mut e_cmd = cmd.entity(e);
+                e_cmd.insert(Animator::new(delay_tween(
+                    get_relative_move_by_tween(
+                        Vec3::Y * 450.,
+                        350,
+                        EaseFunction::CircularIn,
+                        Some(TweenDoneAction::DespawnRecursive),
+                    ),
+                    i as u64 * 100,
+                )));
+                e_cmd.remove::<Card>();
+            }
+
+            break;
         }
     }
 }
