@@ -284,6 +284,10 @@ impl CurrentLevel {
             retry,
         }
     }
+
+    pub fn has_started(&self) -> bool {
+        self.start_timer.is_none()
+    }
 }
 
 pub enum LevelEventTweenType {

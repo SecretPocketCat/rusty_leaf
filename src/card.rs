@@ -134,7 +134,7 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
 fn test_card_spawn(mut cmd: Commands, sprites: Res<Sprites>) {
     for i in 0..4 {
         // spawn_card(&mut cmd, &sprites, &BoardClear::Column(0));
-        // spawn_card(&mut cmd, &sprites, &BoardClear::Section(i));
+        spawn_card(&mut cmd, &sprites, &BoardClear::Section(i));
     }
 }
 

@@ -82,7 +82,7 @@ pub fn spawn_piece(
     piece: &PieceFields,
     piece_index: usize,
     position: Vec2,
-    _tween_delay: u64,
+    tween_delay: u64,
 ) {
     let size_h = TILE_SIZE / 2.;
     let corner = Vec2::new(
@@ -122,9 +122,10 @@ pub fn spawn_piece(
                 ))
                 .insert(Animator::new(delay_tween(
                     get_relative_move_tween(pos, 450, None),
-                    300,
+                    tween_delay,
                 )))
-                .insert(FieldCoords(UVec2::new(x as u32, y as u32)));
+                .insert(FieldCoords(UVec2::new(x as u32, y as u32)))
+                .insert(Name::new("field"));
             }
         })
         .insert(Name::new("piece_visual"))

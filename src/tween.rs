@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::utils::HashSet;
 use bevy_prototype_lyon::prelude::DrawMode;
-use bevy_tweening::lens::{SpriteColorLens, TransformPositionLens};
+use bevy_tweening::lens::{SpriteColorLens, TransformPositionLens, TransformScaleLens};
 use bevy_tweening::*;
 use std::time::Duration;
 
@@ -430,6 +430,29 @@ pub fn get_relative_fade_spritesheet_tween(
         SpriteSheetRelativeColorLens {
             start: Color::NONE,
             end: col,
+        },
+    );
+
+    if let Some(on_completed) = on_completed {
+        tween = tween.with_completed_event(on_completed.into());
+    }
+
+    tween
+}
+
+pub fn get_scale_tween(
+    start_scale: Vec3,
+    end_scale: Vec3,
+    ease: EaseFunction,
+    duration_ms: u64,
+    on_completed: Option<TweenDoneAction>,
+) -> Tween<Transform> {
+    let mut tween = Tween::new(
+        ease,
+        Duration::from_millis(duration_ms),
+        TransformScaleLens {
+            start: start_scale,
+            end: end_scale,
         },
     );
 

@@ -29,13 +29,15 @@ fn restore_level(mut cmd: Commands) {
 
 // todo: handle non-wasm, also error handling...
 fn write_save(level: usize) {
-    let mut storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
-    storage.set_item(SAVE_KEY, &level.to_string());
+    let storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
+    storage.set_item(SAVE_KEY, &level.to_string()).unwrap();
 }
 
 // todo: handle non-wasm, also error handling...
 fn read_save() -> usize {
-    let mut storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
+    return 0;
+
+    let storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
 
     match storage.get_item(SAVE_KEY).unwrap() {
         Some(val) => str::parse(&val).unwrap_or(0),

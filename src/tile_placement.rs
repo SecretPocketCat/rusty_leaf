@@ -4,13 +4,19 @@ use crate::{
     card::{spawn_card, Card, MAX_CARDS},
     coords::TileCoords,
     drag::Mover,
+    level::{CurrentLevel, LevelEv, Levels},
     piece::{spawn_piece, FieldCoords, Piece, PieceFields, PlacedFieldIndex},
+    tween::{
+        delay_tween, get_relative_move_by_tween, get_relative_move_tween, get_scale_tween,
+        TweenDoneAction,
+    },
     GameState,
 };
 use bevy::prelude::*;
 
 use bevy_interact_2d::drag::Dragged;
 
+use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
 use rand::Rng;
 
@@ -39,12 +45,13 @@ impl Plugin for TilePlacementPlugin {
                 ],
             })
             .init_resource::<BoardClearQueue>()
-            .add_system(fill_piece_queue.run_not_in_state(GameState::Loading))
+            .add_system(fill_piece_queue.run_in_state(GameState::Playing))
             .add_system_to_stage(
                 CoreStage::Last,
-                clear_board.run_not_in_state(GameState::Loading),
+                process_clear_queue.run_not_in_state(GameState::Loading),
             )
-            .add_system(drop_piece.run_not_in_state(GameState::Loading));
+            .add_system(drop_piece.run_not_in_state(GameState::Loading))
+            .add_system(on_level_over.run_in_state(GameState::Playing));
     }
 }
 
@@ -52,8 +59,15 @@ pub struct Pieces {
     pub pieces: Vec<PieceFields>,
 }
 
-fn fill_piece_queue(mut cmd: Commands, pieces: Res<Pieces>, pieces_q: Query<Entity, With<Piece>>) {
-    if pieces_q.iter().len() == 0 {
+// todo: initial spawn delay
+// maybe just mark the level as started after the initial wait
+fn fill_piece_queue(
+    mut cmd: Commands,
+    pieces: Res<Pieces>,
+    pieces_q: Query<Entity, With<Piece>>,
+    lvl: Res<CurrentLevel>,
+) {
+    if !lvl.stopped && lvl.has_started() && pieces_q.iter().len() == 0 {
         let pieces_len = pieces.pieces.len();
         let mut rng = rand::thread_rng();
         for i in 0..3 {
@@ -86,6 +100,7 @@ fn drop_piece(
     dragged_query: Query<(Entity, &Piece, &TileCoords, &Mover), With<Dragged>>,
     child_q: Query<&Children>,
     field_q: Query<&FieldCoords>,
+    mut transform_q: Query<(&mut Transform, &GlobalTransform)>,
 ) {
     if mouse_input.just_released(MouseButton::Left) {
         for (dragged_e, piece, coords, mover) in dragged_query.iter() {
@@ -103,9 +118,17 @@ fn drop_piece(
                     if let Ok(children) = child_q.get(mover.moved_e) {
                         for c in children.iter() {
                             if let Ok(fld_coords) = field_q.get(*c) {
-                                cmd.entity(*c).insert(PlacedFieldIndex(
-                                    board.tile_coords_to_tile_index(coords + fld_coords.0),
-                                ));
+                                let mut e_cmd = cmd.entity(*c);
+
+                                let tile_coords =
+                                    board.tile_coords_to_tile_index(coords + fld_coords.0);
+                                e_cmd.insert(Name::new(format!("field [{tile_coords}]")));
+                                e_cmd.insert(PlacedFieldIndex(tile_coords));
+
+                                // unparent and update pos to stay where it's
+                                e_cmd.remove::<Parent>();
+                                let (mut t, t_global) = transform_q.get_mut(*c).unwrap();
+                                t.translation = t_global.translation();
                             }
                         }
 
@@ -121,7 +144,7 @@ fn drop_piece(
     }
 }
 
-fn clear_board(
+fn process_clear_queue(
     mut cmd: Commands,
     mut queue: ResMut<BoardClearQueue>,
     mut board: ResMut<Board>,
@@ -151,7 +174,49 @@ fn clear_board(
             .iter()
             .filter(|(_, f)| cleared_indices.contains(&f.0))
         {
+            // todo: tween
             cmd.entity(e).despawn_recursive();
+        }
+    }
+}
+
+fn on_level_over(
+    mut cmd: Commands,
+    mut lvl_evr: EventReader<LevelEv>,
+    mut board: ResMut<Board>,
+    field_q: Query<Entity, With<PlacedFieldIndex>>,
+    piece_q: Query<Entity, With<Piece>>,
+) {
+    for ev in lvl_evr.iter() {
+        if let LevelEv::LevelOver { .. } = ev {
+            board.clear();
+
+            for (i, e) in field_q.iter().enumerate() {
+                cmd.entity(e).insert(Animator::new(delay_tween(
+                    get_scale_tween(
+                        Vec3::ONE,
+                        Vec3::ZERO,
+                        EaseFunction::CircularIn,
+                        200,
+                        Some(TweenDoneAction::DespawnRecursive),
+                    ),
+                    i as u64 * 25,
+                )));
+            }
+
+            for (i, e) in piece_q.iter().enumerate() {
+                cmd.entity(e).insert(Animator::new(delay_tween(
+                    get_relative_move_by_tween(
+                        Vec3::Y * 450.,
+                        350,
+                        EaseFunction::CircularIn,
+                        Some(TweenDoneAction::DespawnRecursive),
+                    ),
+                    i as u64 * 100,
+                )));
+            }
+
+            break;
         }
     }
 }

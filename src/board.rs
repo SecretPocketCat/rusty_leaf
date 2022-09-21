@@ -224,6 +224,12 @@ impl Board {
         section
     }
 
+    pub fn clear(&mut self) {
+        for f in self.fields.iter_mut() {
+            *f = false;
+        }
+    }
+
     pub fn tile_coords_to_tile_index(&self, coords: UVec2) -> usize {
         (coords.y * self.width as u32 + coords.x) as usize
     }
