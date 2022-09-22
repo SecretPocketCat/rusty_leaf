@@ -7,7 +7,10 @@ use crate::{
     level::LevelEv,
     order::{Order, OrderEv},
     progress::TooltipProgress,
-    render::{NoRescale, ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, SCALE_MULT},
+    render::{
+        NoRescale, ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, COL_OUTLINE_HIGHLIGHTED_2,
+        COL_OUTLINE_HOVERED_DRAG, SCALE_MULT,
+    },
     tween::{
         get_relative_fade_text_anim, get_relative_move_anim, get_relative_move_by_anim,
         get_relative_spritesheet_color_anim, FadeHierarchy, FadeHierarchyBundle, TweenDoneAction,
@@ -144,7 +147,11 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
         let cauldron_outline_e = cmd
             .spawn_bundle(SpriteSheetBundle {
                 texture_atlas: sprites.cauldron_outline.clone(),
-                sprite: TextureAtlasSprite::new(*sprite_index),
+                sprite: TextureAtlasSprite {
+                    index: *sprite_index,
+                    color: COL_DARK,
+                    ..default()
+                },
                 ..default()
             })
             .insert(NoRescale)
@@ -154,7 +161,11 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
         let firepit_outline_e = cmd
             .spawn_bundle(SpriteSheetBundle {
                 texture_atlas: sprites.firepit_outline.clone(),
-                sprite: TextureAtlasSprite::new(*sprite_index),
+                sprite: TextureAtlasSprite {
+                    index: *sprite_index,
+                    color: COL_DARK,
+                    ..default()
+                },
                 ..default()
             })
             .insert(NoRescale)
@@ -188,9 +199,23 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             .insert(NoRescale)
             .add_child(firepit_outline_e);
 
-            for (y, corner_x, corner_y, group, outline_e) in [
-                (10., 18., 18., DragGroup::Cauldron, cauldron_outline_e),
-                (-28., 18., 16., DragGroup::Fire, firepit_outline_e),
+            for (y, corner_x, corner_y, group, outline_e, highlight_col) in [
+                (
+                    10.,
+                    18.,
+                    18.,
+                    DragGroup::Cauldron,
+                    cauldron_outline_e,
+                    COL_OUTLINE_HIGHLIGHTED,
+                ),
+                (
+                    -28.,
+                    18.,
+                    16.,
+                    DragGroup::Fire,
+                    firepit_outline_e,
+                    COL_OUTLINE_HIGHLIGHTED_2,
+                ),
             ] {
                 let corner = Vec2::new(corner_x, corner_y);
                 b.spawn_bundle(SpatialBundle {
@@ -203,8 +228,8 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 })
                 .insert(Highligtable {
                     sprite_e: Some(outline_e),
-                    hightlight_color: COL_OUTLINE_HIGHLIGHTED,
-                    hover_color: COL_OUTLINE_HIGHLIGHTED,
+                    hightlight_color: highlight_col,
+                    hover_color: COL_OUTLINE_HOVERED_DRAG,
                     normal_color: COL_DARK,
                     drag_groups: vec![DragGroup::Card],
                 });

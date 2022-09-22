@@ -111,6 +111,10 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
     let outline_e = cmd
         .spawn_bundle(SpriteBundle {
             texture: sprites.card_outline.clone(),
+            sprite: Sprite {
+                color: COL_DARK,
+                ..default()
+            },
             ..default()
         })
         .insert(NoRescale)

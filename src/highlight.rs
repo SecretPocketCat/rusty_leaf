@@ -14,7 +14,7 @@ impl Plugin for HighlightPlugin {
         app.add_event::<HighlightEv>()
             .insert_resource(HighlightState::default())
             .add_system(send_hover_events)
-            .add_system_to_stage(CoreStage::PostUpdate, send_drag_events)
+            .add_system(send_drag_events)
             .add_system(highlight_interactable_on_drag)
             .add_system(highlight_draggable_on_hover);
     }
@@ -85,9 +85,9 @@ fn send_hover_events(
 fn send_drag_events(
     mut evw: EventWriter<HighlightEv>,
     mut state: ResMut<HighlightState>,
+    mouse_input: Res<Input<MouseButton>>,
     added_q: Query<Entity, (With<Highligtable>, Added<Dragged>)>,
     removed: RemovedComponents<Dragged>,
-    highlightable_q: Query<Entity, (With<Highligtable>, With<Draggable>)>,
 ) {
     for e in added_q.iter() {
         // check if not removed in the same frame
@@ -96,8 +96,15 @@ fn send_drag_events(
         }
     }
 
-    for e in removed.iter().filter(|e| highlightable_q.contains(*e)) {
-        if state.dragged_entities.remove(&e) {
+    // this failed when cards were applied, possibly due to stage-related reasons?
+    // for e in removed.iter() {
+    //     if state.dragged_entities.remove(&e) {
+    //         evw.send(HighlightEv::DragEnd(DragData { entity: e }));
+    //     }
+    // }
+
+    if !mouse_input.pressed(MouseButton::Left) && state.dragged_entities.len() > 0 {
+        for e in state.dragged_entities.drain() {
             evw.send(HighlightEv::DragEnd(DragData { entity: e }));
         }
     }
@@ -154,8 +161,8 @@ fn highlight_draggable_on_hover(
         } {
             if let Ok((highlightable_e, highlightable, draggable)) = highlightable_q.get(e) {
                 if let Some(dragged_e) = state.dragged_entities.iter().next() {
+                    // already dragging => hover with a dragged item
                     if let Ok(draggable) = draggable_q.get(*dragged_e) {
-                        // already dragging => hover with a dragged item
                         tween_outline_with_drag_group_check(
                             &mut cmd,
                             highlightable,
@@ -163,9 +170,9 @@ fn highlight_draggable_on_hover(
                             draggable,
                             &sprite_q,
                             if start {
-                                highlightable.hightlight_color
+                                highlightable.hover_color
                             } else {
-                                highlightable.normal_color
+                                highlightable.hightlight_color
                             },
                         );
                     }
