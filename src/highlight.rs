@@ -11,11 +11,11 @@ use bevy_interact_2d::{
 pub struct HighlightPlugin;
 impl Plugin for HighlightPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(HighlightState::default())
+        app.add_event::<HighlightEv>()
+            .insert_resource(HighlightState::default())
             .add_system(send_hover_events)
             .add_system_to_stage(CoreStage::PostUpdate, send_drag_events)
-            .add_system_to_stage(CoreStage::PostUpdate, restore_color)
-            .add_system(highlight_interactable)
+            .add_system(highlight_interactable_on_drag)
             .add_system(highlight_draggable_on_hover);
     }
 }
@@ -27,14 +27,19 @@ struct HighlightState {
 }
 
 struct HoverData {
+    entity: Entity,
     draggable: bool,
 }
 
-enum HoverEv {
+struct DragData {
+    entity: Entity,
+}
+
+enum HighlightEv {
     HoverStart(HoverData),
     HoverEnd(HoverData),
-    DragStart(Entity),
-    DragEnd(Entity),
+    DragStart(DragData),
+    DragEnd(DragData),
 }
 
 #[derive(Component)]
@@ -47,6 +52,7 @@ pub struct Highligtable {
 }
 
 fn send_hover_events(
+    mut evw: EventWriter<HighlightEv>,
     mut state: ResMut<HighlightState>,
     interaction_state: Res<InteractionState>,
     highlightable_q: Query<(Entity, &Interactable, Option<&Draggable>), With<Highligtable>>,
@@ -59,13 +65,17 @@ fn send_hover_events(
                 .any(|(e, _)| *e == highlightable_e)
             {
                 if state.hovered_entities.insert(highlightable_e) {
-                    // todo: hover start ev
-                    info!("hover start, draggable: {}", draggable.is_some());
+                    evw.send(HighlightEv::HoverStart(HoverData {
+                        draggable: draggable.is_some(),
+                        entity: highlightable_e,
+                    }));
                 }
             } else {
                 if state.hovered_entities.remove(&highlightable_e) {
-                    // todo: hover start ev
-                    info!("hover end, draggable: {}", draggable.is_some());
+                    evw.send(HighlightEv::HoverEnd(HoverData {
+                        draggable: draggable.is_some(),
+                        entity: highlightable_e,
+                    }));
                 }
             }
         }
@@ -73,6 +83,7 @@ fn send_hover_events(
 }
 
 fn send_drag_events(
+    mut evw: EventWriter<HighlightEv>,
     mut state: ResMut<HighlightState>,
     added_q: Query<Entity, (With<Highligtable>, Added<Dragged>)>,
     removed: RemovedComponents<Dragged>,
@@ -81,61 +92,45 @@ fn send_drag_events(
     for e in added_q.iter() {
         // check if not removed in the same frame
         if !removed.iter().any(|rmv_e| rmv_e == e) && state.dragged_entities.insert(e) {
-            info!("drag start");
+            evw.send(HighlightEv::DragStart(DragData { entity: e }));
         }
     }
 
     for e in removed.iter().filter(|e| highlightable_q.contains(*e)) {
         if state.dragged_entities.remove(&e) {
-            info!("drag end");
+            evw.send(HighlightEv::DragEnd(DragData { entity: e }));
         }
     }
 }
 
-fn highlight_interactable(
+fn highlight_interactable_on_drag(
+    mut evr: EventReader<HighlightEv>,
     mut cmd: Commands,
-    dragged_q: Query<(Entity, &Draggable), Added<Dragged>>,
+    draggable_q: Query<&Draggable>,
     highlightable_q: Query<(Entity, &Highligtable)>,
     sprite_q: Query<&Sprite>,
 ) {
-    if let Ok((dragged_e, draggable)) = dragged_q.get_single() {
-        for (highlightable_e, highlightable) in
-            highlightable_q.iter().filter(|(e, ..)| *e != dragged_e)
-        {
-            tween_outline(
-                &mut cmd,
-                highlightable,
-                highlightable_e,
-                draggable,
-                &sprite_q,
-                highlightable.hightlight_color,
-            );
-        }
-    }
-}
-
-fn highlight_draggable_on_hover(
-    mut cmd: Commands,
-    sprite_q: Query<&Sprite>,
-    mouse_input: Res<Input<MouseButton>>,
-    interaction_state: Res<InteractionState>,
-    highlightable_q: Query<(Entity, &Highligtable, &Draggable)>,
-) {
-    if !mouse_input.pressed(MouseButton::Left) || mouse_input.just_released(MouseButton::Left) {
-        for (highlightable_e, highlightable, draggable) in highlightable_q.iter() {
-            if let Some(g) = draggable.groups.first() {
-                if interaction_state
-                    .get_group(DragGroup::Card.into())
-                    .iter()
-                    .any(|(e, _)| *e == highlightable_e)
-                {
-                    tween_outline(
+    for ev in evr.iter() {
+        if let Some((e, start)) = match ev {
+            HighlightEv::DragStart(data) => Some((data.entity, true)),
+            HighlightEv::DragEnd(data) => Some((data.entity, false)),
+            _ => None,
+        } {
+            for (highlightable_e, highlightable) in
+                highlightable_q.iter().filter(|(e2, ..)| *e2 != e)
+            {
+                if let Ok(draggable) = draggable_q.get(e) {
+                    tween_outline_with_drag_group_check(
                         &mut cmd,
                         highlightable,
                         highlightable_e,
                         draggable,
                         &sprite_q,
-                        highlightable.hover_color,
+                        if start {
+                            highlightable.hightlight_color
+                        } else {
+                            highlightable.normal_color
+                        },
                     );
                 }
             }
@@ -143,32 +138,57 @@ fn highlight_draggable_on_hover(
     }
 }
 
-fn restore_color(
+fn highlight_draggable_on_hover(
+    mut evr: EventReader<HighlightEv>,
     mut cmd: Commands,
-    removed: RemovedComponents<Dragged>,
-    draggable_q: Query<&Draggable>,
-    highlightable_q: Query<(Entity, &Highligtable)>,
+    state: Res<HighlightState>,
     sprite_q: Query<&Sprite>,
+    highlightable_q: Query<(Entity, &Highligtable, Option<&Draggable>)>,
+    draggable_q: Query<&Draggable>,
 ) {
-    for dragged_e in removed.iter() {
-        if let Ok(draggable) = draggable_q.get(dragged_e) {
-            for (highlightable_e, highlightable) in
-                highlightable_q.iter().filter(|(e, ..)| *e != dragged_e)
-            {
-                tween_outline(
-                    &mut cmd,
-                    highlightable,
-                    highlightable_e,
-                    draggable,
-                    &sprite_q,
-                    highlightable.normal_color,
-                );
+    for ev in evr.iter() {
+        if let Some((e, start)) = match ev {
+            HighlightEv::HoverStart(data) => Some((data.entity, true)),
+            HighlightEv::HoverEnd(data) => Some((data.entity, false)),
+            _ => None,
+        } {
+            if let Ok((highlightable_e, highlightable, draggable)) = highlightable_q.get(e) {
+                if let Some(dragged_e) = state.dragged_entities.iter().next() {
+                    if let Ok(draggable) = draggable_q.get(*dragged_e) {
+                        // already dragging => hover with a dragged item
+                        tween_outline_with_drag_group_check(
+                            &mut cmd,
+                            highlightable,
+                            highlightable_e,
+                            draggable,
+                            &sprite_q,
+                            if start {
+                                highlightable.hightlight_color
+                            } else {
+                                highlightable.normal_color
+                            },
+                        );
+                    }
+                } else if draggable.is_some() {
+                    // not dragging - hover over a draggable card
+                    tween_outline(
+                        &mut cmd,
+                        highlightable,
+                        highlightable_e,
+                        &sprite_q,
+                        if start {
+                            highlightable.hover_color
+                        } else {
+                            highlightable.normal_color
+                        },
+                    );
+                }
             }
         }
     }
 }
 
-fn tween_outline(
+fn tween_outline_with_drag_group_check(
     cmd: &mut Commands,
     highlightable: &Highligtable,
     highlightable_e: Entity,
@@ -181,13 +201,25 @@ fn tween_outline(
         .iter()
         .any(|g| draggable.groups.contains(&Group(*g as u8)))
     {
-        let e = highlightable.sprite_e.unwrap_or(highlightable_e);
-        if sprite_q.contains(e) {
-            cmd.entity(e)
-                .insert(get_relative_sprite_color_anim(color, 220, None));
-        } else {
-            cmd.entity(e)
-                .insert(get_relative_spritesheet_color_anim(color, 220, None));
-        }
+        tween_outline(cmd, highlightable, highlightable_e, sprite_q, color);
+    }
+}
+
+fn tween_outline(
+    cmd: &mut Commands,
+    highlightable: &Highligtable,
+    highlightable_e: Entity,
+    sprite_q: &Query<&Sprite>,
+    color: Color,
+) {
+    let e = highlightable.sprite_e.unwrap_or(highlightable_e);
+    if sprite_q.contains(e) {
+        // sprite
+        cmd.entity(e)
+            .insert(get_relative_sprite_color_anim(color, 220, None));
+    } else {
+        // spritesheet
+        cmd.entity(e)
+            .insert(get_relative_spritesheet_color_anim(color, 220, None));
     }
 }
