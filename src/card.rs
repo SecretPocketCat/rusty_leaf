@@ -3,9 +3,10 @@ use crate::{
     board::BoardClear,
     cauldron::{Cauldron, TooltipIngridientList},
     drag::DragGroup,
+    highlight::Highligtable,
     level::LevelEv,
     list::{ListPlugin, ListPluginOptions},
-    render::{NoRescale, ZIndex, WINDOW_SIZE},
+    render::{NoRescale, ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, WINDOW_SIZE},
     tween::{
         delay_tween, get_relative_move_anim, get_relative_move_by_tween, FadeHierarchyBundle,
         TweenDoneAction,
@@ -107,6 +108,15 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
         },
     };
 
+    let outline_e = cmd
+        .spawn_bundle(SpriteBundle {
+            texture: sprites.card_outline.clone(),
+            ..default()
+        })
+        .insert(NoRescale)
+        .insert(Name::new("outline"))
+        .id();
+
     let pos = Vec3::new(
         WINDOW_SIZE.x / 2. - CARD_SIZE.x - 60.,
         WINDOW_SIZE.y / 2. - CARD_SIZE.y - 75. + CARD_OFFSCREEN_OFFSET as f32,
@@ -130,6 +140,14 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
         ..default()
     })
     .insert(Name::new("Card"))
+    .insert(Highligtable {
+        sprite_e: Some(outline_e),
+        hightlight_color: COL_LIGHT,
+        hover_color: COL_OUTLINE_HIGHLIGHTED,
+        normal_color: COL_DARK,
+        drag_groups: vec![],
+    })
+    .add_child(outline_e)
     .with_children(|b| {
         b.spawn_bundle(SpriteSheetBundle {
             texture_atlas: sprites.ingredients.clone(),

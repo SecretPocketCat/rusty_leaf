@@ -15,6 +15,7 @@ pub const WINDOW_SIZE: Vec2 = Vec2::new(1280., 720.);
 pub const SCALE_MULT: f32 = 4.; // todo: resource and handled on win resize?
 pub const COL_DARK: Color = Color::rgb(0.2706, 0.2392, 0.2784);
 pub const COL_LIGHT: Color = Color::rgb(0.9372, 0.847, 0.7294);
+pub const COL_OUTLINE_HIGHLIGHTED: Color = Color::rgb(0.9647, 0.502, 0.2431);
 
 #[derive(Component)]
 pub struct MainCam;

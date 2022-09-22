@@ -7,7 +7,7 @@ use crate::{
     level::LevelEv,
     order::{Order, OrderEv},
     progress::TooltipProgress,
-    render::{NoRescale, ZIndex, COL_DARK, COL_LIGHT, SCALE_MULT},
+    render::{NoRescale, ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, SCALE_MULT},
     tween::{
         get_relative_fade_text_anim, get_relative_move_anim, get_relative_move_by_anim,
         get_relative_spritesheet_color_anim, FadeHierarchy, FadeHierarchyBundle, TweenDoneAction,
@@ -141,6 +141,26 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             .insert(Name::new("Fire"))
             .id();
 
+        let cauldron_outline_e = cmd
+            .spawn_bundle(SpriteSheetBundle {
+                texture_atlas: sprites.cauldron_outline.clone(),
+                sprite: TextureAtlasSprite::new(*sprite_index),
+                ..default()
+            })
+            .insert(NoRescale)
+            .insert(Name::new("outline"))
+            .id();
+
+        let firepit_outline_e = cmd
+            .spawn_bundle(SpriteSheetBundle {
+                texture_atlas: sprites.firepit_outline.clone(),
+                sprite: TextureAtlasSprite::new(*sprite_index),
+                ..default()
+            })
+            .insert(NoRescale)
+            .insert(Name::new("outline"))
+            .id();
+
         cmd.spawn_bundle(SpriteSheetBundle {
             texture_atlas: sprites.cauldron.clone(),
             sprite: TextureAtlasSprite::new(*sprite_index),
@@ -155,14 +175,9 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             fire_e,
             tooltip_e: None,
         })
-        .insert(Highligtable {
-            sprite_e: None,
-            hightlight_color: COL_LIGHT,
-            normal_color: COL_DARK,
-            drag_groups: vec![DragGroup::Card],
-        })
         .insert(Name::new("Cauldron"))
         .add_child(fire_e)
+        .add_child(cauldron_outline_e)
         .with_children(|b| {
             b.spawn_bundle(SpriteSheetBundle {
                 texture_atlas: sprites.firepit.clone(),
@@ -170,11 +185,12 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 transform: Transform::from_xyz(*firepit_x, -25., -0.01),
                 ..default()
             })
-            .insert(NoRescale);
+            .insert(NoRescale)
+            .add_child(firepit_outline_e);
 
-            for (y, corner_x, corner_y, group) in [
-                (10., 18., 18., DragGroup::Cauldron),
-                (-28., 18., 16., DragGroup::Fire),
+            for (y, corner_x, corner_y, group, outline_e) in [
+                (10., 18., 18., DragGroup::Cauldron, cauldron_outline_e),
+                (-28., 18., 16., DragGroup::Fire, firepit_outline_e),
             ] {
                 let corner = Vec2::new(corner_x, corner_y);
                 b.spawn_bundle(SpatialBundle {
@@ -184,6 +200,13 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 .insert(Interactable {
                     bounding_box: (-corner, corner),
                     groups: vec![group.into()],
+                })
+                .insert(Highligtable {
+                    sprite_e: Some(outline_e),
+                    hightlight_color: COL_OUTLINE_HIGHLIGHTED,
+                    hover_color: COL_OUTLINE_HIGHLIGHTED,
+                    normal_color: COL_DARK,
+                    drag_groups: vec![DragGroup::Card],
                 });
             }
         });
