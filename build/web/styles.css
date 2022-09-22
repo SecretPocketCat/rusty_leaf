@@ -6,6 +6,7 @@ html {
 body {
   background-color: #453d4f;
   margin: 0;
+  user-select: none;
 }
 
 .game-container {
