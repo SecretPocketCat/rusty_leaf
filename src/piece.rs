@@ -24,6 +24,7 @@ pub struct FieldCoords(pub UVec2);
 #[derive(Component, Inspectable)]
 pub struct PlacedFieldIndex(pub usize);
 
+#[derive(Clone)]
 pub struct PieceFields {
     width: usize,
     padded_width: usize,

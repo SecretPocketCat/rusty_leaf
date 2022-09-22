@@ -16,12 +16,12 @@ use crate::{
     GameState,
 };
 use bevy::prelude::*;
-
 use bevy_interact_2d::drag::Dragged;
-
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
-use rand::{thread_rng, Rng};
+use rand::prelude::*;
+use rand::{distributions::WeightedIndex, thread_rng, Rng};
+use std::ops::Range;
 
 pub const BOARD_SIZE_PX: f32 = 480.;
 pub const BOARD_SIZE: usize = 9;
@@ -34,20 +34,60 @@ pub struct TilePlacementPlugin;
 impl Plugin for TilePlacementPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Board::new(BOARD_SIZE, BOARD_SIZE, SECTION_SIZE))
-            .insert_resource(Pieces {
-                pieces: vec![
-                    PieceFields::new(&[0, 1], 2, BOARD_SIZE),
-                    PieceFields::new(&[0, 1], 1, BOARD_SIZE),
-                    PieceFields::new(&[0, 1, 2], 1, BOARD_SIZE),
-                    PieceFields::new(&[0, 1, 2, 3], 2, BOARD_SIZE),
-                    PieceFields::new(&[0, 1, 2], 2, BOARD_SIZE),
-                    PieceFields::new(&[0, 1, 3], 2, BOARD_SIZE),
-                    PieceFields::new(&[0, 1, 2, 5], 3, BOARD_SIZE),
-                    PieceFields::new(&[0, 1, 2, 3], 3, BOARD_SIZE),
-                    PieceFields::new(&[0, 1, 2, 4], 3, BOARD_SIZE),
-                    PieceFields::new(&[1, 3, 4, 5], 3, BOARD_SIZE),
-                ],
-            })
+            .insert_resource(Pieces::new(vec![
+                // lines
+                (PieceFields::new(&[0, 1], 1, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 1], 2, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 1, 2], 1, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 1, 2], 3, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 1, 2, 3], 1, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 1, 2, 3], 4, BOARD_SIZE), 10),
+                // square
+                (PieceFields::new(&[0, 1, 2, 3], 2, BOARD_SIZE), 10),
+                // corners
+                (PieceFields::new(&[0, 1, 2], 2, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 1, 3], 2, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 2, 3], 2, BOARD_SIZE), 10),
+                (PieceFields::new(&[1, 2, 3], 2, BOARD_SIZE), 10),
+                // L
+                (PieceFields::new(&[0, 1, 2, 4], 2, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 1, 3, 5], 2, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 2, 4, 5], 2, BOARD_SIZE), 10),
+                (PieceFields::new(&[1, 3, 4, 5], 2, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 3, 4, 5], 3, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 1, 2, 3], 3, BOARD_SIZE), 10),
+                (PieceFields::new(&[2, 3, 4, 5], 3, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 1, 2, 4], 3, BOARD_SIZE), 10),
+                // Z
+                (PieceFields::new(&[1, 2, 3, 4], 3, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 1, 4, 5], 3, BOARD_SIZE), 10),
+                (PieceFields::new(&[1, 2, 3, 4], 2, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 2, 3, 5], 2, BOARD_SIZE), 10),
+                // T
+                (PieceFields::new(&[1, 3, 4, 5], 3, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 1, 2, 4], 3, BOARD_SIZE), 10),
+                (PieceFields::new(&[0, 2, 3, 4], 2, BOARD_SIZE), 10),
+                (PieceFields::new(&[1, 2, 3, 5], 2, BOARD_SIZE), 10),
+                // cubby
+                (PieceFields::new(&[0, 1, 2, 4, 5], 2, BOARD_SIZE), 5),
+                (PieceFields::new(&[0, 1, 3, 4, 5], 2, BOARD_SIZE), 5),
+                (PieceFields::new(&[0, 1, 2, 3, 5], 3, BOARD_SIZE), 5),
+                (PieceFields::new(&[0, 3, 4, 5], 3, BOARD_SIZE), 5),
+                // edgy
+                (PieceFields::new(&[0, 3], 2, BOARD_SIZE), 5),
+                (PieceFields::new(&[1, 2], 2, BOARD_SIZE), 5),
+                (PieceFields::new(&[0, 4, 8], 3, BOARD_SIZE), 3),
+                (PieceFields::new(&[2, 4, 6], 3, BOARD_SIZE), 3),
+                // cross
+                (PieceFields::new(&[1, 3, 4, 5, 7], 3, BOARD_SIZE), 3),
+                // edgy cross
+                (PieceFields::new(&[0, 2, 4, 6, 8], 3, BOARD_SIZE), 2),
+                // donut
+                (
+                    PieceFields::new(&[0, 1, 2, 3, 5, 6, 7, 8], 3, BOARD_SIZE),
+                    1,
+                ),
+            ]))
             .init_resource::<BoardClearQueue>()
             .add_system(fill_piece_queue.run_in_state(GameState::Playing))
             .add_system_to_stage(
@@ -61,6 +101,23 @@ impl Plugin for TilePlacementPlugin {
 
 pub struct Pieces {
     pub pieces: Vec<PieceFields>,
+    distribution: Vec<usize>,
+}
+
+impl Pieces {
+    pub fn new(weighted_pieces: Vec<(PieceFields, usize)>) -> Self {
+        Self {
+            pieces: weighted_pieces.iter().map(|x| x.0.clone()).collect(),
+            distribution: weighted_pieces.iter().map(|x| x.1.clone()).collect(),
+        }
+    }
+
+    pub fn get_distribution(&self, range: Option<Range<usize>>) -> WeightedIndex<usize> {
+        match range {
+            Some(range) => WeightedIndex::new(self.distribution[range].iter().cloned()).unwrap(),
+            None => WeightedIndex::new(self.distribution.clone()).unwrap(),
+        }
+    }
 }
 
 pub fn spawn_tile_explosion(cmd: &mut Commands, sprites: &Sprites, position: Vec3, delay_ms: u64) {
@@ -93,10 +150,9 @@ fn fill_piece_queue(
     lvl: Res<CurrentLevel>,
 ) {
     if !lvl.stopped && lvl.has_started() && pieces_q.iter().len() == 0 {
-        let pieces_len = pieces.pieces.len();
         let mut rng = rand::thread_rng();
         for i in 0..3 {
-            let piece_i = rng.gen_range(0..pieces_len);
+            let piece_i = lvl.fields_index_offset + lvl.field_weights.sample(&mut rng);
             let x = ((i as i32) - 1i32) as f32 * 180.;
             let piece = &pieces.pieces[piece_i];
             spawn_piece(

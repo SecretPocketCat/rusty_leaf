@@ -1,12 +1,13 @@
-use std::ops::Range;
+use std::ops::{Range, RangeBounds};
 
 use crate::{
     anim::SheetAnimation,
     assets::{Fonts, Sprites},
     card::Ingredient,
     order::{SpecialOrder, ORDER_TIME_S},
+    piece::PieceFields,
     render::{ZIndex, COL_DARK, COL_LIGHT, SCALE_MULT},
-    tile_placement::BOARD_SHIFT,
+    tile_placement::{Pieces, BOARD_SHIFT},
     tools::enum_variant_eq,
     tween::{
         delay_tween, get_relative_fade_text_anim, get_relative_fade_text_tween,
@@ -17,7 +18,7 @@ use crate::{
 use bevy::prelude::*;
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
-use rand::{thread_rng, Rng};
+use rand::{distributions::WeightedIndex, thread_rng, Rng};
 
 pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
@@ -48,6 +49,7 @@ impl Plugin for LevelPlugin {
                 next_customer_delay_range_ms: 20000..30000,
                 total_order_count: 2,
                 special_order: None,
+                pieces_range: Some(0..27),
             },
             Level {
                 name: "Starter".into(),
@@ -63,9 +65,10 @@ impl Plugin for LevelPlugin {
                 next_customer_delay_range_ms: 20000..30000,
                 total_order_count: 3,
                 special_order: None,
+                pieces_range: Some(0..27),
             },
             Level {
-                name: "Smells like Halloween".into(),
+                name: "Smells Like Halloween".into(),
                 allowed_ingredients: vec![
                     Ingredient::Pumpkin,
                     Ingredient::Potato,
@@ -76,8 +79,25 @@ impl Plugin for LevelPlugin {
                 ingredient_type_range: 1..3,
                 max_simultaneous_orders: 2,
                 next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 4,
+                total_order_count: 5,
                 special_order: None,
+                pieces_range: Some(0..27),
+            },
+            Level {
+                name: "Cutting Corners".into(),
+                allowed_ingredients: vec![
+                    Ingredient::Pumpkin,
+                    Ingredient::Potato,
+                    Ingredient::Tomato,
+                ],
+                required_ingredients: vec![],
+                ingredient_count_range: 1..3,
+                ingredient_type_range: 1..3,
+                max_simultaneous_orders: 2,
+                next_customer_delay_range_ms: 20000..30000,
+                total_order_count: 6,
+                special_order: None,
+                pieces_range: Some(7..19),
             },
             Level {
                 name: "Vampire's Best Friend".into(),
@@ -92,8 +112,9 @@ impl Plugin for LevelPlugin {
                 ingredient_type_range: 1..4,
                 max_simultaneous_orders: 3,
                 next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 5,
+                total_order_count: 7,
                 special_order: None,
+                pieces_range: Some(0..27),
             },
             Level {
                 name: "Turning Up the Heat".into(),
@@ -111,6 +132,7 @@ impl Plugin for LevelPlugin {
                 next_customer_delay_range_ms: 20000..30000,
                 total_order_count: 7,
                 special_order: None,
+                pieces_range: Some(0..27),
             },
             Level {
                 name: "A Recipe for Disaster".into(),
@@ -129,6 +151,7 @@ impl Plugin for LevelPlugin {
                 next_customer_delay_range_ms: 20000..30000,
                 total_order_count: 7,
                 special_order: None,
+                pieces_range: Some(0..35),
             },
             Level {
                 name: "Fast Food".into(),
@@ -147,6 +170,7 @@ impl Plugin for LevelPlugin {
                 next_customer_delay_range_ms: 13000..17000,
                 total_order_count: 10,
                 special_order: None,
+                pieces_range: Some(0..7),
             },
             Level {
                 name: "Souped Up".into(),
@@ -165,6 +189,7 @@ impl Plugin for LevelPlugin {
                 next_customer_delay_range_ms: 20000..30000,
                 total_order_count: 10,
                 special_order: None,
+                pieces_range: None,
             },
             Level {
                 name: "Food Critic".into(),
@@ -191,6 +216,7 @@ impl Plugin for LevelPlugin {
                     ]
                     .into(),
                 }),
+                pieces_range: None,
             },
         ];
 
@@ -233,13 +259,12 @@ pub struct Level {
     pub max_simultaneous_orders: u8,
     pub total_order_count: u8,
     pub allowed_ingredients: Vec<Ingredient>,
-    // todo:
     pub required_ingredients: Vec<Ingredient>,
     pub ingredient_count_range: Range<u8>,
     pub ingredient_type_range: Range<u8>,
     pub next_customer_delay_range_ms: Range<u64>,
-    // todo:
     pub special_order: Option<SpecialOrder>,
+    pub pieces_range: Option<Range<usize>>,
 }
 
 #[derive(Deref, DerefMut)]
@@ -253,10 +278,17 @@ pub struct CurrentLevel {
     pub stopped: bool,
     pub retry: bool,
     pub special_order_index: Option<usize>,
+    pub fields_index_offset: usize,
+    pub field_weights: WeightedIndex<usize>,
 }
 
 impl CurrentLevel {
-    pub fn new(level_index: usize, retry: bool) -> Self {
+    pub fn new(
+        level_index: usize,
+        retry: bool,
+        field_weights: WeightedIndex<usize>,
+        fields_index_offset: usize,
+    ) -> Self {
         Self {
             level_index,
             start_timer: Some(Timer::from_seconds(1.1, false)),
@@ -265,6 +297,8 @@ impl CurrentLevel {
             stopped: true,
             retry,
             special_order_index: None,
+            fields_index_offset,
+            field_weights,
         }
     }
 
@@ -513,24 +547,36 @@ fn on_level_over(
     mut cmd: Commands,
     mut lvl_evr: EventReader<LevelEv>,
     lvl: Res<CurrentLevel>,
-    lvls: ResMut<Levels>,
+    lvls: Res<Levels>,
+    pieces: Res<Pieces>,
 ) {
     for ev in lvl_evr.iter() {
         if let LevelEv::LevelOver { won } = ev {
+            let mut lvl_i = lvl.level_index;
+
             if *won {
                 if lvl.level_index >= lvls.len() - 1 {
                     // restart current lvl if the player wants to go again
-                    cmd.insert_resource(CurrentLevel::new(0, false));
+                    lvl_i = 0;
                     cmd.insert_resource(NextState::<GameState>(GameState::Won));
                 } else {
                     // next lvl
-                    cmd.insert_resource(CurrentLevel::new(lvl.level_index + 1, false));
+                    lvl_i = lvl.level_index + 1;
                     cmd.insert_resource(NextState::<GameState>(GameState::Playing));
                 }
             } else {
-                cmd.insert_resource(CurrentLevel::new(lvl.level_index, true));
                 cmd.insert_resource(NextState::<GameState>(GameState::Playing));
             }
+
+            let range = lvls[lvl_i].pieces_range.clone();
+            let dist = pieces.get_distribution(range.clone());
+
+            cmd.insert_resource(CurrentLevel::new(
+                lvl_i,
+                !won,
+                dist,
+                range.map_or(0, |x| x.start),
+            ));
 
             break;
         }
