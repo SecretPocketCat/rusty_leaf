@@ -2,7 +2,10 @@ use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use web_sys;
 
-use crate::level::{CurrentLevel, LevelEv};
+use crate::{
+    level::{CurrentLevel, LevelEv, Levels},
+    tile_placement::Pieces,
+};
 
 pub struct SavePlugin;
 impl Plugin for SavePlugin {
@@ -22,9 +25,17 @@ fn store_level(mut lvl_evr: EventReader<LevelEv>, lvl: Res<CurrentLevel>) {
     }
 }
 
-fn restore_level(mut cmd: Commands) {
+fn restore_level(mut cmd: Commands, lvls: Res<Levels>, pieces: Res<Pieces>) {
     let lvl = read_save();
-    cmd.insert_resource(CurrentLevel::new(lvl, false));
+
+    let range = lvls[lvl].pieces_range.clone();
+    let dist = pieces.get_distribution(range.clone());
+    cmd.insert_resource(CurrentLevel::new(
+        lvl,
+        false,
+        dist,
+        range.map_or(0, |x| x.start),
+    ));
 }
 
 // todo: handle non-wasm, also error handling...

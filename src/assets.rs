@@ -92,6 +92,15 @@ pub struct Sprites {
     #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 32., columns = 6, rows = 1))]
     #[asset(path = "sprites/shop_smoke_sheet.png")]
     pub shop_smoke: Handle<TextureAtlas>,
+
+    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32., columns = 10, rows = 1))]
+    #[asset(path = "sprites/explosion.png")]
+    pub explosion: Handle<TextureAtlas>,
+
+    #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 16., columns = 4, rows = 4))]
+    #[asset(path = "sprites/crosses.png")]
+    pub crosses: Handle<TextureAtlas>,
+    //
     // // A collection of asset files loaded to typed asset handles
     // #[asset(paths("images/player.png", "images/tree.png"), collection(typed))]
     // files_typed: Vec<Handle<Image>>,
