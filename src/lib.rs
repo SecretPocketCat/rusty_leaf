@@ -18,6 +18,7 @@ mod cauldron;
 mod coords;
 mod customer;
 mod drag;
+mod highlight;
 mod level;
 mod list;
 mod mouse;
@@ -46,6 +47,7 @@ use cauldron::CauldronPlugin;
 use coords::{CoordsPlugin, TileCoords};
 use customer::CustomerPlugin;
 use drag::DragPlugin as GameDragPlugin;
+use highlight::HighlightPlugin;
 use level::LevelPlugin;
 use mouse::MousePlugin;
 use order::OrderPlugin;
@@ -76,10 +78,10 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(AssetsPlugin)
             .add_plugin(RenderPlugin)
-            .add_plugin(WorldInspectorPlugin::new())
             .add_plugin(DragPlugin)
             .add_plugin(GameDragPlugin)
             .add_plugin(AnimationPlugin)
+            .add_plugin(HighlightPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(TilePlacementPlugin)
             .add_plugin(LevelPlugin)

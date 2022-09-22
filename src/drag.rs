@@ -1,8 +1,3 @@
-use bevy::prelude::*;
-
-use bevy_interact_2d::{drag::Dragged, Group, Interactable};
-use bevy_tweening::{Animator, AnimatorState};
-
 use crate::{
     board::Board,
     coords::{get_world_coords_from_tile, TileCoords},
@@ -10,8 +5,10 @@ use crate::{
     render::ZIndex,
     tile_placement::{Pieces, BOARD_SIZE_PX},
 };
+use bevy::prelude::*;
+use bevy_interact_2d::{drag::Dragged, Group, Interactable};
+use bevy_tweening::{Animator, AnimatorState};
 
-// todo: cancel tween if clicking on a draggable entity
 pub struct DragPlugin;
 impl Plugin for DragPlugin {
     fn build(&self, app: &mut App) {

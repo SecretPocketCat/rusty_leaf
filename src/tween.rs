@@ -129,7 +129,7 @@ fn fade_hierarchy(
             match sprite {
                 FadeChild::Sprite(e) => {
                     if let Ok(e) = entity_q.get(*e) {
-                        cmd.entity(e).insert(get_relative_fade_sprite_anim(
+                        cmd.entity(e).insert(get_relative_sprite_color_anim(
                             col,
                             fade.duration_ms,
                             fade.done_action.clone(),
@@ -138,7 +138,7 @@ fn fade_hierarchy(
                 }
                 FadeChild::SpriteSheet(e) => {
                     if let Ok(e) = entity_q.get(*e) {
-                        cmd.entity(e).insert(get_relative_fade_spritesheet_anim(
+                        cmd.entity(e).insert(get_relative_spritesheet_color_anim(
                             col,
                             fade.duration_ms,
                             fade.done_action.clone(),
@@ -342,19 +342,19 @@ pub fn get_move_tween(
     tween
 }
 
-pub fn get_relative_fade_sprite_anim(
+pub fn get_relative_sprite_color_anim(
     col: Color,
     duration_ms: u64,
     on_completed: Option<TweenDoneAction>,
 ) -> Animator<Sprite> {
-    Animator::new(get_relative_fade_sprite_tween(
+    Animator::new(get_relative_sprite_color_tween(
         col,
         duration_ms,
         on_completed,
     ))
 }
 
-pub fn get_relative_fade_sprite_tween(
+pub fn get_relative_sprite_color_tween(
     col: Color,
     duration_ms: u64,
     on_completed: Option<TweenDoneAction>,
@@ -410,7 +410,7 @@ pub fn get_relative_fade_text_tween(
     tween
 }
 
-pub fn get_relative_fade_spritesheet_anim(
+pub fn get_relative_spritesheet_color_anim(
     col: Color,
     duration_ms: u64,
     on_completed: Option<TweenDoneAction>,

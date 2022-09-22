@@ -3,13 +3,17 @@ use crate::{
     assets::{Fonts, Sprites},
     card::{CardEffect, Ingredient},
     drag::DragGroup,
+    highlight::Highligtable,
     level::LevelEv,
     order::{Order, OrderEv},
     progress::TooltipProgress,
-    render::{NoRescale, ZIndex, COL_DARK, SCALE_MULT},
+    render::{
+        NoRescale, ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, COL_OUTLINE_HIGHLIGHTED_2,
+        COL_OUTLINE_HOVERED_DRAG, SCALE_MULT,
+    },
     tween::{
-        get_relative_fade_spritesheet_anim, get_relative_fade_text_anim, get_relative_move_anim,
-        get_relative_move_by_anim, FadeHierarchy, FadeHierarchyBundle, TweenDoneAction,
+        get_relative_fade_text_anim, get_relative_move_anim, get_relative_move_by_anim,
+        get_relative_spritesheet_color_anim, FadeHierarchy, FadeHierarchyBundle, TweenDoneAction,
     },
     GameState,
 };
@@ -112,7 +116,7 @@ pub fn spawn_tooltip_ingredient(
             ..default()
         })
         .insert(NoRescale)
-        .insert(get_relative_fade_spritesheet_anim(Color::WHITE, 250, None))
+        .insert(get_relative_spritesheet_color_anim(Color::WHITE, 250, None))
         .insert(Name::new("tooltip_ingredient"))
         .add_child(txt_e)
         .id();
@@ -140,6 +144,34 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             .insert(Name::new("Fire"))
             .id();
 
+        let cauldron_outline_e = cmd
+            .spawn_bundle(SpriteSheetBundle {
+                texture_atlas: sprites.cauldron_outline.clone(),
+                sprite: TextureAtlasSprite {
+                    index: *sprite_index,
+                    color: COL_DARK,
+                    ..default()
+                },
+                ..default()
+            })
+            .insert(NoRescale)
+            .insert(Name::new("outline"))
+            .id();
+
+        let firepit_outline_e = cmd
+            .spawn_bundle(SpriteSheetBundle {
+                texture_atlas: sprites.firepit_outline.clone(),
+                sprite: TextureAtlasSprite {
+                    index: *sprite_index,
+                    color: COL_DARK,
+                    ..default()
+                },
+                ..default()
+            })
+            .insert(NoRescale)
+            .insert(Name::new("outline"))
+            .id();
+
         cmd.spawn_bundle(SpriteSheetBundle {
             texture_atlas: sprites.cauldron.clone(),
             sprite: TextureAtlasSprite::new(*sprite_index),
@@ -156,6 +188,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
         })
         .insert(Name::new("Cauldron"))
         .add_child(fire_e)
+        .add_child(cauldron_outline_e)
         .with_children(|b| {
             b.spawn_bundle(SpriteSheetBundle {
                 texture_atlas: sprites.firepit.clone(),
@@ -163,11 +196,26 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 transform: Transform::from_xyz(*firepit_x, -25., -0.01),
                 ..default()
             })
-            .insert(NoRescale);
+            .insert(NoRescale)
+            .add_child(firepit_outline_e);
 
-            for (y, corner_x, corner_y, group) in [
-                (10., 18., 18., DragGroup::Cauldron),
-                (-28., 18., 16., DragGroup::Fire),
+            for (y, corner_x, corner_y, group, outline_e, highlight_col) in [
+                (
+                    10.,
+                    18.,
+                    18.,
+                    DragGroup::Cauldron,
+                    cauldron_outline_e,
+                    COL_OUTLINE_HIGHLIGHTED,
+                ),
+                (
+                    -28.,
+                    18.,
+                    16.,
+                    DragGroup::Fire,
+                    firepit_outline_e,
+                    COL_OUTLINE_HIGHLIGHTED_2,
+                ),
             ] {
                 let corner = Vec2::new(corner_x, corner_y);
                 b.spawn_bundle(SpatialBundle {
@@ -177,6 +225,13 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 .insert(Interactable {
                     bounding_box: (-corner, corner),
                     groups: vec![group.into()],
+                })
+                .insert(Highligtable {
+                    sprite_e: Some(outline_e),
+                    hightlight_color: highlight_col,
+                    hover_color: COL_OUTLINE_HOVERED_DRAG,
+                    normal_color: COL_DARK,
+                    drag_groups: vec![DragGroup::Card],
                 });
             }
         });

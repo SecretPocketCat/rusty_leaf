@@ -30,6 +30,9 @@ pub struct Sprites {
     #[asset(path = "sprites/card.png")]
     pub card: Handle<Image>,
 
+    #[asset(path = "sprites/card_outline.png")]
+    pub card_outline: Handle<Image>,
+
     #[asset(path = "sprites/bg_1.png")]
     pub bg: Handle<Image>,
 
@@ -70,6 +73,10 @@ pub struct Sprites {
     #[asset(path = "sprites/cauldron_sheet.png")]
     pub cauldron: Handle<TextureAtlas>,
 
+    #[asset(texture_atlas(tile_size_x = 37., tile_size_y = 30., columns = 2, rows = 1))]
+    #[asset(path = "sprites/cauldron_sheet_outline.png")]
+    pub cauldron_outline: Handle<TextureAtlas>,
+
     #[asset(texture_atlas(tile_size_x = 17., tile_size_y = 24., columns = 8, rows = 2))]
     #[asset(path = "sprites/fire_sheet.png")]
     pub fire: Handle<TextureAtlas>,
@@ -77,6 +84,10 @@ pub struct Sprites {
     #[asset(texture_atlas(tile_size_x = 40., tile_size_y = 32., columns = 2, rows = 1))]
     #[asset(path = "sprites/firepit_sheet.png")]
     pub firepit: Handle<TextureAtlas>,
+
+    #[asset(texture_atlas(tile_size_x = 40., tile_size_y = 32., columns = 2, rows = 1))]
+    #[asset(path = "sprites/firepit_sheet_outline.png")]
+    pub firepit_outline: Handle<TextureAtlas>,
 
     #[asset(texture_atlas(tile_size_x = 16., tile_size_y = 32., columns = 6, rows = 1))]
     #[asset(path = "sprites/shop_smoke_sheet.png")]
