@@ -14,6 +14,8 @@ pub struct SheetAnimation {
     timer: Timer,
     range: Option<Range<usize>>,
     start_index: Option<usize>,
+    despawn_on_completion: bool,
+    delay: Option<Timer>,
 }
 
 impl SheetAnimation {
@@ -22,6 +24,8 @@ impl SheetAnimation {
             timer: Timer::new(Duration::from_millis(duration_ms), true),
             range: None,
             start_index: None,
+            despawn_on_completion: false,
+            delay: None,
         }
     }
 
@@ -31,6 +35,16 @@ impl SheetAnimation {
         }
 
         self.set_range(range);
+        self
+    }
+
+    pub fn with_despawn_on_completion(mut self) -> Self {
+        self.despawn_on_completion = true;
+        self
+    }
+
+    pub fn with_delay(mut self, delay_ms: u64) -> Self {
+        self.delay = Some(Timer::new(Duration::from_millis(delay_ms), false));
         self
     }
 
@@ -44,28 +58,48 @@ impl SheetAnimation {
 }
 
 fn animate_sheet(
+    mut cmd: Commands,
     time: Res<Time>,
     texture_atlases: Res<Assets<TextureAtlas>>,
     mut query: Query<(
+        Entity,
         &mut SheetAnimation,
         &mut TextureAtlasSprite,
         &Handle<TextureAtlas>,
     )>,
 ) {
-    for (mut anim, mut sprite, texture_atlas_handle) in &mut query {
-        anim.timer.tick(time.delta());
-        if anim.timer.just_finished() {
-            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-            let (from, to) = if let Some(ref range) = anim.range {
-                (range.start, range.end)
-            } else {
-                (0, texture_atlas.textures.len())
-            };
+    for (e, mut anim, mut sprite, texture_atlas_handle) in &mut query {
+        let mut run = anim.delay.is_none();
 
-            if let Some(index) = anim.start_index.take() {
-                sprite.index = index;
-            } else {
-                sprite.index = from + (sprite.index + 1) % (to - from);
+        if let Some(delay) = &mut anim.delay {
+            delay.tick(time.delta());
+
+            if delay.just_finished() {
+                anim.delay = None;
+                run = true;
+                sprite.color = Color::WHITE;
+            }
+        }
+
+        if run {
+            anim.timer.tick(time.delta());
+            if anim.timer.just_finished() {
+                let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+                let (from, to) = if let Some(ref range) = anim.range {
+                    (range.start, range.end)
+                } else {
+                    (0, texture_atlas.textures.len())
+                };
+
+                if let Some(index) = anim.start_index.take() {
+                    sprite.index = index;
+                } else {
+                    if anim.despawn_on_completion && sprite.index == to - 1 {
+                        cmd.entity(e).despawn_recursive();
+                    } else {
+                        sprite.index = from + (sprite.index + 1) % (to - from);
+                    }
+                }
             }
         }
     }

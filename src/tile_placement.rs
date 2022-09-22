@@ -1,4 +1,5 @@
 use crate::{
+    anim::SheetAnimation,
     assets::Sprites,
     board::{Board, BoardClear, BoardClearQueue},
     card::{spawn_card, Card, MAX_CARDS},
@@ -6,8 +7,10 @@ use crate::{
     drag::Mover,
     level::{CurrentLevel, LevelEv, Levels},
     piece::{spawn_piece, FieldCoords, Piece, PieceFields, PlacedFieldIndex},
+    render::ZIndex,
     tween::{
-        delay_tween, get_relative_move_by_tween, get_relative_move_tween, get_scale_tween,
+        delay_tween, get_relative_fade_spritesheet_tween, get_relative_move_by_tween,
+        get_relative_move_tween, get_relative_spritesheet_color_anim, get_scale_tween,
         TweenDoneAction,
     },
     GameState,
@@ -18,7 +21,7 @@ use bevy_interact_2d::drag::Dragged;
 
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
-use rand::Rng;
+use rand::{thread_rng, Rng};
 
 pub const BOARD_SIZE_PX: f32 = 480.;
 pub const BOARD_SIZE: usize = 9;
@@ -60,6 +63,27 @@ pub struct Pieces {
     pub pieces: Vec<PieceFields>,
 }
 
+pub fn spawn_tile_explosion(cmd: &mut Commands, sprites: &Sprites, position: Vec3, delay_ms: u64) {
+    let mut rng = thread_rng();
+    cmd.spawn_bundle(SpriteSheetBundle {
+        texture_atlas: sprites.explosion.clone(),
+        sprite: TextureAtlasSprite {
+            flip_x: rng.gen(),
+            flip_y: rng.gen(),
+            color: Color::NONE,
+            ..default()
+        },
+        transform: Transform::from_translation(position),
+        ..default()
+    })
+    .insert(ZIndex::Explosion)
+    .insert(
+        SheetAnimation::new(65)
+            .with_despawn_on_completion()
+            .with_delay(delay_ms),
+    );
+}
+
 // todo: initial spawn delay
 // maybe just mark the level as started after the initial wait
 fn fill_piece_queue(
@@ -98,6 +122,7 @@ fn drop_piece(
     mut board: ResMut<Board>,
     mut clear_queue: ResMut<BoardClearQueue>,
     pieces: Res<Pieces>,
+    sprites: Res<Sprites>,
     dragged_query: Query<(Entity, &Piece, &TileCoords, &Mover), With<Dragged>>,
     child_q: Query<&Children>,
     field_q: Query<&FieldCoords>,
@@ -115,21 +140,51 @@ fn drop_piece(
                     pieces.pieces[piece.0].get_fields(),
                 ) {
                     e_cmd.despawn_recursive();
+                    let mut rng = rand::thread_rng();
 
                     if let Ok(children) = child_q.get(mover.moved_e) {
-                        for c in children.iter() {
+                        for (i, c) in children.iter().enumerate() {
                             if let Ok(fld_coords) = field_q.get(*c) {
-                                let mut e_cmd = cmd.entity(*c);
+                                let (mut t, t_global) = transform_q.get_mut(*c).unwrap();
 
                                 let tile_coords =
                                     board.tile_coords_to_tile_index(coords + fld_coords.0);
-                                e_cmd.insert(Name::new(format!("field [{tile_coords}]")));
-                                e_cmd.insert(PlacedFieldIndex(tile_coords));
+                                let tween_delay = i as u64 * 50;
+
+                                cmd.spawn_bundle(SpriteSheetBundle {
+                                    texture_atlas: sprites.crosses.clone(),
+                                    sprite: TextureAtlasSprite {
+                                        // todo: get range from atlas
+                                        index: rng.gen_range(0..16),
+                                        flip_x: rng.gen(),
+                                        flip_y: rng.gen(),
+                                        color: Color::NONE,
+                                        ..default()
+                                    },
+                                    transform: Transform::from_translation(t_global.translation()),
+                                    ..default()
+                                })
+                                .insert(PlacedFieldIndex(tile_coords))
+                                .insert(Animator::new(delay_tween(
+                                    get_relative_fade_spritesheet_tween(Color::WHITE, 350, None),
+                                    tween_delay,
+                                )))
+                                .insert(Name::new(format!("field [{tile_coords}]")));
 
                                 // unparent and update pos to stay where it's
+                                let mut e_cmd = cmd.entity(*c);
                                 e_cmd.remove::<Parent>();
-                                let (mut t, t_global) = transform_q.get_mut(*c).unwrap();
                                 t.translation = t_global.translation();
+                                e_cmd.insert(Animator::new(delay_tween(
+                                    get_scale_tween(
+                                        Vec3::ONE,
+                                        Vec3::ZERO,
+                                        EaseFunction::QuadraticIn,
+                                        400,
+                                        Some(TweenDoneAction::DespawnRecursive),
+                                    ),
+                                    tween_delay,
+                                )));
                             }
                         }
 
@@ -150,7 +205,7 @@ fn process_clear_queue(
     mut queue: ResMut<BoardClearQueue>,
     mut board: ResMut<Board>,
     sprites: Res<Sprites>,
-    field_q: Query<(Entity, &PlacedFieldIndex)>,
+    field_q: Query<(Entity, &PlacedFieldIndex, &GlobalTransform)>,
     card_q: Query<&Card>,
 ) {
     if queue.is_changed() {
@@ -173,12 +228,24 @@ fn process_clear_queue(
             }
         }
 
-        for (e, ..) in field_q
+        let mut rng = thread_rng();
+
+        for (i, (e, _, t)) in field_q
             .iter()
-            .filter(|(_, f)| cleared_indices.contains(&f.0))
+            .filter(|(_, f, ..)| cleared_indices.contains(&f.0))
+            .enumerate()
         {
-            // todo: tween
-            cmd.entity(e).despawn_recursive();
+            let delay = i as u64 * 30;
+            cmd.entity(e).insert(Animator::new(delay_tween(
+                get_relative_fade_spritesheet_tween(
+                    Color::NONE,
+                    150,
+                    Some(TweenDoneAction::DespawnRecursive),
+                ),
+                delay,
+            )));
+
+            spawn_tile_explosion(&mut cmd, &sprites, t.translation(), delay);
         }
     }
 }
@@ -196,11 +263,9 @@ fn on_level_over(
 
             for (i, e) in field_q.iter().enumerate() {
                 cmd.entity(e).insert(Animator::new(delay_tween(
-                    get_scale_tween(
-                        Vec3::ONE,
-                        Vec3::ZERO,
-                        EaseFunction::CircularIn,
-                        200,
+                    get_relative_fade_spritesheet_tween(
+                        Color::NONE,
+                        150,
                         Some(TweenDoneAction::DespawnRecursive),
                     ),
                     i as u64 * 25,
