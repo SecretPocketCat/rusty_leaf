@@ -41,8 +41,6 @@ impl Plugin for OrderPlugin {
     }
 }
 
-// pub const ORDER_TIME_S: f32 = 5.;
-pub const ORDER_TIME_S: f32 = 90.;
 pub const ORDER_DELAY_S: f32 = 0.5;
 const ORDER_TOOLTIP_OFFSET: i32 = -122;
 
@@ -159,7 +157,7 @@ fn spawn_orders(
             let mut duration = ingredients.len() as f32 * 20. + 30.;
 
             if cfg!(debug_assertions) {
-                // duration = 5.;
+                duration = 5.;
             }
 
             cmd.spawn()

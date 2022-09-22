@@ -32,6 +32,7 @@ impl Plugin for CauldronPlugin {
                     .with_system(show_progress_tooltip)
                     .with_system(add_ingredient_to_tooltip)
                     .with_system(boost_fire)
+                    .with_system(on_level_over)
                     .into(),
             )
             .add_system(cook)
@@ -274,21 +275,27 @@ fn cook(
                     });
                 }
 
-                let mut tooltip_cmd_e = cmd.entity(c.tooltip_e.unwrap());
-                tooltip_cmd_e.insert(FadeHierarchy::new(false, 350, Color::NONE));
-                tooltip_cmd_e.insert(get_relative_move_by_anim(
-                    Vec3::Y * -TOOLTIP_TWEEN_OFFSET,
-                    400,
-                    Some(TweenDoneAction::DespawnRecursive),
-                ));
-                c.tooltip_e = None;
-                c.ingredients.clear();
+                clear_cauldron_ingredients(&mut cmd, &mut c);
             } else if let Some(tooltip_e) = c.tooltip_e {
                 if let Ok(mut p) = progress_q.get_mut(tooltip_e) {
                     p.value = c.cook_timer.percent();
                 }
             }
         }
+    }
+}
+
+fn clear_cauldron_ingredients(cmd: &mut Commands, cauldron: &mut Cauldron) {
+    if let Some(tooltip_e) = cauldron.tooltip_e {
+        let mut tooltip_cmd_e = cmd.entity(tooltip_e);
+        tooltip_cmd_e.insert(FadeHierarchy::new(false, 350, Color::NONE));
+        tooltip_cmd_e.insert(get_relative_move_by_anim(
+            Vec3::Y * -TOOLTIP_TWEEN_OFFSET,
+            400,
+            Some(TweenDoneAction::DespawnRecursive),
+        ));
+        cauldron.tooltip_e = None;
+        cauldron.ingredients.clear();
     }
 }
 
@@ -461,6 +468,26 @@ fn set_fire_intensity(
                 anim.set_range(range);
                 anim.set_time(anim_dur);
             }
+        }
+    }
+}
+
+fn on_level_over(
+    mut cmd: Commands,
+    mut lvl_evr: EventReader<LevelEv>,
+    mut cauldron_q: Query<&mut Cauldron>,
+) {
+    for ev in lvl_evr.iter() {
+        if let LevelEv::LevelOver { .. } = ev {
+            // hide tooltips
+            for mut c in cauldron_q.iter_mut() {
+                // end fire boosts
+                c.fire_boost.reset();
+                c.fire_boost.set_duration(Duration::from_secs(1));
+                clear_cauldron_ingredients(&mut cmd, &mut c);
+            }
+
+            break;
         }
     }
 }
