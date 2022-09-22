@@ -4,10 +4,11 @@ use crate::{
     anim::SheetAnimation,
     assets::{Fonts, Sprites},
     card::Ingredient,
+    drag::DragGroup,
     order::{SpecialOrder, ORDER_TIME_S},
     piece::PieceFields,
     render::{ZIndex, COL_DARK, COL_LIGHT, SCALE_MULT},
-    tile_placement::{Pieces, BOARD_SHIFT},
+    tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, SECTION_SIZE, TILE_SIZE},
     tools::enum_variant_eq,
     tween::{
         delay_tween, get_relative_fade_text_anim, get_relative_fade_text_tween,
@@ -16,6 +17,7 @@ use crate::{
     GameState,
 };
 use bevy::prelude::*;
+use bevy_interact_2d::Interactable;
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
 use rand::{distributions::WeightedIndex, thread_rng, Rng};
@@ -378,6 +380,9 @@ struct StartDayDelay(Timer);
 #[derive(Component)]
 struct LevelTooltiptext;
 
+#[derive(Component, Deref, DerefMut)]
+pub struct InteractableSection(pub usize);
+
 fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
     for (handle, z_index, name) in [
         (sprites.bg.clone(), ZIndex::Bg, "bg"),
@@ -501,6 +506,26 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
         .with_ease_in(EaseFunction::QuadraticInOut),
     )
     .insert(Name::new("continue_text"));
+
+    let corner = Vec2::splat(SECTION_SIZE as f32 / 2. * TILE_SIZE);
+    let section_box = (-corner, corner);
+    // -520., 54.
+    for i in 0..(BOARD_SIZE / SECTION_SIZE).pow(2) {
+        let x = (i % SECTION_SIZE) as f32 * corner.x * 2. - 520.;
+        let y = (i / SECTION_SIZE) as f32 * -corner.x * 2. + 52.;
+
+        cmd.spawn_bundle(SpatialBundle {
+            transform: Transform::from_xyz(x, y, 10.0),
+            ..default()
+        })
+        .insert(ZIndex::Tooltip)
+        .insert(Interactable {
+            bounding_box: section_box,
+            groups: vec![DragGroup::GridSection.into()],
+        })
+        .insert(InteractableSection(i))
+        .insert(Name::new("interactable_section"));
+    }
 }
 
 fn on_level_in(

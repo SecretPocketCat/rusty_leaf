@@ -35,6 +35,7 @@ pub enum DragGroup {
     Fire,
     Grid,
     GridPieces,
+    GridSection,
 }
 
 impl From<DragGroup> for Group {

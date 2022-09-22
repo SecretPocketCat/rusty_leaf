@@ -27,7 +27,10 @@ impl Default for Board {
 pub enum BoardClear {
     Row(usize),
     Column(usize),
-    Section(usize),
+    Section {
+        section_index: usize,
+        used_special: bool,
+    },
 }
 
 #[derive(Debug, Default)]
@@ -122,7 +125,10 @@ impl Board {
             }
 
             if !section_done.1 && self.section_done(x, y).1 {
-                cleared.push(BoardClear::Section(section_done.0));
+                cleared.push(BoardClear::Section {
+                    section_index: section_done.0,
+                    used_special: false,
+                });
             }
         }
 
@@ -232,6 +238,12 @@ impl Board {
 
     pub fn tile_coords_to_tile_index(&self, coords: UVec2) -> usize {
         (coords.y * self.width as u32 + coords.x) as usize
+    }
+
+    pub fn is_section_empty(&self, section_index: usize) -> bool {
+        self.get_section_by_section_index(section_index)
+            .iter()
+            .all(|i| !self.fields[*i])
     }
 }
 
@@ -431,8 +443,8 @@ mod tests {
     #[test_case(vec![6, 7, 10, 11, 15] => Vec::<BoardClear>::new())]
     #[test_case(vec![2, 3] => vec![BoardClear::Row(0)])]
     #[test_case(vec![8, 12] => vec![BoardClear::Column(0)])]
-    #[test_case(vec![5] => vec![BoardClear::Section(0)])]
-    #[test_case(vec![2, 3, 5, 8, 12] => vec![BoardClear::Row(0), BoardClear::Column(0), BoardClear::Section(0)])]
+    #[test_case(vec![5] => vec![BoardClear::Section { section_index: 0, used_special: false }])]
+    #[test_case(vec![2, 3, 5, 8, 12] => vec![BoardClear::Row(0), BoardClear::Column(0), BoardClear::Section { section_index: 0, used_special: false }])]
     fn place_piece(taken: Vec<usize>) -> Vec<BoardClear> {
         let mut fields = [false; 16];
 
@@ -466,7 +478,10 @@ mod tests {
                 BoardClear::Column(0),
                 BoardClear::Column(1),
                 BoardClear::Column(2),
-                BoardClear::Section(0),
+                BoardClear::Section {
+                    section_index: 0,
+                    used_special: false,
+                },
             ]
             .iter(),
         );

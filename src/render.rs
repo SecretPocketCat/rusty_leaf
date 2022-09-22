@@ -62,6 +62,7 @@ fn setup(mut cmd: Commands) {
                 DragGroup::Fire.into(),
                 DragGroup::Grid.into(),
                 DragGroup::GridPieces.into(),
+                DragGroup::GridSection.into(),
             ],
             ..Default::default()
         });

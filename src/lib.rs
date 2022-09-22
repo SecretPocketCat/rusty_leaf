@@ -101,8 +101,8 @@ impl Plugin for GamePlugin {
             app.register_inspectable::<Card>()
                 .register_inspectable::<Ingredient>()
                 .register_inspectable::<TileCoords>();
-            // app.add_plugin(InteractionDebugPlugin);
-            app.add_plugin(InteractionPlugin);
+            app.add_plugin(InteractionDebugPlugin);
+            // app.add_plugin(InteractionPlugin);
         } else {
             app.add_plugin(InteractionPlugin);
         }

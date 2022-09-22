@@ -2,7 +2,7 @@ use crate::{
     anim::SheetAnimation,
     assets::Sprites,
     board::{Board, BoardClear, BoardClearQueue},
-    card::{spawn_card, Card, MAX_CARDS},
+    card::{spawn_card, Card, CardEffect, MAX_CARDS},
     coords::TileCoords,
     drag::Mover,
     level::{CurrentLevel, LevelEv, Levels},
@@ -95,7 +95,8 @@ impl Plugin for TilePlacementPlugin {
                 process_clear_queue.run_not_in_state(GameState::Loading),
             )
             .add_system(drop_piece.run_not_in_state(GameState::Loading))
-            .add_system(on_level_over.run_in_state(GameState::Playing));
+            .add_system(on_level_over.run_in_state(GameState::Playing))
+            .add_system(clear_section_special.run_in_state(GameState::Playing));
     }
 }
 
@@ -268,18 +269,26 @@ fn process_clear_queue(
         let mut cleared_indices: Vec<usize> = Vec::default();
         let mut allowed_card_spawn_count = MAX_CARDS.saturating_sub(card_q.iter().len());
         while let Some(c) = queue.queue.pop_front() {
-            for _ in 0..CARDS_PER_CLEAR {
-                if allowed_card_spawn_count > 0 {
-                    spawn_card(&mut cmd, &sprites, &c);
-                    allowed_card_spawn_count -= 1;
-                }
-            }
+            let mut spawn_cards = true;
 
             match c {
                 BoardClear::Row(row) => cleared_indices.extend(board.clear_row(row)),
                 BoardClear::Column(col) => cleared_indices.extend(board.clear_column(col)),
-                BoardClear::Section(section) => {
-                    cleared_indices.extend(board.clear_section(section))
+                BoardClear::Section {
+                    section_index,
+                    used_special,
+                } => {
+                    spawn_cards = !used_special;
+                    cleared_indices.extend(board.clear_section(section_index))
+                }
+            }
+
+            if spawn_cards {
+                for _ in 0..CARDS_PER_CLEAR {
+                    if allowed_card_spawn_count > 0 {
+                        spawn_card(&mut cmd, &sprites, &c);
+                        allowed_card_spawn_count -= 1;
+                    }
                 }
             }
         }
@@ -302,6 +311,20 @@ fn process_clear_queue(
             )));
 
             spawn_tile_explosion(&mut cmd, &sprites, t.translation(), delay);
+        }
+    }
+}
+
+fn clear_section_special(
+    mut card_evr: EventReader<CardEffect>,
+    mut queue: ResMut<BoardClearQueue>,
+) {
+    for ev in card_evr.iter() {
+        if let CardEffect::ClearSection { section } = ev {
+            queue.queue.push_back(BoardClear::Section {
+                section_index: *section,
+                used_special: true,
+            });
         }
     }
 }
