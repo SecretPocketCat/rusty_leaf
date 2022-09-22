@@ -42,6 +42,9 @@ pub struct Sprites {
     #[asset(path = "sprites/parchment.png")]
     pub parchment: Handle<Image>,
 
+    #[asset(path = "sprites/parchment_grid.png")]
+    pub parchment_grid: Handle<Image>,
+
     #[asset(path = "sprites/hint_tooltip.png")]
     pub hint_tooltip: Handle<Image>,
 

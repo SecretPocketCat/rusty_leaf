@@ -45,7 +45,7 @@ pub enum ZIndex {
 
 impl From<ZIndex> for f32 {
     fn from(z_index: ZIndex) -> Self {
-        z_index as u8 as f32 / 10.
+        z_index as u8 as f32
     }
 }
 

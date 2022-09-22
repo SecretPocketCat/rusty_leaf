@@ -5,9 +5,13 @@ use crate::{
     assets::{Fonts, Sprites},
     card::Ingredient,
     drag::DragGroup,
+    highlight::Highligtable,
     order::{SpecialOrder, ORDER_TIME_S},
     piece::PieceFields,
-    render::{ZIndex, COL_DARK, COL_LIGHT, SCALE_MULT},
+    render::{
+        NoRescale, ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, COL_OUTLINE_HOVERED_DRAG,
+        SCALE_MULT,
+    },
     tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, SECTION_SIZE, TILE_SIZE},
     tools::enum_variant_eq,
     tween::{
@@ -443,7 +447,15 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
         .with_delay_in(500)
         .with_ease_in(EaseFunction::CircularOut),
     )
-    .insert(Name::new("Parchment"));
+    .insert(Name::new("Parchment"))
+    .with_children(|b| {
+        b.spawn_bundle(SpriteBundle {
+            texture: sprites.parchment_grid.clone(),
+            transform: Transform::from_xyz(0., 0., 0.5),
+            ..default()
+        })
+        .insert(NoRescale);
+    });
 
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.title_tooltip.clone(),
@@ -512,18 +524,40 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
     // -520., 54.
     for i in 0..(BOARD_SIZE / SECTION_SIZE).pow(2) {
         let x = (i % SECTION_SIZE) as f32 * corner.x * 2. - 520.;
-        let y = (i / SECTION_SIZE) as f32 * -corner.x * 2. + 52.;
+        let y = (i / SECTION_SIZE) as f32 * -corner.x * 2. + 58.;
 
-        cmd.spawn_bundle(SpatialBundle {
-            transform: Transform::from_xyz(x, y, 10.0),
+        cmd.spawn_bundle(SpriteBundle {
+            transform: Transform::from_xyz(x, y, f32::from(ZIndex::Grid) + 0.1),
+            sprite: Sprite {
+                custom_size: Some(corner * 1.95),
+                color: Color::NONE,
+                ..default()
+            },
             ..default()
         })
-        .insert(ZIndex::Tooltip)
         .insert(Interactable {
             bounding_box: section_box,
             groups: vec![DragGroup::GridSection.into()],
         })
         .insert(InteractableSection(i))
+        .insert(Highligtable {
+            drag_groups: vec![DragGroup::Card],
+            normal_color: Color::NONE,
+            hightlight_color: Color::rgba(
+                COL_OUTLINE_HIGHLIGHTED.r(),
+                COL_OUTLINE_HIGHLIGHTED.g(),
+                COL_OUTLINE_HIGHLIGHTED.b(),
+                0.4,
+            ),
+            hover_color: Color::rgba(
+                COL_OUTLINE_HOVERED_DRAG.r(),
+                COL_OUTLINE_HOVERED_DRAG.g(),
+                COL_OUTLINE_HOVERED_DRAG.b(),
+                0.5,
+            ),
+            sprite_e: None,
+        })
+        .insert(NoRescale)
         .insert(Name::new("interactable_section"));
     }
 }
