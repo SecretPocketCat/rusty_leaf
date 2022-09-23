@@ -405,13 +405,16 @@ fn setup_app(
     sprites: Res<Sprites>,
     fonts: Res<Fonts>,
     fade_q: Query<Entity, With<StartFade>>,
+    lvl: Res<CurrentLevel>,
 ) {
-    cmd.spawn_bundle(SpriteBundle {
-        texture: sprites.tutorial.clone(),
-        transform: Transform::from_xyz(0., 0., 99.),
-        ..default()
-    })
-    .insert(Tutorial);
+    if lvl.level_index == 0 {
+        cmd.spawn_bundle(SpriteBundle {
+            texture: sprites.tutorial.clone(),
+            transform: Transform::from_xyz(0., 0., 99.),
+            ..default()
+        })
+        .insert(Tutorial);
+    }
 
     for e in fade_q.iter() {
         cmd.entity(e).insert(get_relative_sprite_color_anim(
