@@ -205,7 +205,7 @@ fn show_order_tooltip(
                 ..default()
             })
             .insert(ZIndex::OrderTooltip)
-            .insert(TooltipProgress::new(-1.5))
+            .insert(TooltipProgress::new(-1.5, true))
             .insert_bundle(FadeHierarchyBundle::new(true, 450, COL_DARK))
             .insert(OrderTooltip)
             .insert(Name::new("order_tooltip"))

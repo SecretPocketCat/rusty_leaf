@@ -8,8 +8,8 @@ use crate::{
     order::{Order, OrderEv},
     progress::TooltipProgress,
     render::{
-        NoRescale, ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, COL_OUTLINE_HIGHLIGHTED_2,
-        COL_OUTLINE_HOVERED_DRAG, SCALE_MULT,
+        NoRescale, ZIndex, COL_DARK, COL_DARKER, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED,
+        COL_OUTLINE_HIGHLIGHTED_2, COL_OUTLINE_HOVERED_DRAG, SCALE_MULT,
     },
     tween::{
         get_relative_fade_text_anim, get_relative_move_anim, get_relative_move_by_anim,
@@ -40,10 +40,10 @@ impl Plugin for CauldronPlugin {
     }
 }
 
-pub const COOK_TIME: f32 = 1.;
-// pub const COOK_TIME: f32 = 15.;
+// pub const COOK_TIME: f32 = 1.;
+pub const COOK_TIME: f32 = 15.;
 pub const FIRE_BOOST_TIME: f32 = 15.;
-pub const FIRE_BOOST_MULT: f32 = 3.0;
+pub const FIRE_BOOST_MULT: f32 = 2.5;
 const TOOLTIP_TWEEN_OFFSET: f32 = 28.;
 
 #[derive(Component)]
@@ -150,7 +150,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 texture_atlas: sprites.cauldron_outline.clone(),
                 sprite: TextureAtlasSprite {
                     index: *sprite_index,
-                    color: COL_DARK,
+                    color: COL_DARKER,
                     ..default()
                 },
                 ..default()
@@ -164,7 +164,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 texture_atlas: sprites.firepit_outline.clone(),
                 sprite: TextureAtlasSprite {
                     index: *sprite_index,
-                    color: COL_DARK,
+                    color: COL_DARKER,
                     ..default()
                 },
                 ..default()
@@ -348,7 +348,7 @@ fn show_progress_tooltip(
                             .insert(NoRescale)
                             .insert(ZIndex::Tooltip)
                             .insert(Name::new("Tooltip"))
-                            .insert(TooltipProgress::new(0.))
+                            .insert(TooltipProgress::new(0., false))
                             .insert(ingredient_list)
                             .insert_bundle(FadeHierarchyBundle::new(true, 450, COL_DARK))
                             .insert(get_relative_move_anim(

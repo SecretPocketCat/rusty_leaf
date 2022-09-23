@@ -1,13 +1,7 @@
-use crate::{
-    assets::Sprites,
-    render::{NoRescale},
-    GameState,
-};
+use crate::{assets::Sprites, render::NoRescale, GameState};
 use bevy::prelude::*;
 
-
 use iyes_loopless::prelude::*;
-
 
 pub struct ProgressPlugin;
 impl Plugin for ProgressPlugin {
@@ -22,13 +16,23 @@ pub struct TooltipProgress {
     pub value: f32,
     progress_sprite_e: Option<Entity>,
     offset: f32,
+    inverse: bool,
 }
 
 impl TooltipProgress {
-    pub fn new(offset: f32) -> Self {
+    pub fn new(offset: f32, inverse: bool) -> Self {
         Self {
             offset,
+            inverse,
             ..default()
+        }
+    }
+
+    pub fn progress(&self) -> f32 {
+        if self.inverse {
+            1. - self.value
+        } else {
+            self.value
         }
     }
 }
@@ -41,9 +45,13 @@ fn on_progress_added(
     for (progress_e, mut progress) in progress_q.iter_mut() {
         let bar_e = cmd
             .spawn_bundle(SpriteBundle {
-                texture: sprites.progress_bar.clone(),
+                texture: if progress.inverse {
+                    sprites.progress_bar_order.clone()
+                } else {
+                    sprites.progress_bar.clone()
+                },
                 transform: Transform::from_xyz(-24.6, 14. + progress.offset, 0.1)
-                    .with_scale(Vec3::new(progress.value, 1., 1.)),
+                    .with_scale(Vec3::new(progress.progress(), 1., 1.)),
                 sprite: Sprite {
                     anchor: bevy::sprite::Anchor::CenterLeft,
                     ..default()
@@ -65,7 +73,7 @@ fn update_progress(
     for p in progress_q.iter() {
         if let Some(e) = p.progress_sprite_e {
             if let Ok(mut t) = transform_q.get_mut(e) {
-                t.scale.x = p.value;
+                t.scale.x = p.progress();
             }
         }
     }

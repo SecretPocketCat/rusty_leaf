@@ -57,6 +57,9 @@ pub struct Sprites {
     #[asset(path = "sprites/progress_bar.png")]
     pub progress_bar: Handle<Image>,
 
+    #[asset(path = "sprites/progress_bar_order.png")]
+    pub progress_bar_order: Handle<Image>,
+
     #[asset(path = "sprites/title_tooltip.png")]
     pub title_tooltip: Handle<Image>,
 
