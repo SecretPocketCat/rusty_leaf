@@ -154,7 +154,17 @@ fn spawn_orders(
             }
 
       
-            let mut duration = ingredients.len() as f32 * 20. + 30.;
+            let mut duration = ingredients.iter().map(|(i, count)| {
+                let ingredient_time = if *i as u8 >= Ingredient::Eggplant as u8 {
+                    // more time for the rarer ingredients
+                    50.
+                }
+                else {
+                    35.
+                };
+
+                ingredient_time * *count as f32
+            }).sum::<f32>() + 60.;
 
             if cfg!(debug_assertions) {
                 // duration = 5.;
