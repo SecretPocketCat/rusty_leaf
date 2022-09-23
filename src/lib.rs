@@ -31,6 +31,7 @@ mod save;
 mod tile_placement;
 mod tools;
 mod tween;
+mod win;
 
 use crate::tile_placement::TilePlacementPlugin;
 use anim::AnimationPlugin;
@@ -48,11 +49,13 @@ use coords::{CoordsPlugin, TileCoords};
 use customer::CustomerPlugin;
 use drag::DragPlugin as GameDragPlugin;
 use highlight::HighlightPlugin;
+use input::GameInputPlugin;
 use level::LevelPlugin;
 use mouse::MousePlugin;
 use order::OrderPlugin;
 use progress::ProgressPlugin;
 use render::RenderPlugin;
+mod input;
 
 // This example game uses States to separate logic
 // See https://bevy-cheatbook.github.io/programming/states.html
@@ -71,6 +74,7 @@ enum GameState {
 pub use render::WINDOW_SIZE;
 use save::SavePlugin;
 use tween::GameTweenPlugin;
+use win::WinPlugin;
 
 pub struct GamePlugin;
 
@@ -85,6 +89,7 @@ impl Plugin for GamePlugin {
             .add_plugin(ShapePlugin)
             .add_plugin(TilePlacementPlugin)
             .add_plugin(LevelPlugin)
+            .add_plugin(WinPlugin)
             .add_plugin(CardPlugin)
             .add_plugin(CauldronPlugin)
             .add_plugin(CustomerPlugin)
@@ -94,13 +99,14 @@ impl Plugin for GamePlugin {
             .add_plugin(OrderPlugin)
             .add_plugin(TweeningPlugin)
             .add_plugin(GameTweenPlugin)
+            .add_plugin(GameInputPlugin)
             .add_plugin(SavePlugin);
 
         if cfg!(debug_assertions) {
-            app.add_plugin(WorldInspectorPlugin::new());
-            app.register_inspectable::<Card>()
-                .register_inspectable::<Ingredient>()
-                .register_inspectable::<TileCoords>();
+            // app.add_plugin(WorldInspectorPlugin::new());
+            // app.register_inspectable::<Card>()
+            //     .register_inspectable::<Ingredient>()
+            //     .register_inspectable::<TileCoords>();
             // app.add_plugin(InteractionDebugPlugin);
             app.add_plugin(InteractionPlugin);
         } else {

@@ -41,8 +41,6 @@ impl Plugin for OrderPlugin {
     }
 }
 
-// pub const ORDER_TIME_S: f32 = 5.;
-pub const ORDER_TIME_S: f32 = 90.;
 pub const ORDER_DELAY_S: f32 = 0.5;
 const ORDER_TOOLTIP_OFFSET: i32 = -122;
 
@@ -156,7 +154,17 @@ fn spawn_orders(
             }
 
       
-            let mut duration = ingredients.len() as f32 * 20. + 30.;
+            let mut duration = ingredients.iter().map(|(i, count)| {
+                let ingredient_time = if *i as u8 >= Ingredient::Eggplant as u8 {
+                    // more time for the rarer ingredients
+                    50.
+                }
+                else {
+                    35.
+                };
+
+                ingredient_time * *count as f32
+            }).sum::<f32>() + 60.;
 
             if cfg!(debug_assertions) {
                 // duration = 5.;
@@ -207,7 +215,7 @@ fn show_order_tooltip(
                 ..default()
             })
             .insert(ZIndex::OrderTooltip)
-            .insert(TooltipProgress::new(-1.5))
+            .insert(TooltipProgress::new(-1.5, true))
             .insert_bundle(FadeHierarchyBundle::new(true, 450, COL_DARK))
             .insert(OrderTooltip)
             .insert(Name::new("order_tooltip"))

@@ -14,6 +14,7 @@ impl Plugin for RenderPlugin {
 pub const WINDOW_SIZE: Vec2 = Vec2::new(1280., 720.);
 pub const SCALE_MULT: f32 = 4.; // todo: resource and handled on win resize?
 pub const COL_DARK: Color = Color::rgb(0.2706, 0.2392, 0.2784);
+pub const COL_DARKER: Color = Color::rgb(0.1137, 0.0941, 0.0706);
 pub const COL_LIGHT: Color = Color::rgb(0.9372, 0.847, 0.7294);
 pub const COL_OUTLINE_HIGHLIGHTED: Color = Color::rgb(0.9647, 0.502, 0.2431);
 pub const COL_OUTLINE_HIGHLIGHTED_2: Color = Color::rgb(0.6745, 0.2352, 0.1333);
@@ -45,7 +46,7 @@ pub enum ZIndex {
 
 impl From<ZIndex> for f32 {
     fn from(z_index: ZIndex) -> Self {
-        z_index as u8 as f32 / 10.
+        z_index as u8 as f32
     }
 }
 
@@ -62,6 +63,7 @@ fn setup(mut cmd: Commands) {
                 DragGroup::Fire.into(),
                 DragGroup::Grid.into(),
                 DragGroup::GridPieces.into(),
+                DragGroup::GridSection.into(),
             ],
             ..Default::default()
         });

@@ -4,18 +4,24 @@ use crate::{
     anim::SheetAnimation,
     assets::{Fonts, Sprites},
     card::Ingredient,
-    order::{SpecialOrder, ORDER_TIME_S},
-    piece::PieceFields,
-    render::{ZIndex, COL_DARK, COL_LIGHT, SCALE_MULT},
-    tile_placement::{Pieces, BOARD_SHIFT},
+    drag::DragGroup,
+    highlight::Highligtable,
+    order::SpecialOrder,
+    render::{
+        NoRescale, ZIndex, COL_DARK, COL_DARKER, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED,
+        COL_OUTLINE_HOVERED_DRAG, SCALE_MULT,
+    },
+    tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, SECTION_SIZE, TILE_SIZE},
     tools::enum_variant_eq,
     tween::{
-        delay_tween, get_relative_fade_text_anim, get_relative_fade_text_tween,
-        get_relative_move_by_anim, get_relative_move_by_tween, get_relative_move_tween,
+        delay_tween, get_fade_out_sprite_anim, get_relative_fade_text_anim,
+        get_relative_fade_text_tween, get_relative_move_by_anim, get_relative_move_by_tween,
+        get_relative_move_tween, get_relative_sprite_color_anim, TweenDoneAction,
     },
     GameState,
 };
-use bevy::prelude::*;
+use bevy::{ecs::event::Event, prelude::*};
+use bevy_interact_2d::Interactable;
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
 use rand::{distributions::WeightedIndex, thread_rng, Rng};
@@ -52,7 +58,7 @@ impl Plugin for LevelPlugin {
                 pieces_range: Some(0..27),
             },
             Level {
-                name: "Starter".into(),
+                name: "Souped Up".into(),
                 allowed_ingredients: vec![
                     Ingredient::Pumpkin,
                     Ingredient::Potato,
@@ -110,9 +116,9 @@ impl Plugin for LevelPlugin {
                 required_ingredients: vec![Ingredient::Garlic],
                 ingredient_count_range: 1..4,
                 ingredient_type_range: 1..4,
-                max_simultaneous_orders: 3,
-                next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 7,
+                max_simultaneous_orders: 2,
+                next_customer_delay_range_ms: 25000..35000,
+                total_order_count: 5,
                 special_order: None,
                 pieces_range: Some(0..27),
             },
@@ -128,30 +134,11 @@ impl Plugin for LevelPlugin {
                 required_ingredients: vec![],
                 ingredient_count_range: 2..4,
                 ingredient_type_range: 1..4,
-                max_simultaneous_orders: 3,
-                next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 7,
+                max_simultaneous_orders: 2,
+                next_customer_delay_range_ms: 35000..40000,
+                total_order_count: 6,
                 special_order: None,
                 pieces_range: Some(0..27),
-            },
-            Level {
-                name: "A Recipe for Disaster".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Eggplant,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 2..5,
-                ingredient_type_range: 2..4,
-                max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 7,
-                special_order: None,
-                pieces_range: Some(0..35),
             },
             Level {
                 name: "Fast Food".into(),
@@ -167,13 +154,13 @@ impl Plugin for LevelPlugin {
                 ingredient_count_range: 1..2,
                 ingredient_type_range: 1..2,
                 max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 13000..17000,
+                next_customer_delay_range_ms: 13000..15000,
                 total_order_count: 10,
                 special_order: None,
                 pieces_range: Some(0..7),
             },
             Level {
-                name: "Souped Up".into(),
+                name: "A Recipe for Disaster".into(),
                 allowed_ingredients: vec![
                     Ingredient::Pumpkin,
                     Ingredient::Potato,
@@ -183,13 +170,30 @@ impl Plugin for LevelPlugin {
                     Ingredient::Garlic,
                 ],
                 required_ingredients: vec![],
-                ingredient_count_range: 3..6,
-                ingredient_type_range: 2..4,
-                max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 10,
+                ingredient_count_range: 1..5,
+                ingredient_type_range: 1..4,
+                max_simultaneous_orders: 3,
+                next_customer_delay_range_ms: 35000..40000,
+                total_order_count: 7,
                 special_order: None,
-                pieces_range: None,
+                pieces_range: Some(0..35),
+            },
+            Level {
+                name: "Cutting edge".into(),
+                allowed_ingredients: vec![
+                    Ingredient::Pumpkin,
+                    Ingredient::Potato,
+                    Ingredient::Tomato,
+                    Ingredient::Mushroom,
+                ],
+                required_ingredients: vec![],
+                ingredient_count_range: 2..5,
+                ingredient_type_range: 1..4,
+                max_simultaneous_orders: 4,
+                next_customer_delay_range_ms: 40000..45000,
+                total_order_count: 5,
+                special_order: None,
+                pieces_range: Some(31..38),
             },
             Level {
                 name: "Food Critic".into(),
@@ -205,14 +209,14 @@ impl Plugin for LevelPlugin {
                 ingredient_count_range: 1..2,
                 ingredient_type_range: 1..2,
                 max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 15000..20000,
-                total_order_count: 15,
+                next_customer_delay_range_ms: 35000..40000,
+                total_order_count: 11,
                 special_order: Some(SpecialOrder {
-                    index_range: 9..13,
+                    index_range: 2..5,
                     ingredients: [
-                        (Ingredient::Tomato, 3),
-                        (Ingredient::Garlic, 3),
-                        (Ingredient::Eggplant, 3),
+                        (Ingredient::Tomato, 2),
+                        (Ingredient::Eggplant, 2),
+                        (Ingredient::Garlic, 2),
                     ]
                     .into(),
                 }),
@@ -221,14 +225,14 @@ impl Plugin for LevelPlugin {
         ];
 
         app.add_event::<LevelEv>()
-            // todo: restore from somewhere
             .insert_resource(Levels(levels))
+            .add_startup_system(setup_fade)
             .add_exit_system(GameState::Loading, setup_app)
             .add_enter_system(GameState::Playing, on_level_in)
             .add_exit_system(GameState::Playing, on_level_out)
             .add_system(start_day.run_if_resource_exists::<StartDayDelay>())
             .add_system(on_level_over)
-            .add_system(tween_on_level_ev);
+            .add_system(tween_on_level_ev::<LevelEv>);
     }
 }
 
@@ -241,6 +245,7 @@ const FAIL_MSGS: [&str; 6] = [
     "Don't be such a couch potato.",
 ];
 
+#[derive(PartialEq, Eq)]
 pub enum LevelEv {
     LevelIn,
     LevelStart,
@@ -314,11 +319,11 @@ pub enum LevelEventTweenType {
 }
 
 #[derive(Component)]
-pub struct LevelEvTween {
-    in_event: LevelEv,
+pub struct EvTween<T: Event> {
+    in_event: T,
     duration_in: u64,
     duration_out: u64,
-    out_event: LevelEv,
+    out_event: T,
     delay_in: u64,
     delay_out: u64,
     ease_in: EaseFunction,
@@ -326,13 +331,8 @@ pub struct LevelEvTween {
     tween_type: LevelEventTweenType,
 }
 
-impl LevelEvTween {
-    pub fn new(
-        tween_type: LevelEventTweenType,
-        in_event: LevelEv,
-        out_event: LevelEv,
-        duration: u64,
-    ) -> Self {
+impl<T: Event> EvTween<T> {
+    pub fn new(tween_type: LevelEventTweenType, in_event: T, out_event: T, duration: u64) -> Self {
         Self {
             tween_type,
             in_event,
@@ -378,7 +378,49 @@ struct StartDayDelay(Timer);
 #[derive(Component)]
 struct LevelTooltiptext;
 
-fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
+#[derive(Component, Deref, DerefMut)]
+pub struct InteractableSection(pub usize);
+
+#[derive(Component)]
+struct StartFade;
+
+#[derive(Component)]
+struct Tutorial;
+
+fn setup_fade(mut cmd: Commands) {
+    cmd.spawn_bundle(SpriteBundle {
+        sprite: Sprite {
+            custom_size: Some(Vec2::splat(4000.)),
+            color: COL_DARKER,
+            ..default()
+        },
+        transform: Transform::from_xyz(0., 0., 100.),
+        ..default()
+    })
+    .insert(StartFade);
+}
+
+fn setup_app(
+    mut cmd: Commands,
+    sprites: Res<Sprites>,
+    fonts: Res<Fonts>,
+    fade_q: Query<Entity, With<StartFade>>,
+) {
+    cmd.spawn_bundle(SpriteBundle {
+        texture: sprites.tutorial.clone(),
+        transform: Transform::from_xyz(0., 0., 99.),
+        ..default()
+    })
+    .insert(Tutorial);
+
+    for e in fade_q.iter() {
+        cmd.entity(e).insert(get_relative_sprite_color_anim(
+            Color::NONE,
+            1000,
+            Some(TweenDoneAction::DespawnRecursive),
+        ));
+    }
+
     for (handle, z_index, name) in [
         (sprites.bg.clone(), ZIndex::Bg, "bg"),
         (sprites.bg_shop.clone(), ZIndex::BgShop, "bg_shop"),
@@ -429,7 +471,7 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
     })
     .insert(ZIndex::Grid)
     .insert(
-        LevelEvTween::new(
+        EvTween::new(
             LevelEventTweenType::MoveByY(910.),
             LevelEv::LevelStart,
             LevelEv::LevelOut,
@@ -438,7 +480,15 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
         .with_delay_in(500)
         .with_ease_in(EaseFunction::CircularOut),
     )
-    .insert(Name::new("Parchment"));
+    .insert(Name::new("Parchment"))
+    .with_children(|b| {
+        b.spawn_bundle(SpriteBundle {
+            texture: sprites.parchment_grid.clone(),
+            transform: Transform::from_xyz(0., 0., 0.5),
+            ..default()
+        })
+        .insert(NoRescale);
+    });
 
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.title_tooltip.clone(),
@@ -447,7 +497,7 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
     })
     .insert(ZIndex::Tooltip)
     .insert(
-        LevelEvTween::new(
+        EvTween::new(
             LevelEventTweenType::MoveByY(-240.),
             LevelEv::LevelIn,
             LevelEv::LevelStart,
@@ -491,7 +541,7 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
     })
     .insert(ZIndex::Tooltip)
     .insert(
-        LevelEvTween::new(
+        EvTween::new(
             LevelEventTweenType::FadeText(COL_LIGHT),
             LevelEv::LevelIn,
             LevelEv::LevelStart,
@@ -501,6 +551,48 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
         .with_ease_in(EaseFunction::QuadraticInOut),
     )
     .insert(Name::new("continue_text"));
+
+    let corner = Vec2::splat(SECTION_SIZE as f32 / 2. * TILE_SIZE);
+    let section_box = (-corner, corner);
+    // -520., 54.
+    for i in 0..(BOARD_SIZE / SECTION_SIZE).pow(2) {
+        let x = (i % SECTION_SIZE) as f32 * corner.x * 2. - 520.;
+        let y = (i / SECTION_SIZE) as f32 * -corner.x * 2. + 58.;
+
+        cmd.spawn_bundle(SpriteBundle {
+            transform: Transform::from_xyz(x, y, f32::from(ZIndex::Grid) + 0.1),
+            sprite: Sprite {
+                custom_size: Some(corner * 1.95),
+                color: Color::NONE,
+                ..default()
+            },
+            ..default()
+        })
+        .insert(Interactable {
+            bounding_box: section_box,
+            groups: vec![DragGroup::GridSection.into()],
+        })
+        .insert(InteractableSection(i))
+        .insert(Highligtable {
+            drag_groups: vec![DragGroup::Card],
+            normal_color: Color::NONE,
+            hightlight_color: Color::rgba(
+                COL_OUTLINE_HIGHLIGHTED.r(),
+                COL_OUTLINE_HIGHLIGHTED.g(),
+                COL_OUTLINE_HIGHLIGHTED.b(),
+                0.4,
+            ),
+            hover_color: Color::rgba(
+                COL_OUTLINE_HOVERED_DRAG.r(),
+                COL_OUTLINE_HOVERED_DRAG.g(),
+                COL_OUTLINE_HOVERED_DRAG.b(),
+                0.5,
+            ),
+            sprite_e: None,
+        })
+        .insert(NoRescale)
+        .insert(Name::new("interactable_section"));
+    }
 }
 
 fn on_level_in(
@@ -531,14 +623,25 @@ fn start_day(
     mut lvl: ResMut<CurrentLevel>,
     time: Res<Time>,
     mouse_input: Res<Input<MouseButton>>,
+    tutorial_q: Query<Entity, With<Tutorial>>,
 ) {
     delay.tick(time.delta());
 
     if delay.finished() {
         if mouse_input.any_just_pressed([MouseButton::Left, MouseButton::Right]) {
-            cmd.remove_resource::<StartDayDelay>();
-            lvl_evw.send(LevelEv::LevelStart);
-            lvl.stopped = false;
+            if tutorial_q.iter().len() > 0 {
+                for e in tutorial_q.iter() {
+                    cmd.entity(e).insert(get_relative_sprite_color_anim(
+                        Color::NONE,
+                        1000,
+                        Some(TweenDoneAction::DespawnRecursive),
+                    ));
+                }
+            } else {
+                cmd.remove_resource::<StartDayDelay>();
+                lvl_evw.send(LevelEv::LevelStart);
+                lvl.stopped = false;
+            }
         }
     }
 }
@@ -587,16 +690,16 @@ fn on_level_out(mut lvl_evw: EventWriter<LevelEv>) {
     lvl_evw.send(LevelEv::LevelOut);
 }
 
-fn tween_on_level_ev(
+pub fn tween_on_level_ev<T: Event + Eq>(
     mut cmd: Commands,
-    mut lvl_evr: EventReader<LevelEv>,
-    tween_q: Query<(Entity, &LevelEvTween)>,
+    mut lvl_evr: EventReader<T>,
+    tween_q: Query<(Entity, &EvTween<T>)>,
 ) {
     for ev in lvl_evr.iter() {
         for (tween_e, tween) in tween_q.iter() {
-            let is_in = tween.in_event.eq(ev);
+            let is_in = &tween.in_event == ev;
 
-            if is_in || tween.out_event.eq(ev) {
+            if is_in || &tween.out_event == ev {
                 let mut tween_e_cmd = cmd.entity(tween_e);
                 let (sign, duration, delay, ease) = if is_in {
                     (1., tween.duration_in, tween.delay_in, tween.ease_in)

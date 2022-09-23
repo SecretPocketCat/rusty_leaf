@@ -96,12 +96,11 @@ fn send_drag_events(
         }
     }
 
-    // this failed when cards were applied, possibly due to stage-related reasons?
-    // for e in removed.iter() {
-    //     if state.dragged_entities.remove(&e) {
-    //         evw.send(HighlightEv::DragEnd(DragData { entity: e }));
-    //     }
-    // }
+    for e in removed.iter() {
+        if state.dragged_entities.remove(&e) {
+            evw.send(HighlightEv::DragEnd(DragData { entity: e }));
+        }
+    }
 
     if !mouse_input.pressed(MouseButton::Left) && state.dragged_entities.len() > 0 {
         for e in state.dragged_entities.drain() {

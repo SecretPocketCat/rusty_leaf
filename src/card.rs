@@ -1,10 +1,10 @@
 use crate::{
     assets::Sprites,
-    board::BoardClear,
+    board::{Board, BoardClear},
     cauldron::{Cauldron, TooltipIngridientList},
     drag::DragGroup,
     highlight::Highligtable,
-    level::LevelEv,
+    level::{InteractableSection, LevelEv},
     list::{ListPlugin, ListPluginOptions},
     render::{NoRescale, ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, WINDOW_SIZE},
     tween::{
@@ -80,6 +80,9 @@ pub enum CardEffect {
         ingredient: Ingredient,
         cauldron_e: Entity,
     },
+    ClearSection {
+        section: usize,
+    },
 }
 
 pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
@@ -97,14 +100,14 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
             6..=8 => Ingredient::Tomato,
             _ => unimplemented!("Unknown ingredient for column {col}"),
         },
-        BoardClear::Section(section) => match section {
+        BoardClear::Section { section_index, .. } => match section_index {
             0 => Ingredient::Eggplant,
             1 | 5 => Ingredient::Pumpkin,
             2 | 6 => Ingredient::Potato,
             3 | 7 => Ingredient::Tomato,
             4 => Ingredient::Mushroom,
             8 => Ingredient::Garlic,
-            _ => unimplemented!("Unknown ingredient for section {section}"),
+            _ => unimplemented!("Unknown ingredient for section {section_index}"),
         },
     };
 
@@ -166,7 +169,14 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
 fn test_card_spawn(mut cmd: Commands, sprites: Res<Sprites>) {
     for i in 0..4 {
         // spawn_card(&mut cmd, &sprites, &BoardClear::Column(0));
-        spawn_card(&mut cmd, &sprites, &BoardClear::Section(i));
+        // spawn_card(
+        //     &mut cmd,
+        //     &sprites,
+        //     &BoardClear::Section {
+        //         section_index: i,
+        //         used_special: false,
+        //     },
+        // );
     }
 }
 
@@ -177,56 +187,70 @@ fn drop_card(
     interaction_state: Res<InteractionState>,
     parent_q: Query<&Parent>,
     mut cauldron_q: Query<&mut Cauldron>,
+    section_q: Query<&InteractableSection>,
     tooltip_q: Query<&TooltipIngridientList>,
     mut card_evw: EventWriter<CardEffect>,
+    board: Res<Board>,
 ) {
     if mouse_input.just_released(MouseButton::Left) {
         let mut used = false;
 
-        if let Some((e, ..)) = interaction_state.get_group(DragGroup::Fire.into()).first() {
-            if let Ok(cauldron_e) = parent_q.get(*e) {
-                if let Ok(_c) = cauldron_q.get_mut(cauldron_e.get()) {
-                    // increase fire boost
-                    card_evw.send(CardEffect::FireBoost {
-                        cauldron_e: cauldron_e.get(),
-                        boost_dur_multiplier: None,
-                    });
-                    used = true;
+        if interaction_state.get_group(DragGroup::Card.into()).len() > 0 {
+            if let Some((e, ..)) = interaction_state.get_group(DragGroup::Fire.into()).first() {
+                if let Ok(cauldron_e) = parent_q.get(*e) {
+                    if let Ok(_c) = cauldron_q.get_mut(cauldron_e.get()) {
+                        // increase fire boost
+                        card_evw.send(CardEffect::FireBoost {
+                            cauldron_e: cauldron_e.get(),
+                            boost_dur_multiplier: None,
+                        });
+                        used = true;
+                    }
                 }
-            }
-        } else if let Some((e, ..)) = interaction_state
-            .get_group(DragGroup::Cauldron.into())
-            .first()
-        {
-            if let Ok(cauldron_e) = parent_q.get(*e) {
-                if let Ok(mut c) = cauldron_q.get_mut(cauldron_e.get()) {
-                    // there can't be a ready meal in the cauldron
-                    if let Ok((_, _, ingredient, ..)) = dragged_query.get_single() {
-                        let mut can_use_ingredient = true;
+            } else if let Some((e, ..)) = interaction_state
+                .get_group(DragGroup::Cauldron.into())
+                .first()
+            {
+                if let Ok(cauldron_e) = parent_q.get(*e) {
+                    if let Ok(mut c) = cauldron_q.get_mut(cauldron_e.get()) {
+                        // there can't be a ready meal in the cauldron
+                        if let Ok((_, _, ingredient, ..)) = dragged_query.get_single() {
+                            let mut can_use_ingredient = true;
 
-                        if let Some(tooltip_e) = c.tooltip_e {
-                            if let Ok(tooltip) = tooltip_q.get(tooltip_e) {
-                                if tooltip.ingredients.len() >= 3
-                                    && !tooltip.ingredients.contains_key(&(*ingredient as u8))
-                                {
-                                    can_use_ingredient = false;
+                            if let Some(tooltip_e) = c.tooltip_e {
+                                if let Ok(tooltip) = tooltip_q.get(tooltip_e) {
+                                    if tooltip.ingredients.len() >= 3
+                                        && !tooltip.ingredients.contains_key(&(*ingredient as u8))
+                                    {
+                                        can_use_ingredient = false;
+                                    }
                                 }
                             }
-                        }
 
-                        if can_use_ingredient {
-                            c.ingredients.push(*ingredient);
-                            card_evw.send(CardEffect::Ingredient {
-                                cauldron_e: cauldron_e.get(),
-                                ingredient: *ingredient,
-                            });
+                            if can_use_ingredient {
+                                c.ingredients.push(*ingredient);
+                                card_evw.send(CardEffect::Ingredient {
+                                    cauldron_e: cauldron_e.get(),
+                                    ingredient: *ingredient,
+                                });
 
-                            used = true;
+                                used = true;
+                            }
                         }
                     }
                 }
-            }
-        };
+            } else if let Some((e, ..)) = interaction_state
+                .get_group(DragGroup::GridSection.into())
+                .first()
+            {
+                if let Ok(section) = section_q.get(*e) {
+                    if !board.is_section_empty(section.0) {
+                        card_evw.send(CardEffect::ClearSection { section: section.0 });
+                        used = true;
+                    }
+                }
+            };
+        }
 
         if used {
             if let Ok((e, ..)) = dragged_query.get_single() {

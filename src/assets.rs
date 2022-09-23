@@ -27,6 +27,9 @@ pub struct AudioAssets {
 
 #[derive(AssetCollection)]
 pub struct Sprites {
+    #[asset(path = "sprites/tutorial.png")]
+    pub tutorial: Handle<Image>,
+
     #[asset(path = "sprites/card.png")]
     pub card: Handle<Image>,
 
@@ -42,6 +45,9 @@ pub struct Sprites {
     #[asset(path = "sprites/parchment.png")]
     pub parchment: Handle<Image>,
 
+    #[asset(path = "sprites/parchment_grid.png")]
+    pub parchment_grid: Handle<Image>,
+
     #[asset(path = "sprites/hint_tooltip.png")]
     pub hint_tooltip: Handle<Image>,
 
@@ -54,8 +60,14 @@ pub struct Sprites {
     #[asset(path = "sprites/progress_bar.png")]
     pub progress_bar: Handle<Image>,
 
+    #[asset(path = "sprites/progress_bar_order.png")]
+    pub progress_bar_order: Handle<Image>,
+
     #[asset(path = "sprites/title_tooltip.png")]
     pub title_tooltip: Handle<Image>,
+
+    #[asset(path = "sprites/win.png")]
+    pub win: Handle<Image>,
 
     #[asset(texture_atlas(tile_size_x = 28., tile_size_y = 24., columns = 6, rows = 1))]
     #[asset(path = "sprites/ferris.png")]

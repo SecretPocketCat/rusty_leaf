@@ -10,7 +10,7 @@ use std::ops::{Div, Sub};
 use crate::{
     coords::TileCoords,
     drag::{DragGroup, Mover},
-    render::COL_DARK,
+    render::{ZIndex, COL_DARK},
     tile_placement::TILE_SIZE,
     tween::{delay_tween, get_relative_move_tween},
 };
@@ -96,6 +96,7 @@ pub fn spawn_piece(
             transform: Transform::from_xyz(position.x, position.y, 1.),
             ..default()
         })
+        .insert(ZIndex::Piece)
         .with_children(|b| {
             let piece_padded_w = piece.get_padded_width();
             let piece_offset_x = piece.get_width().sub(1) as f32 / 2.;
