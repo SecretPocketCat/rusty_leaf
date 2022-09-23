@@ -19,7 +19,7 @@ use crate::{
     },
     GameState,
 };
-use bevy::prelude::*;
+use bevy::{ecs::event::Event, prelude::*};
 use bevy_interact_2d::Interactable;
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
@@ -52,188 +52,219 @@ impl Plugin for LevelPlugin {
                 ingredient_type_range: 1..2,
                 max_simultaneous_orders: 1,
                 next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 2,
+                total_order_count: 1,
                 special_order: None,
                 pieces_range: Some(0..27),
             },
             Level {
-                name: "Starter".into(),
+                name: "Soup 101".into(),
                 allowed_ingredients: vec![
                     Ingredient::Pumpkin,
                     Ingredient::Potato,
                     Ingredient::Tomato,
                 ],
                 required_ingredients: Vec::new(),
-                ingredient_count_range: 1..3,
-                ingredient_type_range: 1..3,
-                max_simultaneous_orders: 2,
-                next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 3,
-                special_order: None,
-                pieces_range: Some(0..27),
-            },
-            Level {
-                name: "Smells Like Halloween".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                ],
-                required_ingredients: vec![Ingredient::Pumpkin],
-                ingredient_count_range: 1..3,
-                ingredient_type_range: 1..3,
-                max_simultaneous_orders: 2,
-                next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 5,
-                special_order: None,
-                pieces_range: Some(0..27),
-            },
-            Level {
-                name: "Cutting Corners".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 1..3,
-                ingredient_type_range: 1..3,
-                max_simultaneous_orders: 2,
-                next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 6,
-                special_order: None,
-                pieces_range: Some(7..19),
-            },
-            Level {
-                name: "Vampire's Best Friend".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![Ingredient::Garlic],
-                ingredient_count_range: 1..4,
-                ingredient_type_range: 1..4,
-                max_simultaneous_orders: 3,
-                next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 7,
-                special_order: None,
-                pieces_range: Some(0..27),
-            },
-            Level {
-                name: "Turning Up the Heat".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 2..4,
-                ingredient_type_range: 1..4,
-                max_simultaneous_orders: 3,
-                next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 7,
-                special_order: None,
-                pieces_range: Some(0..27),
-            },
-            Level {
-                name: "A Recipe for Disaster".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Eggplant,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 2..5,
-                ingredient_type_range: 2..4,
-                max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 7,
-                special_order: None,
-                pieces_range: Some(0..35),
-            },
-            Level {
-                name: "Fast Food".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Eggplant,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
                 ingredient_count_range: 1..2,
                 ingredient_type_range: 1..2,
-                max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 13000..17000,
-                total_order_count: 10,
-                special_order: None,
-                pieces_range: Some(0..7),
-            },
-            Level {
-                name: "Souped Up".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Eggplant,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 3..6,
-                ingredient_type_range: 2..4,
-                max_simultaneous_orders: 4,
+                max_simultaneous_orders: 1,
                 next_customer_delay_range_ms: 20000..30000,
-                total_order_count: 10,
+                total_order_count: 1,
                 special_order: None,
-                pieces_range: None,
+                pieces_range: Some(0..27),
             },
-            Level {
-                name: "Food Critic".into(),
-                allowed_ingredients: vec![
-                    Ingredient::Pumpkin,
-                    Ingredient::Potato,
-                    Ingredient::Tomato,
-                    Ingredient::Mushroom,
-                    Ingredient::Eggplant,
-                    Ingredient::Garlic,
-                ],
-                required_ingredients: vec![],
-                ingredient_count_range: 1..2,
-                ingredient_type_range: 1..2,
-                max_simultaneous_orders: 4,
-                next_customer_delay_range_ms: 15000..20000,
-                total_order_count: 15,
-                special_order: Some(SpecialOrder {
-                    index_range: 9..13,
-                    ingredients: [
-                        (Ingredient::Tomato, 3),
-                        (Ingredient::Garlic, 3),
-                        (Ingredient::Eggplant, 3),
-                    ]
-                    .into(),
-                }),
-                pieces_range: None,
-            },
+            // Level {
+            //     name: "Soup 101".into(),
+            //     allowed_ingredients: vec![
+            //         Ingredient::Pumpkin,
+            //         Ingredient::Potato,
+            //         Ingredient::Tomato,
+            //     ],
+            //     required_ingredients: Vec::new(),
+            //     ingredient_count_range: 1..2,
+            //     ingredient_type_range: 1..2,
+            //     max_simultaneous_orders: 1,
+            //     next_customer_delay_range_ms: 20000..30000,
+            //     total_order_count: 2,
+            //     special_order: None,
+            //     pieces_range: Some(0..27),
+            // },
+            // Level {
+            //     name: "Starter".into(),
+            //     allowed_ingredients: vec![
+            //         Ingredient::Pumpkin,
+            //         Ingredient::Potato,
+            //         Ingredient::Tomato,
+            //     ],
+            //     required_ingredients: Vec::new(),
+            //     ingredient_count_range: 1..3,
+            //     ingredient_type_range: 1..3,
+            //     max_simultaneous_orders: 2,
+            //     next_customer_delay_range_ms: 20000..30000,
+            //     total_order_count: 3,
+            //     special_order: None,
+            //     pieces_range: Some(0..27),
+            // },
+            // Level {
+            //     name: "Smells Like Halloween".into(),
+            //     allowed_ingredients: vec![
+            //         Ingredient::Pumpkin,
+            //         Ingredient::Potato,
+            //         Ingredient::Tomato,
+            //     ],
+            //     required_ingredients: vec![Ingredient::Pumpkin],
+            //     ingredient_count_range: 1..3,
+            //     ingredient_type_range: 1..3,
+            //     max_simultaneous_orders: 2,
+            //     next_customer_delay_range_ms: 20000..30000,
+            //     total_order_count: 5,
+            //     special_order: None,
+            //     pieces_range: Some(0..27),
+            // },
+            // Level {
+            //     name: "Cutting Corners".into(),
+            //     allowed_ingredients: vec![
+            //         Ingredient::Pumpkin,
+            //         Ingredient::Potato,
+            //         Ingredient::Tomato,
+            //     ],
+            //     required_ingredients: vec![],
+            //     ingredient_count_range: 1..3,
+            //     ingredient_type_range: 1..3,
+            //     max_simultaneous_orders: 2,
+            //     next_customer_delay_range_ms: 20000..30000,
+            //     total_order_count: 6,
+            //     special_order: None,
+            //     pieces_range: Some(7..19),
+            // },
+            // Level {
+            //     name: "Vampire's Best Friend".into(),
+            //     allowed_ingredients: vec![
+            //         Ingredient::Pumpkin,
+            //         Ingredient::Potato,
+            //         Ingredient::Tomato,
+            //         Ingredient::Garlic,
+            //     ],
+            //     required_ingredients: vec![Ingredient::Garlic],
+            //     ingredient_count_range: 1..4,
+            //     ingredient_type_range: 1..4,
+            //     max_simultaneous_orders: 3,
+            //     next_customer_delay_range_ms: 20000..30000,
+            //     total_order_count: 7,
+            //     special_order: None,
+            //     pieces_range: Some(0..27),
+            // },
+            // Level {
+            //     name: "Turning Up the Heat".into(),
+            //     allowed_ingredients: vec![
+            //         Ingredient::Pumpkin,
+            //         Ingredient::Potato,
+            //         Ingredient::Tomato,
+            //         Ingredient::Mushroom,
+            //         Ingredient::Garlic,
+            //     ],
+            //     required_ingredients: vec![],
+            //     ingredient_count_range: 2..4,
+            //     ingredient_type_range: 1..4,
+            //     max_simultaneous_orders: 3,
+            //     next_customer_delay_range_ms: 20000..30000,
+            //     total_order_count: 7,
+            //     special_order: None,
+            //     pieces_range: Some(0..27),
+            // },
+            // Level {
+            //     name: "A Recipe for Disaster".into(),
+            //     allowed_ingredients: vec![
+            //         Ingredient::Pumpkin,
+            //         Ingredient::Potato,
+            //         Ingredient::Tomato,
+            //         Ingredient::Mushroom,
+            //         Ingredient::Eggplant,
+            //         Ingredient::Garlic,
+            //     ],
+            //     required_ingredients: vec![],
+            //     ingredient_count_range: 2..5,
+            //     ingredient_type_range: 2..4,
+            //     max_simultaneous_orders: 4,
+            //     next_customer_delay_range_ms: 20000..30000,
+            //     total_order_count: 7,
+            //     special_order: None,
+            //     pieces_range: Some(0..35),
+            // },
+            // Level {
+            //     name: "Fast Food".into(),
+            //     allowed_ingredients: vec![
+            //         Ingredient::Pumpkin,
+            //         Ingredient::Potato,
+            //         Ingredient::Tomato,
+            //         Ingredient::Mushroom,
+            //         Ingredient::Eggplant,
+            //         Ingredient::Garlic,
+            //     ],
+            //     required_ingredients: vec![],
+            //     ingredient_count_range: 1..2,
+            //     ingredient_type_range: 1..2,
+            //     max_simultaneous_orders: 4,
+            //     next_customer_delay_range_ms: 13000..17000,
+            //     total_order_count: 10,
+            //     special_order: None,
+            //     pieces_range: Some(0..7),
+            // },
+            // Level {
+            //     name: "Souped Up".into(),
+            //     allowed_ingredients: vec![
+            //         Ingredient::Pumpkin,
+            //         Ingredient::Potato,
+            //         Ingredient::Tomato,
+            //         Ingredient::Mushroom,
+            //         Ingredient::Eggplant,
+            //         Ingredient::Garlic,
+            //     ],
+            //     required_ingredients: vec![],
+            //     ingredient_count_range: 3..6,
+            //     ingredient_type_range: 2..4,
+            //     max_simultaneous_orders: 4,
+            //     next_customer_delay_range_ms: 20000..30000,
+            //     total_order_count: 10,
+            //     special_order: None,
+            //     pieces_range: None,
+            // },
+            // Level {
+            //     name: "Food Critic".into(),
+            //     allowed_ingredients: vec![
+            //         Ingredient::Pumpkin,
+            //         Ingredient::Potato,
+            //         Ingredient::Tomato,
+            //         Ingredient::Mushroom,
+            //         Ingredient::Eggplant,
+            //         Ingredient::Garlic,
+            //     ],
+            //     required_ingredients: vec![],
+            //     ingredient_count_range: 1..2,
+            //     ingredient_type_range: 1..2,
+            //     max_simultaneous_orders: 4,
+            //     next_customer_delay_range_ms: 15000..20000,
+            //     total_order_count: 15,
+            //     special_order: Some(SpecialOrder {
+            //         index_range: 9..13,
+            //         ingredients: [
+            //             (Ingredient::Tomato, 3),
+            //             (Ingredient::Garlic, 3),
+            //             (Ingredient::Eggplant, 3),
+            //         ]
+            //         .into(),
+            //     }),
+            //     pieces_range: None,
+            // },
         ];
 
         app.add_event::<LevelEv>()
-            // todo: restore from somewhere
             .insert_resource(Levels(levels))
             .add_exit_system(GameState::Loading, setup_app)
             .add_enter_system(GameState::Playing, on_level_in)
             .add_exit_system(GameState::Playing, on_level_out)
             .add_system(start_day.run_if_resource_exists::<StartDayDelay>())
             .add_system(on_level_over)
-            .add_system(tween_on_level_ev);
+            .add_system(tween_on_level_ev::<LevelEv>);
     }
 }
 
@@ -246,6 +277,7 @@ const FAIL_MSGS: [&str; 6] = [
     "Don't be such a couch potato.",
 ];
 
+#[derive(PartialEq, Eq)]
 pub enum LevelEv {
     LevelIn,
     LevelStart,
@@ -319,11 +351,11 @@ pub enum LevelEventTweenType {
 }
 
 #[derive(Component)]
-pub struct LevelEvTween {
-    in_event: LevelEv,
+pub struct EvTween<T: Event> {
+    in_event: T,
     duration_in: u64,
     duration_out: u64,
-    out_event: LevelEv,
+    out_event: T,
     delay_in: u64,
     delay_out: u64,
     ease_in: EaseFunction,
@@ -331,13 +363,8 @@ pub struct LevelEvTween {
     tween_type: LevelEventTweenType,
 }
 
-impl LevelEvTween {
-    pub fn new(
-        tween_type: LevelEventTweenType,
-        in_event: LevelEv,
-        out_event: LevelEv,
-        duration: u64,
-    ) -> Self {
+impl<T: Event> EvTween<T> {
+    pub fn new(tween_type: LevelEventTweenType, in_event: T, out_event: T, duration: u64) -> Self {
         Self {
             tween_type,
             in_event,
@@ -437,7 +464,7 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
     })
     .insert(ZIndex::Grid)
     .insert(
-        LevelEvTween::new(
+        EvTween::new(
             LevelEventTweenType::MoveByY(910.),
             LevelEv::LevelStart,
             LevelEv::LevelOut,
@@ -463,7 +490,7 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
     })
     .insert(ZIndex::Tooltip)
     .insert(
-        LevelEvTween::new(
+        EvTween::new(
             LevelEventTweenType::MoveByY(-240.),
             LevelEv::LevelIn,
             LevelEv::LevelStart,
@@ -507,7 +534,7 @@ fn setup_app(mut cmd: Commands, sprites: Res<Sprites>, fonts: Res<Fonts>) {
     })
     .insert(ZIndex::Tooltip)
     .insert(
-        LevelEvTween::new(
+        EvTween::new(
             LevelEventTweenType::FadeText(COL_LIGHT),
             LevelEv::LevelIn,
             LevelEv::LevelStart,
@@ -645,16 +672,16 @@ fn on_level_out(mut lvl_evw: EventWriter<LevelEv>) {
     lvl_evw.send(LevelEv::LevelOut);
 }
 
-fn tween_on_level_ev(
+pub fn tween_on_level_ev<T: Event + Eq>(
     mut cmd: Commands,
-    mut lvl_evr: EventReader<LevelEv>,
-    tween_q: Query<(Entity, &LevelEvTween)>,
+    mut lvl_evr: EventReader<T>,
+    tween_q: Query<(Entity, &EvTween<T>)>,
 ) {
     for ev in lvl_evr.iter() {
         for (tween_e, tween) in tween_q.iter() {
-            let is_in = tween.in_event.eq(ev);
+            let is_in = &tween.in_event == ev;
 
-            if is_in || tween.out_event.eq(ev) {
+            if is_in || &tween.out_event == ev {
                 let mut tween_e_cmd = cmd.entity(tween_e);
                 let (sign, duration, delay, ease) = if is_in {
                     (1., tween.duration_in, tween.delay_in, tween.ease_in)

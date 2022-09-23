@@ -157,7 +157,7 @@ fn spawn_orders(
             let mut duration = ingredients.len() as f32 * 20. + 30.;
 
             if cfg!(debug_assertions) {
-                duration = 5.;
+                // duration = 5.;
             }
 
             cmd.spawn()

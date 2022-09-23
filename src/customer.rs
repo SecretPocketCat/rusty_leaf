@@ -16,7 +16,7 @@ impl Plugin for CustomerPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
             ConditionSet::new()
-                .run_in_state(GameState::Playing)
+                .run_not_in_state(GameState::Loading)
                 .with_system(spawn_customer)
                 .with_system(wander_around)
                 .with_system(on_order_completed)

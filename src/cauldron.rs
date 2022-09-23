@@ -40,10 +40,10 @@ impl Plugin for CauldronPlugin {
     }
 }
 
-// pub const COOK_TIME: f32 = 1.;
-pub const COOK_TIME: f32 = 15.;
+pub const COOK_TIME: f32 = 1.;
+// pub const COOK_TIME: f32 = 15.;
 pub const FIRE_BOOST_TIME: f32 = 15.;
-pub const FIRE_BOOST_MULT: f32 = 2.5;
+pub const FIRE_BOOST_MULT: f32 = 3.0;
 const TOOLTIP_TWEEN_OFFSET: f32 = 28.;
 
 #[derive(Component)]
