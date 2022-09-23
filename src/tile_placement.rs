@@ -82,11 +82,13 @@ impl Plugin for TilePlacementPlugin {
                 (PieceFields::new(&[1, 3, 4, 5, 7], 3, BOARD_SIZE), 3),
                 // edgy cross
                 (PieceFields::new(&[0, 2, 4, 6, 8], 3, BOARD_SIZE), 2),
-                // donut
-                (
-                    PieceFields::new(&[0, 1, 2, 3, 5, 6, 7, 8], 3, BOARD_SIZE),
-                    1,
-                ),
+                // single
+                (PieceFields::new(&[0], 1, BOARD_SIZE), 10),
+                // // donut
+                // (
+                //     PieceFields::new(&[0, 1, 2, 3, 5, 6, 7, 8], 3, BOARD_SIZE),
+                //     1,
+                // ),
             ]))
             .init_resource::<BoardClearQueue>()
             .add_system(fill_piece_queue.run_in_state(GameState::Playing))
