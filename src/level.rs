@@ -384,6 +384,9 @@ pub struct InteractableSection(pub usize);
 #[derive(Component)]
 struct StartFade;
 
+#[derive(Component)]
+struct Tutorial;
+
 fn setup_fade(mut cmd: Commands) {
     cmd.spawn_bundle(SpriteBundle {
         sprite: Sprite {
@@ -403,6 +406,13 @@ fn setup_app(
     fonts: Res<Fonts>,
     fade_q: Query<Entity, With<StartFade>>,
 ) {
+    cmd.spawn_bundle(SpriteBundle {
+        texture: sprites.tutorial.clone(),
+        transform: Transform::from_xyz(0., 0., 99.),
+        ..default()
+    })
+    .insert(Tutorial);
+
     for e in fade_q.iter() {
         cmd.entity(e).insert(get_relative_sprite_color_anim(
             Color::NONE,
@@ -613,14 +623,25 @@ fn start_day(
     mut lvl: ResMut<CurrentLevel>,
     time: Res<Time>,
     mouse_input: Res<Input<MouseButton>>,
+    tutorial_q: Query<Entity, With<Tutorial>>,
 ) {
     delay.tick(time.delta());
 
     if delay.finished() {
         if mouse_input.any_just_pressed([MouseButton::Left, MouseButton::Right]) {
-            cmd.remove_resource::<StartDayDelay>();
-            lvl_evw.send(LevelEv::LevelStart);
-            lvl.stopped = false;
+            if tutorial_q.iter().len() > 0 {
+                for e in tutorial_q.iter() {
+                    cmd.entity(e).insert(get_relative_sprite_color_anim(
+                        Color::NONE,
+                        1000,
+                        Some(TweenDoneAction::DespawnRecursive),
+                    ));
+                }
+            } else {
+                cmd.remove_resource::<StartDayDelay>();
+                lvl_evw.send(LevelEv::LevelStart);
+                lvl.stopped = false;
+            }
         }
     }
 }

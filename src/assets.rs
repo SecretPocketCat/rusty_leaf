@@ -27,6 +27,9 @@ pub struct AudioAssets {
 
 #[derive(AssetCollection)]
 pub struct Sprites {
+    #[asset(path = "sprites/tutorial.png")]
+    pub tutorial: Handle<Image>,
+
     #[asset(path = "sprites/card.png")]
     pub card: Handle<Image>,
 
