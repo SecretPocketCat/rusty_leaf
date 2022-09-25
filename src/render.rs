@@ -10,7 +10,12 @@ impl Plugin for RenderPlugin {
     }
 }
 
-pub const WINDOW_SIZE: Vec2 = Vec2::new(320., 180.);
+pub const VIEW_SIZE: Vec2 = Vec2::new(320., 180.);
+pub const VIEW_PADDING: f32 = 5.;
+pub const PADDED_VIEW_EXTENDS: Vec2 = Vec2::new(
+    VIEW_SIZE.x / 2. - VIEW_PADDING,
+    VIEW_SIZE.y / 2. - VIEW_PADDING,
+);
 pub const COL_DARK: Color = Color::rgb(0.2706, 0.2392, 0.2784);
 pub const COL_DARKER: Color = Color::rgb(0.1137, 0.0941, 0.0706);
 pub const COL_LIGHT: Color = Color::rgb(0.9372, 0.847, 0.7294);

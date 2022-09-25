@@ -6,7 +6,10 @@ use crate::{
     highlight::Highligtable,
     level::{InteractableSection, LevelEv},
     list::{ListPlugin, ListPluginOptions},
-    render::{ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, WINDOW_SIZE},
+    render::{
+        ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, PADDED_VIEW_EXTENDS, VIEW_PADDING,
+        VIEW_SIZE,
+    },
     tween::{
         delay_tween, get_relative_move_anim, get_relative_move_by_tween, FadeHierarchyBundle,
         TweenDoneAction,
@@ -28,22 +31,24 @@ impl Plugin for CardPlugin {
         app.add_event::<CardEffect>()
             .add_plugin(ListPlugin::<Card>::new(ListPluginOptions {
                 offset: CARD_INDEX_X_OFFSET as f32,
-                offscreen_offset: CARD_OFFSCREEN_OFFSET as f32,
+                offscreen_offset: -CARD_SIZE.y - VIEW_PADDING,
                 horizontal: true,
+                place_duration_ms: 650,
+                shift_duration_ms: 300,
             }))
             .add_system_to_stage(CoreStage::Last, drop_card) // run after update to get precise dragged.origin
             .add_system(on_level_over.run_not_in_state(GameState::Loading));
 
         if cfg!(debug_assertions) {
-            app.add_enter_system(GameState::Playing, test_card_spawn);
+            app.add_system(test_card_spawn.run_in_state(GameState::Playing));
         }
     }
 }
 
 pub const MAX_CARDS: usize = 5;
 pub const CARD_SIZE: Vec2 = Vec2::new(32., 48.);
+pub const CARD_EXTENDS: Vec2 = Vec2::new(CARD_SIZE.x / 2., CARD_SIZE.y / 2.);
 const CARD_INDEX_X_OFFSET: i32 = -35;
-const CARD_OFFSCREEN_OFFSET: i32 = 63;
 
 #[derive(Component, Inspectable)]
 pub struct Card {}
@@ -124,8 +129,8 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
         .id();
 
     let pos = Vec3::new(
-        WINDOW_SIZE.x / 2. - CARD_SIZE.x - 15.,
-        WINDOW_SIZE.y / 2. - CARD_SIZE.y - 19. + CARD_OFFSCREEN_OFFSET as f32,
+        PADDED_VIEW_EXTENDS.x - CARD_EXTENDS.x,
+        VIEW_SIZE.y / 2. + CARD_EXTENDS.y,
         2.,
     );
 
@@ -164,17 +169,23 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
     });
 }
 
-fn test_card_spawn(mut cmd: Commands, sprites: Res<Sprites>) {
-    for i in 0..4 {
-        // spawn_card(&mut cmd, &sprites, &BoardClear::Column(0));
-        // spawn_card(
-        //     &mut cmd,
-        //     &sprites,
-        //     &BoardClear::Section {
-        //         section_index: i,
-        //         used_special: false,
-        //     },
-        // );
+fn test_card_spawn(mut cmd: Commands, mut lvl_evr: EventReader<LevelEv>, sprites: Res<Sprites>) {
+    for ev in lvl_evr.iter() {
+        if let LevelEv::LevelStart = ev {
+            for i in 0..4 {
+                // spawn_card(&mut cmd, &sprites, &BoardClear::Column(0));
+                spawn_card(
+                    &mut cmd,
+                    &sprites,
+                    &BoardClear::Section {
+                        section_index: i,
+                        used_special: false,
+                    },
+                );
+            }
+
+            break;
+        }
     }
 }
 
@@ -285,9 +296,9 @@ fn on_level_over(
                 let mut e_cmd = cmd.entity(e);
                 e_cmd.insert(Animator::new(delay_tween(
                     get_relative_move_by_tween(
-                        Vec3::Y * 113.,
+                        Vec3::Y * CARD_SIZE.y * 1.5,
                         350,
-                        EaseFunction::CircularIn,
+                        EaseFunction::QuadraticIn,
                         Some(TweenDoneAction::DespawnRecursive),
                     ),
                     i as u64 * 100,

@@ -8,7 +8,7 @@ use crate::{
     level::LevelEv,
     order::{Order, OrderEv},
     render::ZIndex,
-    GameState, WINDOW_SIZE,
+    GameState, VIEW_SIZE,
 };
 
 pub struct CustomerPlugin;
@@ -71,7 +71,7 @@ fn spawn_customer(
                 flip_x: true,
                 ..default()
             },
-            transform: Transform::from_xyz(WINDOW_SIZE.x / 2. + 13., -60., 0.0),
+            transform: Transform::from_xyz(VIEW_SIZE.x / 2. + 13., -60., 0.0),
             ..default()
         })
         .insert(ZIndex::Character)
@@ -90,7 +90,7 @@ fn spawn_customer(
 }
 
 fn get_rand_target() -> f32 {
-    thread_rng().gen_range(0.0..(WINDOW_SIZE.x / 2. - 13.))
+    thread_rng().gen_range(0.0..(VIEW_SIZE.x / 2. - 13.))
 }
 
 fn wander_around(
@@ -104,7 +104,7 @@ fn wander_around(
     time: Res<Time>,
 ) {
     for (e, mut c, mut c_t, mut sprite) in customer_q.iter_mut() {
-        if c_t.translation.x > WINDOW_SIZE.x / 2. + 50. {
+        if c_t.translation.x > VIEW_SIZE.x / 2. + 50. {
             // despawn if offscreen
             cmd.entity(e).despawn_recursive();
         } else {

@@ -26,6 +26,8 @@ impl Plugin for OrderPlugin {
                 horizontal: false,
                 offscreen_offset: 0.,
                 offset: ORDER_TOOLTIP_OFFSET as f32,
+                place_duration_ms: 500,
+                shift_duration_ms: 300,
             }))
             .add_system_set(
                 ConditionSet::new()
@@ -167,7 +169,7 @@ fn spawn_orders(
             }).sum::<f32>() + 60.;
 
             if cfg!(debug_assertions) {
-                // duration = 5.;
+                duration = 5.;
             }
 
             cmd.spawn()
@@ -211,7 +213,7 @@ fn show_order_tooltip(
                     color: Color::NONE,
                     ..default()
                 },
-                transform: Transform::from_xyz(510., 70., 0.),
+                transform: Transform::from_xyz(128., 70., 0.),
                 ..default()
             })
             .insert(ZIndex::OrderTooltip)
