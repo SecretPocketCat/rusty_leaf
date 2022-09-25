@@ -1,11 +1,11 @@
 use crate::{
     assets::{Fonts, Sprites},
-    card::Ingredient,
+    card::{Ingredient, CARD_SIZE},
     cauldron::spawn_tooltip_ingredient,
     level::{CurrentLevel, LevelEv, Levels},
     list::{ListPlugin, ListPluginOptions},
     progress::TooltipProgress,
-    render::{ZIndex, COL_DARK},
+    render::{ZIndex, COL_DARK, VIEW_PADDING, PADDED_VIEW_EXTENDS, VIEW_EXTENDS},
     tween::{
         delay_tween, get_relative_move_by_anim, get_relative_move_by_tween, FadeHierarchyBundle,
         TweenDoneAction,
@@ -24,8 +24,8 @@ impl Plugin for OrderPlugin {
         app.add_event::<OrderEv>()
             .add_plugin(ListPlugin::<OrderTooltip>::new(ListPluginOptions {
                 horizontal: false,
-                offscreen_offset: 0.,
-                offset: ORDER_TOOLTIP_OFFSET as f32,
+                offscreen_offset: -60.,
+                offset: -30.,
                 place_duration_ms: 500,
                 shift_duration_ms: 300,
             }))
@@ -44,7 +44,6 @@ impl Plugin for OrderPlugin {
 }
 
 pub const ORDER_DELAY_S: f32 = 0.5;
-const ORDER_TOOLTIP_OFFSET: i32 = -122;
 
 pub enum OrderEv {
     Completed(Entity),
@@ -213,7 +212,7 @@ fn show_order_tooltip(
                     color: Color::NONE,
                     ..default()
                 },
-                transform: Transform::from_xyz(128., 70., 0.),
+                transform: Transform::from_xyz(VIEW_EXTENDS.x + 30., PADDED_VIEW_EXTENDS.y - CARD_SIZE.y - 17., 0.),
                 ..default()
             })
             .insert(ZIndex::OrderTooltip)
@@ -293,9 +292,9 @@ fn on_level_over(
                 let mut e_cmd = cmd.entity(e);
                 e_cmd.insert(Animator::new(delay_tween(
                     get_relative_move_by_tween(
-                        Vec3::X * 300.,
+                        Vec3::X * 70.,
                         350,
-                        EaseFunction::CircularIn,
+                        EaseFunction::QuadraticIn,
                         Some(TweenDoneAction::DespawnRecursive),
                     ),
                     i as u64 * 100,
