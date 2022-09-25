@@ -171,7 +171,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
         cmd.spawn_bundle(SpriteSheetBundle {
             texture_atlas: sprites.cauldron.clone(),
             sprite: TextureAtlasSprite::new(*sprite_index),
-            transform: Transform::from_xyz(*x, -176., 0.5),
+            transform: Transform::from_xyz(*x, -44., 0.5),
             ..default()
         })
         .insert(ZIndex::Cauldron)
@@ -189,7 +189,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
             b.spawn_bundle(SpriteSheetBundle {
                 texture_atlas: sprites.firepit.clone(),
                 sprite: TextureAtlasSprite::new(*sprite_index),
-                transform: Transform::from_xyz(*firepit_x, -6., -0.01),
+                transform: Transform::from_xyz(*firepit_x, -25., -0.01),
                 ..default()
             })
             .add_child(firepit_outline_e);
