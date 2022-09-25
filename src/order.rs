@@ -168,7 +168,7 @@ fn spawn_orders(
             }).sum::<f32>() + 60.;
 
             if cfg!(debug_assertions) {
-                duration = 5.;
+                // duration = 5.;
             }
 
             cmd.spawn()
@@ -216,7 +216,7 @@ fn show_order_tooltip(
                 ..default()
             })
             .insert(ZIndex::OrderTooltip)
-            .insert(TooltipProgress::new(-1.5, true))
+            .insert(TooltipProgress::new(-1., true))
             .insert_bundle(FadeHierarchyBundle::new(true, 450, COL_DARK))
             .insert(OrderTooltip)
             .insert(Name::new("order_tooltip"))
