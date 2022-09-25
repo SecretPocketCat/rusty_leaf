@@ -125,7 +125,7 @@ pub fn spawn_tooltip_ingredient(
 
 fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
     for (x, firepit_x, sprite_index, flip_x, fire_x) in
-        [(20., -1., 0, false, 0.), (74., -2., 1, true, -1.0)].iter()
+        [(20., -1., 0, false, 0.), (74., -5., 1, true, -1.0)].iter()
     {
         let fire_e = cmd
             .spawn_bundle(SpriteSheetBundle {
