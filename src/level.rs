@@ -8,8 +8,7 @@ use crate::{
     highlight::Highligtable,
     order::SpecialOrder,
     render::{
-        NoRescale, ZIndex, COL_DARK, COL_DARKER, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED,
-        COL_OUTLINE_HOVERED_DRAG, SCALE_MULT,
+        ZIndex, COL_DARK, COL_DARKER, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, COL_OUTLINE_HOVERED_DRAG,
     },
     tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, SECTION_SIZE, TILE_SIZE},
     tools::enum_variant_eq,
@@ -390,7 +389,7 @@ struct Tutorial;
 fn setup_fade(mut cmd: Commands) {
     cmd.spawn_bundle(SpriteBundle {
         sprite: Sprite {
-            custom_size: Some(Vec2::splat(4000.)),
+            custom_size: Some(Vec2::splat(1000.)),
             color: COL_DARKER,
             ..default()
         },
@@ -442,15 +441,15 @@ fn setup_app(
         (
             sprites.ferris.clone(),
             ZIndex::Shopkeep,
-            -350.,
-            -218.,
+            -88.,
+            -55.,
             "ferris",
         ),
         (
             sprites.shop_smoke.clone(),
             ZIndex::BgShop,
-            -470.,
-            169.,
+            -118.,
+            42.,
             "shop_smoke",
         ),
     ]
@@ -469,13 +468,13 @@ fn setup_app(
 
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.parchment.clone(),
-        transform: Transform::from_xyz(BOARD_SHIFT.x + 23., -1500., 0.),
+        transform: Transform::from_xyz(BOARD_SHIFT.x + 6., -375., 0.),
         ..default()
     })
     .insert(ZIndex::Grid)
     .insert(
         EvTween::new(
-            LevelEventTweenType::MoveByY(910.),
+            LevelEventTweenType::MoveByY(228.),
             LevelEv::LevelStart,
             LevelEv::LevelOut,
             800,
@@ -489,19 +488,18 @@ fn setup_app(
             texture: sprites.parchment_grid.clone(),
             transform: Transform::from_xyz(0., 0., 0.5),
             ..default()
-        })
-        .insert(NoRescale);
+        });
     });
 
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.title_tooltip.clone(),
-        transform: Transform::from_xyz(0., 450., 0.),
+        transform: Transform::from_xyz(0., 113., 0.),
         ..default()
     })
     .insert(ZIndex::Tooltip)
     .insert(
         EvTween::new(
-            LevelEventTweenType::MoveByY(-240.),
+            LevelEventTweenType::MoveByY(-60.),
             LevelEv::LevelIn,
             LevelEv::LevelStart,
             1200,
@@ -517,13 +515,12 @@ fn setup_app(
                 "",
                 TextStyle {
                     font: fonts.tooltip.clone(),
-                    font_size: 16.0 * SCALE_MULT,
+                    font_size: 16.0,
                     color: COL_DARK,
                 },
             )
             .with_alignment(TextAlignment::CENTER),
-            transform: Transform::from_xyz(0., 2., 0.01)
-                .with_scale(Vec2::splat(1. / SCALE_MULT).extend(1.)),
+            transform: Transform::from_xyz(0., 2., 0.01),
             ..default()
         })
         .insert(LevelTooltiptext);
@@ -534,12 +531,12 @@ fn setup_app(
             format!("Click anywhere to start the day..."),
             TextStyle {
                 font: fonts.tooltip.clone(),
-                font_size: 16.0 * SCALE_MULT,
+                font_size: 16.0,
                 color: Color::NONE,
             },
         )
         .with_alignment(TextAlignment::CENTER_LEFT),
-        transform: Transform::from_xyz(-50., -321., 0.),
+        transform: Transform::from_xyz(-13., -80., 0.),
         ..default()
     })
     .insert(ZIndex::Tooltip)
@@ -557,10 +554,9 @@ fn setup_app(
 
     let corner = Vec2::splat(SECTION_SIZE as f32 / 2. * TILE_SIZE);
     let section_box = (-corner, corner);
-    // -520., 54.
     for i in 0..(BOARD_SIZE / SECTION_SIZE).pow(2) {
-        let x = (i % SECTION_SIZE) as f32 * corner.x * 2. - 520.;
-        let y = (i / SECTION_SIZE) as f32 * -corner.x * 2. + 58.;
+        let x = (i % SECTION_SIZE) as f32 * corner.x * 2. - 130.;
+        let y = (i / SECTION_SIZE) as f32 * -corner.x * 2. + 15.;
 
         cmd.spawn_bundle(SpriteBundle {
             transform: Transform::from_xyz(x, y, f32::from(ZIndex::Grid) + 0.1),
@@ -593,7 +589,6 @@ fn setup_app(
             ),
             sprite_e: None,
         })
-        .insert(NoRescale)
         .insert(Name::new("interactable_section"));
     }
 }

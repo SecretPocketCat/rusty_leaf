@@ -1,4 +1,4 @@
-use crate::{assets::Sprites, render::NoRescale, GameState};
+use crate::{assets::Sprites, GameState};
 use bevy::prelude::*;
 
 use iyes_loopless::prelude::*;
@@ -50,7 +50,7 @@ fn on_progress_added(
                 } else {
                     sprites.progress_bar.clone()
                 },
-                transform: Transform::from_xyz(-24.6, 14. + progress.offset, 0.1)
+                transform: Transform::from_xyz(-6., 4. + progress.offset, 0.1)
                     .with_scale(Vec3::new(progress.progress(), 1., 1.)),
                 sprite: Sprite {
                     anchor: bevy::sprite::Anchor::CenterLeft,
@@ -58,7 +58,6 @@ fn on_progress_added(
                 },
                 ..default()
             })
-            .insert(NoRescale)
             .id();
 
         progress.progress_sprite_e = Some(bar_e);

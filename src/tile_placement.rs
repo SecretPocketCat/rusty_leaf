@@ -23,11 +23,11 @@ use rand::prelude::*;
 use rand::{distributions::WeightedIndex, thread_rng, Rng};
 use std::ops::Range;
 
-pub const BOARD_SIZE_PX: f32 = 480.;
+pub const BOARD_SIZE_PX: f32 = 120.;
 pub const BOARD_SIZE: usize = 9;
 pub const TILE_SIZE: f32 = BOARD_SIZE_PX / BOARD_SIZE as f32;
 pub const SECTION_SIZE: usize = 3;
-pub const BOARD_SHIFT: Vec3 = Vec3::new(-362.0, -103., 0.);
+pub const BOARD_SHIFT: Vec3 = Vec3::new(-91.0, -26., 0.);
 pub const CARDS_PER_CLEAR: usize = 2;
 
 pub struct TilePlacementPlugin;
@@ -156,7 +156,7 @@ fn fill_piece_queue(
         let mut rng = rand::thread_rng();
         for i in 0..3 {
             let piece_i = lvl.fields_index_offset + lvl.field_weights.sample(&mut rng);
-            let x = ((i as i32) - 1i32) as f32 * 180.;
+            let x = ((i as i32) - 1i32) as f32 * 45.;
             let piece = &pieces.pieces[piece_i];
             spawn_piece(
                 &mut cmd,
@@ -167,7 +167,7 @@ fn fill_piece_queue(
                     BOARD_SIZE_PX / 2.
                         + BOARD_SHIFT.y
                         // + (piece.get_height() as f32 * TILE_SIZE) / 2.
-                        + 100.,
+                        + 25.,
                 ),
                 i * 150,
             );
@@ -357,7 +357,7 @@ fn on_level_over(
                 cmd.entity(e).despawn_recursive();
                 cmd.entity(mover.moved_e).insert(Animator::new(delay_tween(
                     get_relative_move_by_tween(
-                        Vec3::Y * 450.,
+                        Vec3::Y * 113.,
                         350,
                         EaseFunction::CircularIn,
                         Some(TweenDoneAction::DespawnRecursive),

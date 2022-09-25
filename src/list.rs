@@ -166,7 +166,7 @@ fn place_items<T: Component>(
                         Vec3::Y
                     } else {
                         Vec3::X
-                    } * 250.;
+                    } * 63.;
 
                 c_sprite.color = Color::WHITE;
                 item_t.translation = start_pos;

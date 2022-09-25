@@ -23,7 +23,6 @@ mod level;
 mod list;
 mod mouse;
 mod order;
-mod pause;
 mod piece;
 mod progress;
 mod render;

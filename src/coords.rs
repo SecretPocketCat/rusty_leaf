@@ -2,7 +2,6 @@ use crate::{
     board::Board,
     mouse::CursorWorldPosition,
     piece::Piece,
-    render::SCALE_MULT,
     tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, TILE_SIZE},
 };
 use bevy::prelude::*;
@@ -27,10 +26,7 @@ pub struct TileCoords {
 
 pub fn get_tile_coords_from_world(world_coords: Vec2, tile_size: UVec2) -> Option<UVec2> {
     let max_i = BOARD_SIZE as f32;
-    let base_coords = world_coords
-        .div(TILE_SIZE)
-        .round()
-        .add(Vec2::splat(SCALE_MULT));
+    let base_coords = world_coords.div(TILE_SIZE).round();
     let coords = Vec2::new(base_coords.x - 1., max_i - 1. - base_coords.y.abs());
     let tile_size = Vec2::new(tile_size.x as f32, tile_size.y as f32);
 

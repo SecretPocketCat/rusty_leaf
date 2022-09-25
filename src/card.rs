@@ -6,7 +6,7 @@ use crate::{
     highlight::Highligtable,
     level::{InteractableSection, LevelEv},
     list::{ListPlugin, ListPluginOptions},
-    render::{NoRescale, ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, WINDOW_SIZE},
+    render::{ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, WINDOW_SIZE},
     tween::{
         delay_tween, get_relative_move_anim, get_relative_move_by_tween, FadeHierarchyBundle,
         TweenDoneAction,
@@ -42,8 +42,8 @@ impl Plugin for CardPlugin {
 
 pub const MAX_CARDS: usize = 5;
 pub const CARD_SIZE: Vec2 = Vec2::new(32., 48.);
-const CARD_INDEX_X_OFFSET: i32 = -140;
-const CARD_OFFSCREEN_OFFSET: i32 = 250;
+const CARD_INDEX_X_OFFSET: i32 = -35;
+const CARD_OFFSCREEN_OFFSET: i32 = 63;
 
 #[derive(Component, Inspectable)]
 pub struct Card {}
@@ -120,13 +120,12 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
             },
             ..default()
         })
-        .insert(NoRescale)
         .insert(Name::new("outline"))
         .id();
 
     let pos = Vec3::new(
-        WINDOW_SIZE.x / 2. - CARD_SIZE.x - 60.,
-        WINDOW_SIZE.y / 2. - CARD_SIZE.y - 75. + CARD_OFFSCREEN_OFFSET as f32,
+        WINDOW_SIZE.x / 2. - CARD_SIZE.x - 15.,
+        WINDOW_SIZE.y / 2. - CARD_SIZE.y - 19. + CARD_OFFSCREEN_OFFSET as f32,
         2.,
     );
 
@@ -161,8 +160,7 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
             sprite: TextureAtlasSprite::new(ingredient.get_sprite_index()),
             transform: Transform::from_translation(Vec2::new(0., 10.).extend(0.0)),
             ..default()
-        })
-        .insert(NoRescale);
+        });
     });
 }
 
@@ -287,7 +285,7 @@ fn on_level_over(
                 let mut e_cmd = cmd.entity(e);
                 e_cmd.insert(Animator::new(delay_tween(
                     get_relative_move_by_tween(
-                        Vec3::Y * 450.,
+                        Vec3::Y * 113.,
                         350,
                         EaseFunction::CircularIn,
                         Some(TweenDoneAction::DespawnRecursive),
