@@ -1,5 +1,15 @@
 use crate::drag::DragGroup;
 use bevy::prelude::*;
+use bevy::{
+    core_pipeline::clear_color::ClearColorConfig,
+    render::{
+        camera::RenderTarget,
+        render_resource::{
+            Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
+        },
+        view::RenderLayers,
+    },
+};
 use bevy_interact_2d::InteractionSource;
 pub struct RenderPlugin;
 
@@ -49,7 +59,50 @@ impl From<ZIndex> for f32 {
     }
 }
 
-fn setup(mut cmd: Commands) {
+fn setup(mut cmd: Commands, mut images: ResMut<Assets<Image>>) {
+    let size = Extent3d {
+        width: VIEW_SIZE.x as u32,
+        height: VIEW_SIZE.y as u32,
+        ..default()
+    };
+
+    // view texture
+    let mut view_img = Image {
+        texture_descriptor: TextureDescriptor {
+            label: None,
+            size,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Rgba8UnormSrgb,
+            mip_level_count: 1,
+            sample_count: 1,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_DST
+                | TextureUsages::RENDER_ATTACHMENT,
+        },
+        ..default()
+    };
+
+    // fill image.data with zeroes
+    view_img.resize(size);
+    let image_handle = images.add(view_img);
+    let rescale_pass_layer = RenderLayers::layer(1);
+
+    cmd.spawn_bundle(Camera2dBundle {
+        camera: Camera {
+            priority: -1,
+            target: RenderTarget::Image(image_handle.clone()),
+            ..default()
+        },
+        ..default()
+    });
+
+    cmd.spawn_bundle(SpriteBundle {
+        texture: image_handle.clone(),
+        transform: Transform::from_scale(Vec2::splat(2.).extend(1.)),
+        ..default()
+    })
+    .insert(rescale_pass_layer);
+
     cmd.spawn_bundle(Camera2dBundle::default())
         .insert(MainCam)
         .insert(InteractionSource {
@@ -63,7 +116,8 @@ fn setup(mut cmd: Commands) {
                 DragGroup::GridSection.into(),
             ],
             ..Default::default()
-        });
+        })
+        .insert(rescale_pass_layer);
 }
 
 fn set_z(mut z_query: Query<(&ZIndex, &mut Transform), Or<(Changed<ZIndex>, Changed<Transform>)>>) {
