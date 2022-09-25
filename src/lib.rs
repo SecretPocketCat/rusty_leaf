@@ -102,7 +102,7 @@ impl Plugin for GamePlugin {
             .add_plugin(SavePlugin);
 
         if cfg!(debug_assertions) {
-            app.add_plugin(WorldInspectorPlugin::new());
+            // app.add_plugin(WorldInspectorPlugin::new());
             // app.register_inspectable::<Card>()
             //     .register_inspectable::<Ingredient>()
             //     .register_inspectable::<TileCoords>();

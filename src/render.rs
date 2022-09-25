@@ -1,5 +1,6 @@
 use crate::drag::DragGroup;
 use bevy::prelude::*;
+use bevy::window::WindowResized;
 use bevy::{
     core_pipeline::clear_color::ClearColorConfig,
     render::{
@@ -15,8 +16,12 @@ pub struct RenderPlugin;
 
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup)
-            .add_system_to_stage(CoreStage::PostUpdate, set_z);
+        app.insert_resource(ViewScale(1))
+            .add_startup_system(setup)
+            .add_system_to_stage(CoreStage::PostUpdate, set_z)
+            .add_startup_system(on_resize)
+            .add_system(on_resize)
+            .add_system(on_scale_change);
     }
 }
 
@@ -58,6 +63,12 @@ impl From<ZIndex> for f32 {
         z_index as u8 as f32
     }
 }
+
+#[derive(Deref, DerefMut)]
+pub struct ViewScale(u8);
+
+#[derive(Component)]
+pub struct ScaledView;
 
 fn setup(mut cmd: Commands, mut images: ResMut<Assets<Image>>) {
     let size = Extent3d {
@@ -101,6 +112,7 @@ fn setup(mut cmd: Commands, mut images: ResMut<Assets<Image>>) {
         transform: Transform::from_scale(Vec2::splat(2.).extend(1.)),
         ..default()
     })
+    .insert(ScaledView)
     .insert(rescale_pass_layer);
 
     cmd.spawn_bundle(Camera2dBundle::default())
@@ -118,6 +130,29 @@ fn setup(mut cmd: Commands, mut images: ResMut<Assets<Image>>) {
             ..Default::default()
         })
         .insert(rescale_pass_layer);
+}
+
+fn on_resize(mut resize_evr: EventReader<WindowResized>, mut scale: ResMut<ViewScale>) {
+    for ev in resize_evr.iter() {
+        let new_scale = (Vec2::new(ev.width, ev.height) / VIEW_SIZE)
+            .floor()
+            .min_element() as u8;
+
+        if scale.0 != new_scale {
+            scale.0 = new_scale;
+        }
+    }
+}
+
+fn on_scale_change(
+    scale: Res<ViewScale>,
+    mut scaled_view_q: Query<&mut Transform, With<ScaledView>>,
+) {
+    if scale.is_changed() {
+        if let Ok(mut t) = scaled_view_q.get_single_mut() {
+            t.scale = Vec2::splat(scale.0 as f32).extend(1.);
+        }
+    }
 }
 
 fn set_z(mut z_query: Query<(&ZIndex, &mut Transform), Or<(Changed<ZIndex>, Changed<Transform>)>>) {
