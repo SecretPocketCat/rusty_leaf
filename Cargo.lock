@@ -515,7 +515,7 @@ dependencies = [
 [[package]]
 name = "bevy_interact_2d"
 version = "0.8.0"
-source = "git+https://github.com/Anshorei/bevy_rei#e326e32caf6d0d8dd0e5a1432a6eec09b03eddb1"
+source = "git+https://github.com/SecretPocketCat/bevy_rei#6e2b338bfac7efcbdb10cb10efaf49e983562e6c"
 dependencies = [
  "bevy",
  "bevy_prototype_lyon",

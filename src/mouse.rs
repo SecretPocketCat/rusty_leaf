@@ -1,7 +1,7 @@
 // use crate::{game::game_state::UpdatePhase, render::camera::MainCam};
 use bevy::{prelude::*, render::camera::RenderTarget};
 
-use crate::render::MainCam;
+use crate::render::{MainCam, ViewScale};
 
 pub struct MousePlugin;
 impl Plugin for MousePlugin {
@@ -19,6 +19,7 @@ fn store_cursor_pos(
     wnds: Res<Windows>,
     q_camera: Query<(&Camera, &GlobalTransform), With<MainCam>>,
     mut cursor_pos: ResMut<CursorWorldPosition>,
+    scale: Res<ViewScale>,
 ) {
     // get the camera info and transform
     // assuming there is exactly one main camera entity, so query::single() is OK
@@ -38,7 +39,7 @@ fn store_cursor_pos(
             // use it to convert ndc to world-space coordinates
             let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
 
-            cursor_pos.0 = world_pos.truncate();
+            cursor_pos.0 = world_pos.truncate() / scale.0 as f32;
         }
     }
 }

@@ -65,7 +65,7 @@ impl From<ZIndex> for f32 {
 }
 
 #[derive(Deref, DerefMut)]
-pub struct ViewScale(u8);
+pub struct ViewScale(pub u8);
 
 #[derive(Component)]
 pub struct ScaledView;

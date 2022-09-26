@@ -2,11 +2,11 @@ use crate::{
     board::Board,
     coords::{get_world_coords_from_tile, TileCoords},
     piece::Piece,
-    render::ZIndex,
+    render::{ViewScale, ZIndex},
     tile_placement::{Pieces, BOARD_SIZE_PX},
 };
 use bevy::prelude::*;
-use bevy_interact_2d::{drag::Dragged, Group, Interactable};
+use bevy_interact_2d::{drag::Dragged, Group, Interactable, InteractionState};
 use bevy_tweening::{Animator, AnimatorState};
 
 pub struct DragPlugin;
@@ -17,7 +17,8 @@ impl Plugin for DragPlugin {
             .add_system(drag_piece)
             .add_system(raise_z_index)
             .add_system(restore_z_index)
-            .add_system(process_movers);
+            .add_system(process_movers)
+            .add_system(on_view_scale_change);
     }
 }
 
@@ -146,5 +147,11 @@ fn process_movers(
                 mover_t.translation
             };
         }
+    }
+}
+
+fn on_view_scale_change(scale: Res<ViewScale>, mut interaction_state: ResMut<InteractionState>) {
+    if scale.is_changed() || interaction_state.scale.is_none() {
+        interaction_state.scale = Some(1.0 / scale.0 as f32);
     }
 }
