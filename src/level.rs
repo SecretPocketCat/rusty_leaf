@@ -28,18 +28,7 @@ use rand::{distributions::WeightedIndex, thread_rng, Rng};
 pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
-        let levels = vec![
-            // Level {
-            //     name: "TEST".into(),
-            //     allowed_ingredients: vec![Ingredient::Pumpkin],
-            //     required_ingredients: Vec::new(),
-            //     ingredient_count_range: 1..2,
-            //     ingredient_type_range: 1..2,
-            //     max_simultaneous_orders: 3,
-            //     next_customer_delay_range_ms: 5000..5001,
-            //     total_order_count: 3,
-            //     special_order: None,
-            // },
+        let mut levels = vec![
             Level {
                 name: "Soup 101".into(),
                 allowed_ingredients: vec![
@@ -222,6 +211,31 @@ impl Plugin for LevelPlugin {
                 pieces_range: None,
             },
         ];
+
+        if cfg!(debug_assertions) {
+            levels.insert(
+                1,
+                Level {
+                    name: "TEST".into(),
+                    allowed_ingredients: vec![
+                        Ingredient::Pumpkin,
+                        Ingredient::Potato,
+                        Ingredient::Tomato,
+                        Ingredient::Mushroom,
+                        Ingredient::Eggplant,
+                        Ingredient::Garlic,
+                    ],
+                    required_ingredients: Vec::new(),
+                    ingredient_count_range: 5..7,
+                    ingredient_type_range: 3..4,
+                    max_simultaneous_orders: 4,
+                    next_customer_delay_range_ms: 1000..1001,
+                    total_order_count: 3,
+                    special_order: None,
+                    pieces_range: None,
+                },
+            );
+        }
 
         app.add_event::<LevelEv>()
             .insert_resource(Levels(levels))
