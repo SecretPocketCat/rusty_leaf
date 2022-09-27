@@ -153,7 +153,6 @@ fn spawn_orders(
                 }
     
             }
-
       
             let mut duration = ingredients.iter().map(|(i, count)| {
                 let ingredient_time = if *i as u8 >= Ingredient::Eggplant as u8 {

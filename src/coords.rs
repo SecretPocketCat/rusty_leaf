@@ -2,6 +2,7 @@ use crate::{
     board::Board,
     mouse::CursorWorldPosition,
     piece::Piece,
+    render::ViewScale,
     tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, TILE_SIZE},
 };
 use bevy::prelude::*;
@@ -51,6 +52,7 @@ pub fn get_world_coords_from_tile(tile_coords: UVec2) -> Vec2 {
 
 fn update_tile_coords(
     cursor_pos: Res<CursorWorldPosition>,
+    scale: Res<ViewScale>,
     mut dragged_query: Query<(&mut TileCoords, &Piece, &Transform, &Interactable), With<Dragged>>,
     board: Res<Board>,
     pieces: Res<Pieces>,
@@ -63,9 +65,10 @@ fn update_tile_coords(
             let tile_size = UVec2::new(tile_size.x as u32, tile_size.y as u32);
             let mut dragged_tile_coords = get_tile_coords_from_world(
                 interactable_t.translation.truncate()
+                    // todo: what's up with this magic offset?
                     + Vec2::new(
-                        -interactable.bounding_box.0.x.abs() + 1.5 * TILE_SIZE,
-                        interactable.bounding_box.0.y.abs() - 0.5 * TILE_SIZE,
+                        -interactable.bounding_box.0.x.abs() + 5.5 * TILE_SIZE,
+                        interactable.bounding_box.0.y.abs() + 3.5 * TILE_SIZE,
                     )
                     + -BOARD_SHIFT.truncate(),
                 tile_size,
