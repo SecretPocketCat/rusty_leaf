@@ -201,7 +201,7 @@ fn show_order_tooltip(
             .iter()
             .enumerate()
             .map(|(i, (ingredient, count))| {
-                spawn_tooltip_ingredient(*ingredient, *count, i, -6.0, &mut cmd, &sprites, &fonts).0
+                spawn_tooltip_ingredient(*ingredient, *count, i, -5.0, &mut cmd, &sprites, &fonts).0
             })
             .collect();
 

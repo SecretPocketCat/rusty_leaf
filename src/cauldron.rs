@@ -45,6 +45,7 @@ pub const COOK_TIME: f32 = 15.;
 pub const FIRE_BOOST_TIME: f32 = 15.;
 pub const FIRE_BOOST_MULT: f32 = 2.5;
 const TOOLTIP_TWEEN_OFFSET: f32 = 7.;
+const CAULDRON_INGREDIENT_Y: f32 = -4.;
 
 #[derive(Component)]
 pub struct Cauldron {
@@ -75,7 +76,7 @@ pub fn spawn_tooltip_ingredient(
     sprites: &Sprites,
     fonts: &Fonts,
 ) -> (Entity, Entity) {
-    let x_offset = 4.;
+    let x_offset = 16.;
 
     let x = match current_list_len {
         0 => -x_offset,
@@ -95,7 +96,7 @@ pub fn spawn_tooltip_ingredient(
                 },
             )
             .with_alignment(TextAlignment::BOTTOM_CENTER),
-            transform: Transform::from_xyz(0., 2., 0.),
+            transform: Transform::from_xyz(0., 6., 0.),
             ..default()
         })
         .insert(get_relative_fade_text_anim(
@@ -312,7 +313,7 @@ fn show_progress_tooltip(
                         *ingredient,
                         1,
                         0,
-                        -1.,
+                        CAULDRON_INGREDIENT_Y,
                         &mut cmd,
                         &sprites,
                         &fonts,
@@ -387,7 +388,7 @@ fn add_ingredient_to_tooltip(
                                 *ingredient,
                                 1,
                                 ingredient_list.ingredients.len(),
-                                -1.0,
+                                CAULDRON_INGREDIENT_Y,
                                 &mut cmd,
                                 &sprites,
                                 &fonts,
