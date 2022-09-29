@@ -52,7 +52,6 @@ pub fn get_world_coords_from_tile(tile_coords: UVec2) -> Vec2 {
 
 fn update_tile_coords(
     cursor_pos: Res<CursorWorldPosition>,
-    scale: Res<ViewScale>,
     mut dragged_query: Query<(&mut TileCoords, &Piece, &Transform, &Interactable), With<Dragged>>,
     board: Res<Board>,
     pieces: Res<Pieces>,
