@@ -14,6 +14,7 @@ impl Plugin for MousePlugin {
 #[derive(Default)]
 pub struct CursorWorldPosition(pub Vec2);
 
+// todo: fix - cam viewport not considered
 #[allow(clippy::only_used_in_recursion)]
 fn store_cursor_pos(
     wnds: Res<Windows>,

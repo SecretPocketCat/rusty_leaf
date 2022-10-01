@@ -2,7 +2,6 @@ use crate::{
     board::Board,
     mouse::CursorWorldPosition,
     piece::Piece,
-    render::ViewScale,
     tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, TILE_SIZE},
 };
 use bevy::prelude::*;

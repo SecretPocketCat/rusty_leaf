@@ -42,9 +42,9 @@ use bevy_inspector_egui::WorldInspectorPlugin;
 use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin, InteractionPlugin};
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use bevy_tweening::TweeningPlugin;
-use card::{Card, CardPlugin, Ingredient};
+use card::CardPlugin;
 use cauldron::CauldronPlugin;
-use coords::{CoordsPlugin, TileCoords};
+use coords::CoordsPlugin;
 use customer::CustomerPlugin;
 use drag::DragPlugin as GameDragPlugin;
 use highlight::HighlightPlugin;
@@ -55,6 +55,7 @@ use order::OrderPlugin;
 use progress::ProgressPlugin;
 use render::RenderPlugin;
 mod input;
+use bevy_pixel_camera::PixelCameraPlugin;
 
 // This example game uses States to separate logic
 // See https://bevy-cheatbook.github.io/programming/states.html
@@ -80,6 +81,7 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(AssetsPlugin)
+            .add_plugin(PixelCameraPlugin)
             .add_plugin(RenderPlugin)
             .add_plugin(DragPlugin)
             .add_plugin(GameDragPlugin)

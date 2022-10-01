@@ -16,7 +16,7 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
         .insert_resource(ImageSettings::default_nearest())
         .insert_resource(WindowDescriptor {
-            title: "Bevy game".to_string(), // ToDo
+            title: "Rusty Cauldron".to_string(), // ToDo
             canvas: Some("#bevy".to_owned()),
             fit_canvas_to_parent: true,
             ..Default::default()
