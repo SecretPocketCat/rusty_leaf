@@ -37,14 +37,14 @@ fn store_cursor_pos(
             });
 
             // convert screen position [0..resolution] to ndc [-1..1] (gpu coordinates)
-            let ndc = ((screen_pos / win_size) * 2.0 - Vec2::ONE);
+            let ndc = (screen_pos / win_size) * 2.0 - Vec2::ONE;
             // matrix for undoing the projection and camera transform
             let ndc_to_world =
                 camera_transform.compute_matrix() * cam.projection_matrix().inverse();
-            // use it to convert ndc to world-space coordinates
-            let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
-
-            cursor_pos.0 = world_pos.truncate() / viewport_scale;
+            // use it to convert ndc to world-space coordinates & map it to viewport coordinates
+            // todo: this only works for a centered viewport
+            cursor_pos.0 =
+                ndc_to_world.project_point3(ndc.extend(-1.0)).truncate() / viewport_scale;
         }
     }
 }
