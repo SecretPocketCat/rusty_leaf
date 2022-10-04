@@ -2,8 +2,10 @@ use crate::{
     assets::Sprites,
     board::{Board, BoardClear},
     cauldron::{Cauldron, TooltipIngridientList},
-    drag::DragGroup,
     highlight::Highligtable,
+    interaction::{
+        Draggable, Dragged, Interactable, InteractionEv, InteractionGroup, InteractionState,
+    },
     level::{InteractableSection, LevelEv},
     list::{ListPlugin, ListPluginOptions},
     render::{
@@ -18,10 +20,6 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
-use bevy_interact_2d::{
-    drag::{Draggable, Dragged},
-    Interactable, InteractionState,
-};
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
 
@@ -142,14 +140,8 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
     .insert(ZIndex::Card)
     .insert(Card {})
     .insert(ingredient)
-    .insert(Interactable {
-        bounding_box: (-corner, corner),
-        groups: vec![DragGroup::Card.into()],
-    })
-    .insert(Draggable {
-        groups: vec![DragGroup::Card.into()],
-        ..default()
-    })
+    .insert(Interactable::new_rectangle(InteractionGroup::Card, corner))
+    .insert(Draggable)
     .insert(Name::new("Card"))
     .insert(Highligtable {
         sprite_e: Some(outline_e),
@@ -191,95 +183,94 @@ fn test_card_spawn(mut cmd: Commands, mut lvl_evr: EventReader<LevelEv>, sprites
 
 fn drop_card(
     mut cmd: Commands,
-    mouse_input: Res<Input<MouseButton>>,
-    dragged_query: Query<(Entity, &Card, &Ingredient, &Dragged, &Transform)>,
+    dragged_query: Query<(&Card, &Ingredient, &Transform)>,
     interaction_state: Res<InteractionState>,
     parent_q: Query<&Parent>,
     mut cauldron_q: Query<&mut Cauldron>,
     section_q: Query<&InteractableSection>,
     tooltip_q: Query<&TooltipIngridientList>,
+    mut interaction_evr: EventReader<InteractionEv>,
     mut card_evw: EventWriter<CardEffect>,
     board: Res<Board>,
 ) {
-    if mouse_input.just_released(MouseButton::Left) {
-        let mut used = false;
+    for ev in interaction_evr.iter() {
+        if let InteractionEv::DragEnd(drag_data) = ev {
+            if let Ok((card, ingredient, card_t)) = dragged_query.get(drag_data.e) {
+                let mut used = false;
 
-        if interaction_state.get_group(DragGroup::Card.into()).len() > 0 {
-            if let Some((e, ..)) = interaction_state.get_group(DragGroup::Fire.into()).first() {
-                if let Ok(cauldron_e) = parent_q.get(*e) {
-                    if let Ok(_c) = cauldron_q.get_mut(cauldron_e.get()) {
-                        // increase fire boost
-                        card_evw.send(CardEffect::FireBoost {
-                            cauldron_e: cauldron_e.get(),
-                            boost_dur_multiplier: None,
-                        });
-                        used = true;
+                if let Some(e) = interaction_state.get_first_hovered_entity(&InteractionGroup::Fire)
+                {
+                    if let Ok(cauldron_e) = parent_q.get(e) {
+                        if let Ok(_c) = cauldron_q.get_mut(cauldron_e.get()) {
+                            // increase fire boost
+                            card_evw.send(CardEffect::FireBoost {
+                                cauldron_e: cauldron_e.get(),
+                                boost_dur_multiplier: None,
+                            });
+                            used = true;
+                        }
                     }
-                }
-            } else if let Some((e, ..)) = interaction_state
-                .get_group(DragGroup::Cauldron.into())
-                .first()
-            {
-                if let Ok(cauldron_e) = parent_q.get(*e) {
-                    if let Ok(mut c) = cauldron_q.get_mut(cauldron_e.get()) {
-                        // there can't be a ready meal in the cauldron
-                        if let Ok((_, _, ingredient, ..)) = dragged_query.get_single() {
-                            let mut can_use_ingredient = true;
+                } else if let Some(e) =
+                    interaction_state.get_first_hovered_entity(&InteractionGroup::Cauldron)
+                {
+                    if let Ok(cauldron_e) = parent_q.get(e) {
+                        if let Ok(mut c) = cauldron_q.get_mut(cauldron_e.get()) {
+                            // there can't be a ready meal in the cauldron
+                            if let Ok((_, ingredient, ..)) = dragged_query.get_single() {
+                                let mut can_use_ingredient = true;
 
-                            if let Some(tooltip_e) = c.tooltip_e {
-                                if let Ok(tooltip) = tooltip_q.get(tooltip_e) {
-                                    if tooltip.ingredients.len() >= 3
-                                        && !tooltip.ingredients.contains_key(&(*ingredient as u8))
-                                    {
-                                        can_use_ingredient = false;
+                                if let Some(tooltip_e) = c.tooltip_e {
+                                    if let Ok(tooltip) = tooltip_q.get(tooltip_e) {
+                                        if tooltip.ingredients.len() >= 3
+                                            && !tooltip
+                                                .ingredients
+                                                .contains_key(&(*ingredient as u8))
+                                        {
+                                            can_use_ingredient = false;
+                                        }
                                     }
                                 }
-                            }
 
-                            if can_use_ingredient {
-                                c.ingredients.push(*ingredient);
-                                card_evw.send(CardEffect::Ingredient {
-                                    cauldron_e: cauldron_e.get(),
-                                    ingredient: *ingredient,
-                                });
+                                if can_use_ingredient {
+                                    c.ingredients.push(*ingredient);
+                                    card_evw.send(CardEffect::Ingredient {
+                                        cauldron_e: cauldron_e.get(),
+                                        ingredient: *ingredient,
+                                    });
 
-                                used = true;
+                                    used = true;
+                                }
                             }
                         }
                     }
-                }
-            } else if let Some((e, ..)) = interaction_state
-                .get_group(DragGroup::GridSection.into())
-                .first()
-            {
-                if let Ok(section) = section_q.get(*e) {
-                    if !board.is_section_empty(section.0) {
-                        card_evw.send(CardEffect::ClearSection { section: section.0 });
-                        used = true;
+                } else if let Some(e) =
+                    interaction_state.get_first_hovered_entity(&InteractionGroup::GridSection)
+                {
+                    if let Ok(section) = section_q.get(e) {
+                        if !board.is_section_empty(section.0) {
+                            card_evw.send(CardEffect::ClearSection { section: section.0 });
+                            used = true;
+                        }
                     }
-                }
-            };
-        }
+                };
 
-        if used {
-            if let Ok((e, ..)) = dragged_query.get_single() {
-                // todo: particles?
-                let mut cmd_e = cmd.entity(e);
-                cmd_e.remove::<Interactable>();
-                cmd_e.insert_bundle(
-                    FadeHierarchyBundle::new(false, 300, Color::NONE)
-                        .with_done_action(TweenDoneAction::DespawnRecursive),
-                );
-            }
-        } else {
-            for (dragged_e, _card, _, dragged, card_t) in dragged_query.iter() {
-                let mut e_cmd = cmd.entity(dragged_e);
-                e_cmd.remove::<Dragged>();
-                e_cmd.insert(get_relative_move_anim(
-                    dragged.origin.extend(card_t.translation.z),
-                    300,
-                    None,
-                ));
+                if used {
+                    // todo: particles?
+                    let mut cmd_e = cmd.entity(drag_data.e);
+                    cmd_e.remove::<Interactable>();
+                    cmd_e.insert_bundle(
+                        FadeHierarchyBundle::new(false, 300, Color::NONE)
+                            .with_done_action(TweenDoneAction::DespawnRecursive),
+                    );
+                } else {
+                    let mut e_cmd = cmd.entity(drag_data.e);
+                    e_cmd.remove::<Dragged>();
+                    e_cmd.insert(get_relative_move_anim(
+                        drag_data.origin.extend(card_t.translation.z),
+                        300,
+                        None,
+                    ));
+                }
             }
         }
     }

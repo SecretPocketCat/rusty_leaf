@@ -37,9 +37,6 @@ image = { version = "0.24", default-features = false }
 bevy_prototype_lyon = "0.6.0"
 iyes_loopless = "0.7.1"
 bevy-inspector-egui = "0.12.1"
-bevy_interact_2d = { git = "https://github.com/SecretPocketCat/bevy_rei", features = [
-    "debug",
-] }
 bevy_tweening = { git = "https://github.com/SecretPocketCat/bevy_tweening", branch = "bevy_0_8" }
 web-sys = { version = "0.3", features = [
     "console",

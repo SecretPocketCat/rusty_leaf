@@ -2,8 +2,8 @@ use crate::{
     anim::SheetAnimation,
     assets::{Fonts, Sprites},
     card::{CardEffect, Ingredient},
-    drag::DragGroup,
     highlight::Highligtable,
+    interaction::{Interactable, InteractionGroup},
     level::LevelEv,
     order::{Order, OrderEv},
     progress::TooltipProgress,
@@ -18,7 +18,6 @@ use crate::{
     GameState,
 };
 use bevy::{prelude::*, utils::HashMap};
-use bevy_interact_2d::Interactable;
 use iyes_loopless::prelude::*;
 use std::time::Duration;
 
@@ -200,7 +199,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                     10.,
                     18.,
                     18.,
-                    DragGroup::Cauldron,
+                    InteractionGroup::Cauldron,
                     cauldron_outline_e,
                     COL_OUTLINE_HIGHLIGHTED,
                 ),
@@ -208,7 +207,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                     -28.,
                     18.,
                     16.,
-                    DragGroup::Fire,
+                    InteractionGroup::Fire,
                     firepit_outline_e,
                     COL_OUTLINE_HIGHLIGHTED_2,
                 ),
@@ -218,16 +217,16 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                     transform: Transform::from_xyz(0., y, 0.),
                     ..default()
                 })
-                .insert(Interactable {
-                    bounding_box: (-corner, corner),
-                    groups: vec![group.into()],
-                })
+                .insert(Interactable::new_rectangle(
+                    InteractionGroup::Cauldron,
+                    corner,
+                ))
                 .insert(Highligtable {
                     sprite_e: Some(outline_e),
                     hightlight_color: highlight_col,
                     hover_color: COL_OUTLINE_HOVERED_DRAG,
                     normal_color: COL_DARK,
-                    drag_groups: vec![DragGroup::Card],
+                    drag_groups: vec![InteractionGroup::Card],
                 });
             }
         });

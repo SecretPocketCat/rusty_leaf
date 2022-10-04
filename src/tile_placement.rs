@@ -5,6 +5,7 @@ use crate::{
     card::{spawn_card, Card, CardEffect, MAX_CARDS},
     coords::TileCoords,
     drag::Mover,
+    interaction::Dragged,
     level::{CurrentLevel, LevelEv, Levels},
     piece::{spawn_piece, FieldCoords, Piece, PieceFields, PlacedFieldIndex},
     render::ZIndex,
@@ -16,7 +17,6 @@ use crate::{
     GameState,
 };
 use bevy::prelude::*;
-use bevy_interact_2d::drag::Dragged;
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
 use rand::prelude::*;

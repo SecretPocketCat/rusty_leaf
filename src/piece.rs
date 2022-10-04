@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
-use bevy_interact_2d::{drag::Draggable, Interactable};
 use bevy_prototype_lyon::prelude::*;
 use bevy_tweening::Animator;
 
@@ -9,7 +8,8 @@ use std::ops::{Div, Sub};
 
 use crate::{
     coords::TileCoords,
-    drag::{DragGroup, Mover},
+    drag::Mover,
+    interaction::{Draggable, Interactable, InteractionGroup},
     render::{ZIndex, COL_DARK},
     tile_placement::TILE_SIZE,
     tween::{delay_tween, get_relative_move_tween},
@@ -136,16 +136,8 @@ pub fn spawn_piece(
         transform: Transform::from_xyz(position.x, position.y, 1.),
         ..default()
     })
-    .insert(Interactable {
-        groups: vec![DragGroup::Piece.into()],
-        bounding_box: (-corner, corner),
-        ..default()
-    })
-    .insert(Draggable {
-        groups: vec![DragGroup::Piece.into()],
-        // hook: Some(Vec2::new(0., TILE_SIZE)),
-        ..Default::default()
-    })
+    .insert(Interactable::new_rectangle(InteractionGroup::Piece, corner))
+    .insert(Draggable)
     .insert(Piece(piece_index))
     .insert(TileCoords::default())
     .insert(Mover {

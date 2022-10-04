@@ -1,12 +1,12 @@
 use crate::{
     board::Board,
+    interaction::{Dragged, Interactable},
     mouse::CursorWorldPosition,
     piece::Piece,
     tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, TILE_SIZE},
 };
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
-use bevy_interact_2d::{drag::Dragged, Interactable};
 
 use std::ops::{Add, Div};
 
@@ -59,14 +59,14 @@ fn update_tile_coords(
         if let Ok((mut coords, piece, interactable_t, interactable)) =
             dragged_query.get_single_mut()
         {
-            let tile_size = interactable.bounding_box.0.abs().div(TILE_SIZE / 2.);
+            let tile_size = interactable.bounds.size().div(TILE_SIZE);
             let tile_size = UVec2::new(tile_size.x as u32, tile_size.y as u32);
             let mut dragged_tile_coords = get_tile_coords_from_world(
                 interactable_t.translation.truncate()
                     // todo: what's up with this magic offset?
                     + Vec2::new(
-                        -interactable.bounding_box.0.x.abs() + 5.5 * TILE_SIZE,
-                        interactable.bounding_box.0.y.abs() + 3.5 * TILE_SIZE,
+                        -interactable.bounds.width() / 2. + 5.5 * TILE_SIZE,
+                        interactable.bounds.height() / 2. + 3.5 * TILE_SIZE,
                     )
                     + -BOARD_SHIFT.truncate(),
                 tile_size,

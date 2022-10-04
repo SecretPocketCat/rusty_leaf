@@ -1,4 +1,3 @@
-use crate::drag::DragGroup;
 use crate::GameState;
 use bevy::prelude::*;
 use bevy::render::camera::Viewport;
@@ -14,9 +13,7 @@ use bevy::{
         view::RenderLayers,
     },
 };
-use bevy_interact_2d::InteractionSource;
 use bevy_pixel_camera::{PixelCameraBundle, PixelProjection};
-use iyes_loopless::prelude::AppLooplessStateExt;
 
 pub struct RenderPlugin;
 
@@ -78,19 +75,7 @@ pub struct ScaledView;
 
 fn setup_pixel_cam(mut cmd: Commands) {
     cmd.spawn_bundle(PixelCameraBundle::from_zoom(1))
-        .insert(MainCam)
-        .insert(InteractionSource {
-            groups: vec![
-                DragGroup::Card.into(),
-                DragGroup::Piece.into(),
-                DragGroup::Cauldron.into(),
-                DragGroup::Fire.into(),
-                DragGroup::Grid.into(),
-                DragGroup::GridPieces.into(),
-                DragGroup::GridSection.into(),
-            ],
-            ..Default::default()
-        });
+        .insert(MainCam);
 }
 
 // can use this e.g. for particles

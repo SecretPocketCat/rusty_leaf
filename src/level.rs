@@ -4,8 +4,8 @@ use crate::{
     anim::SheetAnimation,
     assets::{Fonts, Sprites},
     card::Ingredient,
-    drag::DragGroup,
     highlight::Highligtable,
+    interaction::{Interactable, InteractionGroup},
     order::SpecialOrder,
     render::{
         ZIndex, COL_DARK, COL_DARKER, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, COL_OUTLINE_HOVERED_DRAG,
@@ -20,7 +20,6 @@ use crate::{
     GameState,
 };
 use bevy::{ecs::event::Event, prelude::*};
-use bevy_interact_2d::Interactable;
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
 use rand::{distributions::WeightedIndex, thread_rng, Rng};
@@ -581,13 +580,13 @@ fn setup_app(
             },
             ..default()
         })
-        .insert(Interactable {
-            bounding_box: section_box,
-            groups: vec![DragGroup::GridSection.into()],
-        })
+        .insert(Interactable::new_rectangle(
+            InteractionGroup::GridSection,
+            corner,
+        ))
         .insert(InteractableSection(i))
         .insert(Highligtable {
-            drag_groups: vec![DragGroup::Card],
+            drag_groups: vec![InteractionGroup::Card],
             normal_color: Color::NONE,
             hightlight_color: Color::rgba(
                 COL_OUTLINE_HIGHLIGHTED.r(),

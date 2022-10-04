@@ -1,12 +1,13 @@
 use crate::{
     board::Board,
     coords::{get_world_coords_from_tile, TileCoords},
+    interaction::{Dragged, Interactable},
+    mouse::CursorWorldPosition,
     piece::Piece,
     render::{ViewScale, ZIndex},
     tile_placement::{Pieces, BOARD_SIZE_PX},
 };
 use bevy::prelude::*;
-use bevy_interact_2d::{drag::Dragged, Group, Interactable, InteractionState};
 use bevy_tweening::{Animator, AnimatorState};
 
 pub struct DragPlugin;
@@ -17,8 +18,7 @@ impl Plugin for DragPlugin {
             .add_system(drag_piece)
             .add_system(raise_z_index)
             .add_system(restore_z_index)
-            .add_system(process_movers)
-            .add_system(on_view_scale_change);
+            .add_system(process_movers);
     }
 }
 
@@ -26,23 +26,6 @@ impl Plugin for DragPlugin {
 pub struct DragZOffset {
     original_z: f32,
     original_z_index: Option<ZIndex>,
-}
-
-#[derive(Clone, Copy)]
-pub enum DragGroup {
-    Piece = 1,
-    Card,
-    Cauldron,
-    Fire,
-    Grid,
-    GridPieces,
-    GridSection,
-}
-
-impl From<DragGroup> for Group {
-    fn from(g: DragGroup) -> Self {
-        Group(g as u8)
-    }
 }
 
 #[derive(Component)]
@@ -139,19 +122,13 @@ fn process_movers(
                 (get_world_coords_from_tile(pos)
                     + Vec2::new(-BOARD_SIZE_PX / 2., BOARD_SIZE_PX / 2.)
                     + Vec2::new(
-                        interactable.bounding_box.0.x.abs(),
-                        -interactable.bounding_box.0.y.abs(),
+                        interactable.bounds.width() / 2.,
+                        -interactable.bounds.height() / 2.,
                     ))
                 .extend(z)
             } else {
                 mover_t.translation
             };
         }
-    }
-}
-
-fn on_view_scale_change(scale: Res<ViewScale>, mut interaction_state: ResMut<InteractionState>) {
-    if scale.is_changed() || interaction_state.scale.is_none() {
-        interaction_state.scale = Some(1.0 / scale.0 as f32);
     }
 }
