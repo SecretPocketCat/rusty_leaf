@@ -4,6 +4,7 @@ use bevy::{
     sprite::Rect,
     utils::{HashMap, HashSet},
 };
+use strum::{EnumIter, IntoEnumIterator};
 
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
@@ -17,7 +18,7 @@ impl Plugin for InteractionPlugin {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
 pub enum InteractionGroup {
     Piece = 1,
     Card,
@@ -64,10 +65,22 @@ impl Interactable {
     }
 }
 
-#[derive(Default)]
 pub struct InteractionState {
     pub dragged_e: Option<Entity>,
-    pub hovered_entities: HashMap<InteractionGroup, HashSet<Entity>>,
+    hovered_entities: HashMap<InteractionGroup, HashSet<Entity>>,
+}
+
+impl Default for InteractionState {
+    fn default() -> Self {
+        let hovered = InteractionGroup::iter()
+            .map(|g| (g, HashSet::new()))
+            .collect();
+
+        Self {
+            dragged_e: None,
+            hovered_entities: hovered,
+        }
+    }
 }
 
 impl InteractionState {
@@ -105,72 +118,53 @@ pub enum InteractionEv {
 }
 
 fn check_interaction(
+    mut cmd: Commands,
+    mut state: ResMut<InteractionState>,
     cursor: Res<CursorWorldPosition>,
+    mouse_input: Res<Input<MouseButton>>,
+    mut evw: EventWriter<InteractionEv>,
     interactable_q: Query<(
+        Entity,
         &Interactable,
         &GlobalTransform,
         ChangeTrackers<GlobalTransform>,
+        Option<&Draggable>,
     )>,
+    dragged_q: Query<&Dragged>,
 ) {
-    for (i, t, t_change) in interactable_q.iter() {
+    if let Some(e) = state.dragged_e && !mouse_input.pressed(MouseButton::Left) {
+        state.dragged_e = None;
+        evw.send(InteractionEv::DragEnd(DragData { e, origin: dragged_q.get(e).map_or(Vec2::ZERO, |dragged| dragged.origin) }));
+        cmd.entity(e).remove::<Dragged>();
+    }
+
+    for (e, i, t, t_change, draggable) in interactable_q.iter() {
         if cursor.is_changed() || t_change.is_changed() {
             let pos = t.translation().truncate();
 
             if i.contains(cursor.0 - pos) {
-                info!("intersection: {pos}");
+                if state.hovered_entities.get_mut(&i.group).unwrap().insert(e) {
+                    evw.send(InteractionEv::HoverStart(HoverData {
+                        draggable: draggable.is_some(),
+                        e,
+                    }));
+                }
+
+                if state.dragged_e.is_none()
+                    && mouse_input.just_pressed(MouseButton::Left)
+                    && draggable.is_some()
+                {
+                    state.dragged_e = Some(e);
+                    evw.send(InteractionEv::DragStart(DragData { e, origin: pos }));
+                }
+            } else {
+                if state.hovered_entities.get_mut(&i.group).unwrap().remove(&e) {
+                    evw.send(InteractionEv::HoverEnd(HoverData {
+                        draggable: draggable.is_some(),
+                        e,
+                    }));
+                }
             }
         }
     }
 }
-
-// fn send_hover_events(
-//     mut evw: EventWriter<InteractionEv>,
-//     mut state: ResMut<InteractionState>,
-//     interaction_state: Res<InteractionState>,
-//     interactable_q: Query<(Entity, &Interactable, Option<&Draggable>)>,
-// ) {
-//     for (e, interactable, draggable) in interactable_q.iter() {
-//         if interaction_state.get_group(*g).iter().any(|(e, _)| *e == e) {
-//             if state.hovered_entities.insert(e) {
-//                 evw.send(InteractionEv::HoverStart(HoverData {
-//                     draggable: draggable.is_some(),
-//                     entity: e,
-//                 }));
-//             }
-//         } else {
-//             if state.hovered_entities.remove(&e) {
-//                 evw.send(InteractionEv::HoverEnd(HoverData {
-//                     draggable: draggable.is_some(),
-//                     entity: e,
-//                 }));
-//             }
-//         }
-//     }
-// }
-
-// fn send_drag_events(
-//     mut evw: EventWriter<InteractionEv>,
-//     mut state: ResMut<InteractionState>,
-//     mouse_input: Res<Input<MouseButton>>,
-//     added_q: Query<Entity, Added<Dragged>>,
-//     removed: RemovedComponents<Dragged>,
-// ) {
-//     for e in added_q.iter() {
-//         // check if not removed in the same frame
-//         if !removed.iter().any(|rmv_e| rmv_e == e) && state.dragged_e.insert(e) {
-//             evw.send(InteractionEv::DragStart(DragData { entity: e }));
-//         }
-//     }
-
-//     for e in removed.iter() {
-//         if state.dragged_e.remove(&e) {
-//             evw.send(InteractionEv::DragEnd(DragData { entity: e }));
-//         }
-//     }
-
-//     if !mouse_input.pressed(MouseButton::Left) && state.dragged_e.len() > 0 {
-//         for e in state.dragged_e.drain() {
-//             evw.send(InteractionEv::DragEnd(DragData { entity: e }));
-//         }
-//     }
-// }

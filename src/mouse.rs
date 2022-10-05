@@ -10,8 +10,14 @@ impl Plugin for MousePlugin {
     }
 }
 
-#[derive(Default)]
 pub struct CursorWorldPosition(pub Vec2);
+
+impl Default for CursorWorldPosition {
+    fn default() -> Self {
+        // start offscreen
+        Self(Vec2::splat(100000.))
+    }
+}
 
 #[allow(clippy::only_used_in_recursion)]
 fn store_cursor_pos(

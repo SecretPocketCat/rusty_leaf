@@ -45,6 +45,7 @@ web-sys = { version = "0.3", features = [
     "Location",
 ] }
 bevy_pixel_camera = "0.2.0"
+strum = { version = "0.24.1", features = ["derive"] }
 
 [build-dependencies]
 embed-resource = "1.4"
