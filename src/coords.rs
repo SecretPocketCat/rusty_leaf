@@ -1,6 +1,7 @@
 use crate::{
     board::Board,
-    interaction::{Dragged, Interactable},
+    drag::Dragged,
+    interaction::Interactable,
     mouse::CursorWorldPosition,
     piece::Piece,
     tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, TILE_SIZE},

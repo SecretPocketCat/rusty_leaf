@@ -8,8 +8,9 @@ use std::ops::{Div, Sub};
 
 use crate::{
     coords::TileCoords,
-    drag::Mover,
-    interaction::{Draggable, Interactable, InteractionGroup},
+    drag::Draggable,
+    interaction::{Interactable, InteractionGroup},
+    mover::Mover,
     render::{ZIndex, COL_DARK},
     tile_placement::TILE_SIZE,
     tween::{delay_tween, get_relative_move_tween},

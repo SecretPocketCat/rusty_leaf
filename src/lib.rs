@@ -23,6 +23,7 @@ mod interaction;
 mod level;
 mod list;
 mod mouse;
+mod mover;
 mod order;
 mod piece;
 mod progress;
@@ -52,6 +53,7 @@ use input::GameInputPlugin;
 use interaction::InteractionPlugin;
 use level::LevelPlugin;
 use mouse::MousePlugin;
+use mover::MoverPlugin;
 use order::OrderPlugin;
 use progress::ProgressPlugin;
 use render::RenderPlugin;
@@ -86,6 +88,7 @@ impl Plugin for GamePlugin {
             .add_plugin(RenderPlugin)
             .add_plugin(InteractionPlugin)
             .add_plugin(DragPlugin)
+            .add_plugin(MoverPlugin)
             .add_plugin(AnimationPlugin)
             .add_plugin(HighlightPlugin)
             .add_plugin(ShapePlugin)

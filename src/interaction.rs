@@ -1,9 +1,13 @@
-use crate::mouse::CursorWorldPosition;
+use crate::{
+    drag::{Draggable, Dragged},
+    mouse::CursorWorldPosition,
+};
 use bevy::{
     prelude::*,
     sprite::Rect,
     utils::{HashMap, HashSet},
 };
+use bevy_tweening::Animator;
 use strum::{EnumIter, IntoEnumIterator};
 
 pub struct InteractionPlugin;
@@ -11,10 +15,7 @@ impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<InteractionEv>()
             .insert_resource(InteractionState::default())
-            .add_system(check_interaction)
-            // .add_system(send_hover_events)
-            // .add_system(send_drag_events)
-            ;
+            .add_system(check_interaction);
     }
 }
 
@@ -34,14 +35,6 @@ pub struct Interactable {
     pub group: InteractionGroup,
     pub bounds: Rect,
     pub enabled: bool,
-}
-
-#[derive(Component)]
-pub struct Draggable;
-
-#[derive(Component)]
-pub struct Dragged {
-    pub origin: Vec2,
 }
 
 impl Interactable {
@@ -129,16 +122,16 @@ fn check_interaction(
         &GlobalTransform,
         ChangeTrackers<GlobalTransform>,
         Option<&Draggable>,
+        Option<&Animator<Transform>>,
     )>,
     dragged_q: Query<&Dragged>,
 ) {
     if let Some(e) = state.dragged_e && !mouse_input.pressed(MouseButton::Left) {
         state.dragged_e = None;
         evw.send(InteractionEv::DragEnd(DragData { e, origin: dragged_q.get(e).map_or(Vec2::ZERO, |dragged| dragged.origin) }));
-        cmd.entity(e).remove::<Dragged>();
     }
 
-    for (e, i, t, t_change, draggable) in interactable_q.iter() {
+    for (e, i, t, t_change, draggable, tween) in interactable_q.iter() {
         if cursor.is_changed() || t_change.is_changed() {
             let pos = t.translation().truncate();
 
@@ -154,8 +147,11 @@ fn check_interaction(
                     && mouse_input.just_pressed(MouseButton::Left)
                     && draggable.is_some()
                 {
-                    state.dragged_e = Some(e);
-                    evw.send(InteractionEv::DragStart(DragData { e, origin: pos }));
+                    // no running transform tween
+                    if tween.map_or(true, |t| t.tweenable().progress() >= 1.) {
+                        state.dragged_e = Some(e);
+                        evw.send(InteractionEv::DragStart(DragData { e, origin: pos }));
+                    }
                 }
             } else {
                 if state.hovered_entities.get_mut(&i.group).unwrap().remove(&e) {

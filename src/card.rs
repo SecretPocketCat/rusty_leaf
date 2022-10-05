@@ -2,10 +2,9 @@ use crate::{
     assets::Sprites,
     board::{Board, BoardClear},
     cauldron::{Cauldron, TooltipIngridientList},
+    drag::{Draggable, Dragged},
     highlight::Highligtable,
-    interaction::{
-        Draggable, Dragged, Interactable, InteractionEv, InteractionGroup, InteractionState,
-    },
+    interaction::{Interactable, InteractionEv, InteractionGroup, InteractionState},
     level::{InteractableSection, LevelEv},
     list::{ListPlugin, ListPluginOptions},
     render::{

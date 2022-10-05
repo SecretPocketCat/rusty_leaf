@@ -4,9 +4,9 @@ use crate::{
     board::{Board, BoardClear, BoardClearQueue},
     card::{spawn_card, Card, CardEffect, MAX_CARDS},
     coords::TileCoords,
-    drag::Mover,
-    interaction::Dragged,
+    drag::Dragged,
     level::{CurrentLevel, LevelEv, Levels},
+    mover::Mover,
     piece::{spawn_piece, FieldCoords, Piece, PieceFields, PlacedFieldIndex},
     render::ZIndex,
     tween::{
