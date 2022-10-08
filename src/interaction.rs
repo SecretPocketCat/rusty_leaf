@@ -135,7 +135,7 @@ fn check_interaction(
         if cursor.is_changed() || t_change.is_changed() {
             let pos = t.translation().truncate();
 
-            if i.contains(cursor.0 - pos) {
+            if i.contains(cursor.position - pos) {
                 if state.hovered_entities.get_mut(&i.group).unwrap().insert(e) {
                     evw.send(InteractionEv::HoverStart(HoverData {
                         draggable: draggable.is_some(),

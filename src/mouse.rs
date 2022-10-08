@@ -10,12 +10,18 @@ impl Plugin for MousePlugin {
     }
 }
 
-pub struct CursorWorldPosition(pub Vec2);
+pub struct CursorWorldPosition {
+    pub position: Vec2,
+    pub delta: Vec2,
+}
 
 impl Default for CursorWorldPosition {
     fn default() -> Self {
         // start offscreen
-        Self(Vec2::splat(100000.))
+        Self {
+            position: Vec2::splat(100000.),
+            delta: Vec2::ZERO,
+        }
     }
 }
 
@@ -49,8 +55,9 @@ fn store_cursor_pos(
                 camera_transform.compute_matrix() * cam.projection_matrix().inverse();
             // use it to convert ndc to world-space coordinates & map it to viewport coordinates
             // todo: this only works for a centered viewport
-            cursor_pos.0 =
-                ndc_to_world.project_point3(ndc.extend(-1.0)).truncate() / viewport_scale;
+            let pos = ndc_to_world.project_point3(ndc.extend(-1.0)).truncate() / viewport_scale;
+            cursor_pos.delta = pos - cursor_pos.position;
+            cursor_pos.position = pos;
         }
     }
 }

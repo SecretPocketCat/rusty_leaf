@@ -473,12 +473,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_extensions"
+version = "0.2.1"
+source = "git+https://github.com/SecretPocketCat/bevy_extensions#4f7db4e4597420b3539abee9c8a62c8e63dacf0c"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_game"
 version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_asset_loader",
+ "bevy_extensions",
  "bevy_kira_audio",
  "bevy_pixel_camera",
  "bevy_prototype_lyon",

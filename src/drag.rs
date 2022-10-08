@@ -1,3 +1,5 @@
+use std::ops::Sub;
+
 use crate::{
     board::Board,
     coords::{get_world_coords_from_tile, TileCoords},
@@ -8,7 +10,9 @@ use crate::{
     tile_placement::{Pieces, BOARD_SIZE_PX},
 };
 use bevy::prelude::*;
+use bevy_extensions::{asymptotic_smoothing_with_delta_time, inverse_lerp_clamped};
 use bevy_tweening::{Animator, AnimatorState};
+use web_sys::console::info;
 
 pub struct DragPlugin;
 impl Plugin for DragPlugin {
@@ -44,7 +48,7 @@ fn on_drag_start(
                         origin: drag_data.origin,
                         original_z: t.translation.z,
                         original_z_index: z.cloned(),
-                        offset: t.translation.truncate() - cursor.0,
+                        offset: t.translation.truncate() - cursor.position,
                     })
                     .insert(ZIndex::Dragged);
 
@@ -78,10 +82,24 @@ fn on_drag_end(
     }
 }
 
-fn drag(mut dragged_q: Query<(&Dragged, &mut Transform)>, cursor: Res<CursorWorldPosition>) {
-    for (dragged, mut t) in dragged_q.iter_mut() {
+fn drag(
+    mut dragged_q: Query<(&mut Dragged, &mut Transform, &Interactable)>,
+    cursor: Res<CursorWorldPosition>,
+    time: Res<Time>,
+) {
+    for (mut dragged, mut t, interactable) in dragged_q.iter_mut() {
         if cursor.is_changed() {
-            t.translation = (cursor.0 + dragged.offset).extend(t.translation.z);
+            let offset_t =
+                inverse_lerp_clamped(0., 50. * time.delta_seconds(), cursor.delta.length()) + 0.5;
+
+            info!("{offset_t}");
+            dragged.offset = asymptotic_smoothing_with_delta_time(
+                dragged.offset,
+                Vec2::new(interactable.bounds.max.x, interactable.bounds.min.y),
+                0.2 * offset_t,
+                time.delta_seconds(),
+            );
+            t.translation = (cursor.position + dragged.offset).extend(t.translation.z);
         }
     }
 }

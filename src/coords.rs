@@ -108,6 +108,9 @@ fn update_tile_coords(
 
 fn log_coords(cursor_pos: Res<CursorWorldPosition>) {
     if cursor_pos.is_changed() {
-        info!("Cursor coords [{}, {}]", cursor_pos.0.x, cursor_pos.0.y);
+        info!(
+            "Cursor coords [{}, {}]",
+            cursor_pos.position.x, cursor_pos.position.y
+        );
     }
 }
