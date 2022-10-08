@@ -140,7 +140,7 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
     .insert(Card {})
     .insert(ingredient)
     .insert(Interactable::new_rectangle(InteractionGroup::Card, corner))
-    .insert(Draggable)
+    .insert(Draggable { offset: true })
     .insert(Name::new("Card"))
     .insert(Highligtable {
         sprite_e: Some(outline_e),

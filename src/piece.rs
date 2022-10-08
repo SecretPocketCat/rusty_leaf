@@ -138,7 +138,7 @@ pub fn spawn_piece(
         ..default()
     })
     .insert(Interactable::new_rectangle(InteractionGroup::Piece, corner))
-    .insert(Draggable)
+    .insert(Draggable { offset: false })
     .insert(Piece(piece_index))
     .insert(TileCoords::default())
     .insert(Mover {

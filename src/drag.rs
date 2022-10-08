@@ -24,7 +24,9 @@ impl Plugin for DragPlugin {
 }
 
 #[derive(Component)]
-pub struct Draggable;
+pub struct Draggable {
+    pub offset: bool,
+}
 
 #[derive(Component)]
 pub struct Dragged {
@@ -83,22 +85,25 @@ fn on_drag_end(
 }
 
 fn drag(
-    mut dragged_q: Query<(&mut Dragged, &mut Transform, &Interactable)>,
+    mut dragged_q: Query<(&mut Dragged, &mut Transform, &Interactable, &Draggable)>,
     cursor: Res<CursorWorldPosition>,
     time: Res<Time>,
 ) {
-    for (mut dragged, mut t, interactable) in dragged_q.iter_mut() {
+    for (mut dragged, mut t, interactable, draggable) in dragged_q.iter_mut() {
         if cursor.is_changed() {
-            let offset_t =
-                inverse_lerp_clamped(0., 50. * time.delta_seconds(), cursor.delta.length()) + 0.5;
+            if draggable.offset {
+                let offset_t =
+                    inverse_lerp_clamped(0., 50. * time.delta_seconds(), cursor.delta.length())
+                        + 0.5;
 
-            info!("{offset_t}");
-            dragged.offset = asymptotic_smoothing_with_delta_time(
-                dragged.offset,
-                Vec2::new(interactable.bounds.max.x, interactable.bounds.min.y),
-                0.2 * offset_t,
-                time.delta_seconds(),
-            );
+                dragged.offset = asymptotic_smoothing_with_delta_time(
+                    dragged.offset,
+                    Vec2::new(interactable.bounds.max.x, interactable.bounds.min.y),
+                    0.2 * offset_t,
+                    time.delta_seconds(),
+                );
+            }
+
             t.translation = (cursor.position + dragged.offset).extend(t.translation.z);
         }
     }
