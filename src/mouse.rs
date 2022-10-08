@@ -86,7 +86,7 @@ fn map_touch(mut touch_evr: EventReader<TouchInput>, mut cursor: ResMut<CursorTo
                 cursor.id = Some(ev.id);}
             }
             TouchPhase::Ended | TouchPhase::Cancelled => {
-                if let Some(  id) = cursor.id && id == ev.id {
+                if let Some(id) = cursor.id && id == ev.id {
                     cursor.id = None;
                 }
             }
