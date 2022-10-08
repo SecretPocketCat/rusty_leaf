@@ -182,7 +182,7 @@ fn test_card_spawn(mut cmd: Commands, mut lvl_evr: EventReader<LevelEv>, sprites
 
 fn drop_card(
     mut cmd: Commands,
-    dragged_query: Query<(&Card, &Ingredient, &Transform)>,
+    dragged_query: Query<(&Ingredient, &Transform), With<Card>>,
     interaction_state: Res<InteractionState>,
     parent_q: Query<&Parent>,
     mut cauldron_q: Query<&mut Cauldron>,
@@ -194,7 +194,7 @@ fn drop_card(
 ) {
     for ev in interaction_evr.iter() {
         if let InteractionEv::DragEnd(drag_data) = ev {
-            if let Ok((card, ingredient, card_t)) = dragged_query.get(drag_data.e) {
+            if let Ok((ingredient, card_t)) = dragged_query.get(drag_data.e) {
                 let mut used = false;
 
                 if let Some(e) = interaction_state.get_first_hovered_entity(&InteractionGroup::Fire)
