@@ -217,10 +217,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                     transform: Transform::from_xyz(0., y, 0.),
                     ..default()
                 })
-                .insert(Interactable::new_rectangle(
-                    InteractionGroup::Cauldron,
-                    corner,
-                ))
+                .insert(Interactable::new_rectangle(group, corner))
                 .insert(Highligtable {
                     sprite_e: Some(outline_e),
                     hightlight_color: highlight_col,

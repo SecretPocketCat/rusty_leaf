@@ -215,30 +215,26 @@ fn drop_card(
                     if let Ok(cauldron_e) = parent_q.get(e) {
                         if let Ok(mut c) = cauldron_q.get_mut(cauldron_e.get()) {
                             // there can't be a ready meal in the cauldron
-                            if let Ok((_, ingredient, ..)) = dragged_query.get_single() {
-                                let mut can_use_ingredient = true;
+                            let mut can_use_ingredient = true;
 
-                                if let Some(tooltip_e) = c.tooltip_e {
-                                    if let Ok(tooltip) = tooltip_q.get(tooltip_e) {
-                                        if tooltip.ingredients.len() >= 3
-                                            && !tooltip
-                                                .ingredients
-                                                .contains_key(&(*ingredient as u8))
-                                        {
-                                            can_use_ingredient = false;
-                                        }
+                            if let Some(tooltip_e) = c.tooltip_e {
+                                if let Ok(tooltip) = tooltip_q.get(tooltip_e) {
+                                    if tooltip.ingredients.len() >= 3
+                                        && !tooltip.ingredients.contains_key(&(*ingredient as u8))
+                                    {
+                                        can_use_ingredient = false;
                                     }
                                 }
+                            }
 
-                                if can_use_ingredient {
-                                    c.ingredients.push(*ingredient);
-                                    card_evw.send(CardEffect::Ingredient {
-                                        cauldron_e: cauldron_e.get(),
-                                        ingredient: *ingredient,
-                                    });
+                            if can_use_ingredient {
+                                c.ingredients.push(*ingredient);
+                                card_evw.send(CardEffect::Ingredient {
+                                    cauldron_e: cauldron_e.get(),
+                                    ingredient: *ingredient,
+                                });
 
-                                    used = true;
-                                }
+                                used = true;
                             }
                         }
                     }
