@@ -176,7 +176,7 @@ fn on_fadeable_child_added(
         } else if spritesheet.is_some() {
             FadeChild::SpriteSheet(added_e)
         } else {
-            FadeChild::SpriteSheet(added_e)
+            FadeChild::Text(added_e)
         };
 
         while let Ok(p) = parent_q.get(current_e) {
