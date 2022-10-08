@@ -2,14 +2,14 @@ use crate::{
     anim::SheetAnimation,
     assets::{Fonts, Sprites},
     card::{CardEffect, Ingredient},
-    drag::DragGroup,
     highlight::Highligtable,
+    interaction::{Interactable, InteractionGroup},
     level::LevelEv,
     order::{Order, OrderEv},
     progress::TooltipProgress,
     render::{
-        NoRescale, ZIndex, COL_DARK, COL_DARKER, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED,
-        COL_OUTLINE_HIGHLIGHTED_2, COL_OUTLINE_HOVERED_DRAG, SCALE_MULT,
+        ZIndex, COL_DARK, COL_DARKER, COL_OUTLINE_HIGHLIGHTED, COL_OUTLINE_HIGHLIGHTED_2,
+        COL_OUTLINE_HOVERED_DRAG,
     },
     tween::{
         get_relative_fade_text_anim, get_relative_move_anim, get_relative_move_by_anim,
@@ -18,7 +18,6 @@ use crate::{
     GameState,
 };
 use bevy::{prelude::*, utils::HashMap};
-use bevy_interact_2d::Interactable;
 use iyes_loopless::prelude::*;
 use std::time::Duration;
 
@@ -45,6 +44,7 @@ pub const COOK_TIME: f32 = 15.;
 pub const FIRE_BOOST_TIME: f32 = 15.;
 pub const FIRE_BOOST_MULT: f32 = 2.5;
 const TOOLTIP_TWEEN_OFFSET: f32 = 28.;
+const CAULDRON_INGREDIENT_Y: f32 = -4.5;
 
 #[derive(Component)]
 pub struct Cauldron {
@@ -90,13 +90,12 @@ pub fn spawn_tooltip_ingredient(
                 format!("{count}x"),
                 TextStyle {
                     font: fonts.tooltip.clone(),
-                    font_size: 16.0 * SCALE_MULT,
+                    font_size: 16.0,
                     color: Color::NONE,
                 },
             )
             .with_alignment(TextAlignment::BOTTOM_CENTER),
-            transform: Transform::from_scale(Vec2::splat(1. / SCALE_MULT).extend(1.))
-                .with_translation(Vec3::new(0., 6., 0.)),
+            transform: Transform::from_xyz(0., 6., 0.),
             ..default()
         })
         .insert(get_relative_fade_text_anim(
@@ -116,7 +115,6 @@ pub fn spawn_tooltip_ingredient(
             transform: Transform::from_translation(Vec2::new(x, y_offset).extend(0.01)),
             ..default()
         })
-        .insert(NoRescale)
         .insert(get_relative_spritesheet_color_anim(Color::WHITE, 250, None))
         .insert(Name::new("tooltip_ingredient"))
         .add_child(txt_e)
@@ -127,7 +125,7 @@ pub fn spawn_tooltip_ingredient(
 
 fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
     for (x, firepit_x, sprite_index, flip_x, fire_x) in
-        [(80., -2.5, 0, false, 0.), (295., -6., 1, true, -2.0)].iter()
+        [(20., -1., 0, false, 0.), (74., -5., 1, true, -1.0)].iter()
     {
         let fire_e = cmd
             .spawn_bundle(SpriteSheetBundle {
@@ -141,7 +139,6 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 ..default()
             })
             .insert(SheetAnimation::new(100).with_range(0..8, true))
-            .insert(NoRescale)
             .insert(Name::new("Fire"))
             .id();
 
@@ -155,7 +152,6 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 },
                 ..default()
             })
-            .insert(NoRescale)
             .insert(Name::new("outline"))
             .id();
 
@@ -169,14 +165,13 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 },
                 ..default()
             })
-            .insert(NoRescale)
             .insert(Name::new("outline"))
             .id();
 
         cmd.spawn_bundle(SpriteSheetBundle {
             texture_atlas: sprites.cauldron.clone(),
             sprite: TextureAtlasSprite::new(*sprite_index),
-            transform: Transform::from_xyz(*x, -176., 0.5),
+            transform: Transform::from_xyz(*x, -44., 0.5),
             ..default()
         })
         .insert(ZIndex::Cauldron)
@@ -197,7 +192,6 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                 transform: Transform::from_xyz(*firepit_x, -25., -0.01),
                 ..default()
             })
-            .insert(NoRescale)
             .add_child(firepit_outline_e);
 
             for (y, corner_x, corner_y, group, outline_e, highlight_col) in [
@@ -205,7 +199,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                     10.,
                     18.,
                     18.,
-                    DragGroup::Cauldron,
+                    InteractionGroup::Cauldron,
                     cauldron_outline_e,
                     COL_OUTLINE_HIGHLIGHTED,
                 ),
@@ -213,7 +207,7 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                     -28.,
                     18.,
                     16.,
-                    DragGroup::Fire,
+                    InteractionGroup::Fire,
                     firepit_outline_e,
                     COL_OUTLINE_HIGHLIGHTED_2,
                 ),
@@ -223,16 +217,13 @@ fn setup(mut cmd: Commands, sprites: Res<Sprites>) {
                     transform: Transform::from_xyz(0., y, 0.),
                     ..default()
                 })
-                .insert(Interactable {
-                    bounding_box: (-corner, corner),
-                    groups: vec![group.into()],
-                })
+                .insert(Interactable::new_rectangle(group, corner))
                 .insert(Highligtable {
                     sprite_e: Some(outline_e),
                     hightlight_color: highlight_col,
                     hover_color: COL_OUTLINE_HOVERED_DRAG,
                     normal_color: COL_DARK,
-                    drag_groups: vec![DragGroup::Card],
+                    drag_groups: vec![InteractionGroup::Card],
                 });
             }
         });
@@ -318,7 +309,7 @@ fn show_progress_tooltip(
                         *ingredient,
                         1,
                         0,
-                        -4.5,
+                        CAULDRON_INGREDIENT_Y,
                         &mut cmd,
                         &sprites,
                         &fonts,
@@ -342,10 +333,8 @@ fn show_progress_tooltip(
                                     color: Color::NONE,
                                     ..default()
                                 },
-                                transform: Transform::from_xyz(0., 0., 0.),
                                 ..default()
                             })
-                            .insert(NoRescale)
                             .insert(ZIndex::Tooltip)
                             .insert(Name::new("Tooltip"))
                             .insert(TooltipProgress::new(0., false))
@@ -395,7 +384,7 @@ fn add_ingredient_to_tooltip(
                                 *ingredient,
                                 1,
                                 ingredient_list.ingredients.len(),
-                                -4.5,
+                                CAULDRON_INGREDIENT_Y,
                                 &mut cmd,
                                 &sprites,
                                 &fonts,

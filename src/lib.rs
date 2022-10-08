@@ -19,11 +19,12 @@ mod coords;
 mod customer;
 mod drag;
 mod highlight;
+mod interaction;
 mod level;
 mod list;
 mod mouse;
+mod mover;
 mod order;
-mod pause;
 mod piece;
 mod progress;
 mod render;
@@ -40,22 +41,24 @@ use bevy::app::App;
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
 use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_interact_2d::{drag::DragPlugin, InteractionDebugPlugin, InteractionPlugin};
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use bevy_tweening::TweeningPlugin;
-use card::{Card, CardPlugin, Ingredient};
+use card::CardPlugin;
 use cauldron::CauldronPlugin;
-use coords::{CoordsPlugin, TileCoords};
+use coords::CoordsPlugin;
 use customer::CustomerPlugin;
-use drag::DragPlugin as GameDragPlugin;
+use drag::DragPlugin;
 use highlight::HighlightPlugin;
 use input::GameInputPlugin;
+use interaction::InteractionPlugin;
 use level::LevelPlugin;
 use mouse::MousePlugin;
+use mover::MoverPlugin;
 use order::OrderPlugin;
 use progress::ProgressPlugin;
 use render::RenderPlugin;
 mod input;
+use bevy_pixel_camera::PixelCameraPlugin;
 
 // This example game uses States to separate logic
 // See https://bevy-cheatbook.github.io/programming/states.html
@@ -71,7 +74,7 @@ enum GameState {
     Menu,
 }
 
-pub use render::WINDOW_SIZE;
+pub use render::VIEW_SIZE;
 use save::SavePlugin;
 use tween::GameTweenPlugin;
 use win::WinPlugin;
@@ -81,9 +84,11 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(AssetsPlugin)
+            .add_plugin(PixelCameraPlugin)
             .add_plugin(RenderPlugin)
+            .add_plugin(InteractionPlugin)
             .add_plugin(DragPlugin)
-            .add_plugin(GameDragPlugin)
+            .add_plugin(MoverPlugin)
             .add_plugin(AnimationPlugin)
             .add_plugin(HighlightPlugin)
             .add_plugin(ShapePlugin)
@@ -107,10 +112,8 @@ impl Plugin for GamePlugin {
             // app.register_inspectable::<Card>()
             //     .register_inspectable::<Ingredient>()
             //     .register_inspectable::<TileCoords>();
-            // app.add_plugin(InteractionDebugPlugin);
-            app.add_plugin(InteractionPlugin);
+            // app.add_plugin(InteractionPlugin);
         } else {
-            app.add_plugin(InteractionPlugin);
         }
     }
 }

@@ -2,11 +2,15 @@ use crate::{
     assets::Sprites,
     board::{Board, BoardClear},
     cauldron::{Cauldron, TooltipIngridientList},
-    drag::DragGroup,
+    drag::{Draggable, Dragged},
     highlight::Highligtable,
+    interaction::{Interactable, InteractionEv, InteractionGroup, InteractionState},
     level::{InteractableSection, LevelEv},
     list::{ListPlugin, ListPluginOptions},
-    render::{NoRescale, ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, WINDOW_SIZE},
+    render::{
+        ZIndex, COL_DARK, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, PADDED_VIEW_EXTENDS, VIEW_PADDING,
+        VIEW_SIZE,
+    },
     tween::{
         delay_tween, get_relative_move_anim, get_relative_move_by_tween, FadeHierarchyBundle,
         TweenDoneAction,
@@ -15,10 +19,6 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
-use bevy_interact_2d::{
-    drag::{Draggable, Dragged},
-    Interactable, InteractionState,
-};
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
 
@@ -28,22 +28,24 @@ impl Plugin for CardPlugin {
         app.add_event::<CardEffect>()
             .add_plugin(ListPlugin::<Card>::new(ListPluginOptions {
                 offset: CARD_INDEX_X_OFFSET as f32,
-                offscreen_offset: CARD_OFFSCREEN_OFFSET as f32,
+                offscreen_offset: -CARD_SIZE.y - VIEW_PADDING,
                 horizontal: true,
+                place_duration_ms: 650,
+                shift_duration_ms: 300,
             }))
             .add_system_to_stage(CoreStage::Last, drop_card) // run after update to get precise dragged.origin
             .add_system(on_level_over.run_not_in_state(GameState::Loading));
 
         if cfg!(debug_assertions) {
-            app.add_enter_system(GameState::Playing, test_card_spawn);
+            app.add_system(test_card_spawn.run_in_state(GameState::Playing));
         }
     }
 }
 
 pub const MAX_CARDS: usize = 5;
 pub const CARD_SIZE: Vec2 = Vec2::new(32., 48.);
-const CARD_INDEX_X_OFFSET: i32 = -140;
-const CARD_OFFSCREEN_OFFSET: i32 = 250;
+pub const CARD_EXTENDS: Vec2 = Vec2::new(CARD_SIZE.x / 2., CARD_SIZE.y / 2.);
+const CARD_INDEX_X_OFFSET: i32 = -35;
 
 #[derive(Component, Inspectable)]
 pub struct Card {}
@@ -120,13 +122,12 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
             },
             ..default()
         })
-        .insert(NoRescale)
         .insert(Name::new("outline"))
         .id();
 
     let pos = Vec3::new(
-        WINDOW_SIZE.x / 2. - CARD_SIZE.x - 60.,
-        WINDOW_SIZE.y / 2. - CARD_SIZE.y - 75. + CARD_OFFSCREEN_OFFSET as f32,
+        PADDED_VIEW_EXTENDS.x - CARD_EXTENDS.x,
+        VIEW_SIZE.y / 2. + CARD_EXTENDS.y,
         2.,
     );
 
@@ -138,14 +139,8 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
     .insert(ZIndex::Card)
     .insert(Card {})
     .insert(ingredient)
-    .insert(Interactable {
-        bounding_box: (-corner, corner),
-        groups: vec![DragGroup::Card.into()],
-    })
-    .insert(Draggable {
-        groups: vec![DragGroup::Card.into()],
-        ..default()
-    })
+    .insert(Interactable::new_rectangle(InteractionGroup::Card, corner))
+    .insert(Draggable { offset: true })
     .insert(Name::new("Card"))
     .insert(Highligtable {
         sprite_e: Some(outline_e),
@@ -161,60 +156,65 @@ pub fn spawn_card(cmd: &mut Commands, sprites: &Sprites, clear: &BoardClear) {
             sprite: TextureAtlasSprite::new(ingredient.get_sprite_index()),
             transform: Transform::from_translation(Vec2::new(0., 10.).extend(0.0)),
             ..default()
-        })
-        .insert(NoRescale);
+        });
     });
 }
 
-fn test_card_spawn(mut cmd: Commands, sprites: Res<Sprites>) {
-    for i in 0..4 {
-        // spawn_card(&mut cmd, &sprites, &BoardClear::Column(0));
-        // spawn_card(
-        //     &mut cmd,
-        //     &sprites,
-        //     &BoardClear::Section {
-        //         section_index: i,
-        //         used_special: false,
-        //     },
-        // );
+fn test_card_spawn(mut cmd: Commands, mut lvl_evr: EventReader<LevelEv>, sprites: Res<Sprites>) {
+    for ev in lvl_evr.iter() {
+        if let LevelEv::LevelStart = ev {
+            for i in 0..4 {
+                // spawn_card(&mut cmd, &sprites, &BoardClear::Column(0));
+                spawn_card(
+                    &mut cmd,
+                    &sprites,
+                    &BoardClear::Section {
+                        section_index: i,
+                        used_special: false,
+                    },
+                );
+            }
+
+            break;
+        }
     }
 }
 
 fn drop_card(
     mut cmd: Commands,
-    mouse_input: Res<Input<MouseButton>>,
-    dragged_query: Query<(Entity, &Card, &Ingredient, &Dragged, &Transform)>,
+    dragged_query: Query<(&Ingredient, &Transform), With<Card>>,
     interaction_state: Res<InteractionState>,
     parent_q: Query<&Parent>,
     mut cauldron_q: Query<&mut Cauldron>,
     section_q: Query<&InteractableSection>,
     tooltip_q: Query<&TooltipIngridientList>,
+    mut interaction_evr: EventReader<InteractionEv>,
     mut card_evw: EventWriter<CardEffect>,
     board: Res<Board>,
 ) {
-    if mouse_input.just_released(MouseButton::Left) {
-        let mut used = false;
+    for ev in interaction_evr.iter() {
+        if let InteractionEv::DragEnd(drag_data) = ev {
+            if let Ok((ingredient, card_t)) = dragged_query.get(drag_data.e) {
+                let mut used = false;
 
-        if interaction_state.get_group(DragGroup::Card.into()).len() > 0 {
-            if let Some((e, ..)) = interaction_state.get_group(DragGroup::Fire.into()).first() {
-                if let Ok(cauldron_e) = parent_q.get(*e) {
-                    if let Ok(_c) = cauldron_q.get_mut(cauldron_e.get()) {
-                        // increase fire boost
-                        card_evw.send(CardEffect::FireBoost {
-                            cauldron_e: cauldron_e.get(),
-                            boost_dur_multiplier: None,
-                        });
-                        used = true;
+                if let Some(e) = interaction_state.get_first_hovered_entity(&InteractionGroup::Fire)
+                {
+                    if let Ok(cauldron_e) = parent_q.get(e) {
+                        if let Ok(_c) = cauldron_q.get_mut(cauldron_e.get()) {
+                            // increase fire boost
+                            card_evw.send(CardEffect::FireBoost {
+                                cauldron_e: cauldron_e.get(),
+                                boost_dur_multiplier: None,
+                            });
+                            used = true;
+                        }
                     }
-                }
-            } else if let Some((e, ..)) = interaction_state
-                .get_group(DragGroup::Cauldron.into())
-                .first()
-            {
-                if let Ok(cauldron_e) = parent_q.get(*e) {
-                    if let Ok(mut c) = cauldron_q.get_mut(cauldron_e.get()) {
-                        // there can't be a ready meal in the cauldron
-                        if let Ok((_, _, ingredient, ..)) = dragged_query.get_single() {
+                } else if let Some(e) =
+                    interaction_state.get_first_hovered_entity(&InteractionGroup::Cauldron)
+                {
+                    if let Ok(cauldron_e) = parent_q.get(e) {
+                        if let Ok(mut c) = cauldron_q.get_mut(cauldron_e.get()) {
+                            // there can't be a ready meal in the cauldron
                             let mut can_use_ingredient = true;
 
                             if let Some(tooltip_e) = c.tooltip_e {
@@ -238,39 +238,34 @@ fn drop_card(
                             }
                         }
                     }
-                }
-            } else if let Some((e, ..)) = interaction_state
-                .get_group(DragGroup::GridSection.into())
-                .first()
-            {
-                if let Ok(section) = section_q.get(*e) {
-                    if !board.is_section_empty(section.0) {
-                        card_evw.send(CardEffect::ClearSection { section: section.0 });
-                        used = true;
+                } else if let Some(e) =
+                    interaction_state.get_first_hovered_entity(&InteractionGroup::GridSection)
+                {
+                    if let Ok(section) = section_q.get(e) {
+                        if !board.is_section_empty(section.0) {
+                            card_evw.send(CardEffect::ClearSection { section: section.0 });
+                            used = true;
+                        }
                     }
-                }
-            };
-        }
+                };
 
-        if used {
-            if let Ok((e, ..)) = dragged_query.get_single() {
-                // todo: particles?
-                let mut cmd_e = cmd.entity(e);
-                cmd_e.remove::<Interactable>();
-                cmd_e.insert_bundle(
-                    FadeHierarchyBundle::new(false, 300, Color::NONE)
-                        .with_done_action(TweenDoneAction::DespawnRecursive),
-                );
-            }
-        } else {
-            for (dragged_e, _card, _, dragged, card_t) in dragged_query.iter() {
-                let mut e_cmd = cmd.entity(dragged_e);
-                e_cmd.remove::<Dragged>();
-                e_cmd.insert(get_relative_move_anim(
-                    dragged.origin.extend(card_t.translation.z),
-                    300,
-                    None,
-                ));
+                if used {
+                    // todo: particles?
+                    let mut cmd_e = cmd.entity(drag_data.e);
+                    cmd_e.remove::<Interactable>();
+                    cmd_e.insert_bundle(
+                        FadeHierarchyBundle::new(false, 300, Color::NONE)
+                            .with_done_action(TweenDoneAction::DespawnRecursive),
+                    );
+                } else {
+                    let mut e_cmd = cmd.entity(drag_data.e);
+                    e_cmd.remove::<Dragged>();
+                    e_cmd.insert(get_relative_move_anim(
+                        drag_data.origin.extend(card_t.translation.z),
+                        300,
+                        None,
+                    ));
+                }
             }
         }
     }
@@ -287,9 +282,9 @@ fn on_level_over(
                 let mut e_cmd = cmd.entity(e);
                 e_cmd.insert(Animator::new(delay_tween(
                     get_relative_move_by_tween(
-                        Vec3::Y * 450.,
+                        Vec3::Y * CARD_SIZE.y * 1.5,
                         350,
-                        EaseFunction::CircularIn,
+                        EaseFunction::QuadraticIn,
                         Some(TweenDoneAction::DespawnRecursive),
                     ),
                     i as u64 * 100,

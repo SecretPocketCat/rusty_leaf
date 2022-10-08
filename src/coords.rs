@@ -1,13 +1,13 @@
 use crate::{
     board::Board,
+    drag::Dragged,
+    interaction::Interactable,
     mouse::CursorWorldPosition,
     piece::Piece,
-    render::SCALE_MULT,
     tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, TILE_SIZE},
 };
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
-use bevy_interact_2d::{drag::Dragged, Interactable};
 
 use std::ops::{Add, Div};
 
@@ -27,10 +27,7 @@ pub struct TileCoords {
 
 pub fn get_tile_coords_from_world(world_coords: Vec2, tile_size: UVec2) -> Option<UVec2> {
     let max_i = BOARD_SIZE as f32;
-    let base_coords = world_coords
-        .div(TILE_SIZE)
-        .round()
-        .add(Vec2::splat(SCALE_MULT));
+    let base_coords = world_coords.div(TILE_SIZE).round();
     let coords = Vec2::new(base_coords.x - 1., max_i - 1. - base_coords.y.abs());
     let tile_size = Vec2::new(tile_size.x as f32, tile_size.y as f32);
 
@@ -63,13 +60,14 @@ fn update_tile_coords(
         if let Ok((mut coords, piece, interactable_t, interactable)) =
             dragged_query.get_single_mut()
         {
-            let tile_size = interactable.bounding_box.0.abs().div(TILE_SIZE / 2.);
+            let tile_size = interactable.bounds.size().div(TILE_SIZE);
             let tile_size = UVec2::new(tile_size.x as u32, tile_size.y as u32);
             let mut dragged_tile_coords = get_tile_coords_from_world(
                 interactable_t.translation.truncate()
+                    // todo: what's up with this magic offset?
                     + Vec2::new(
-                        -interactable.bounding_box.0.x.abs() + 1.5 * TILE_SIZE,
-                        interactable.bounding_box.0.y.abs() - 0.5 * TILE_SIZE,
+                        -interactable.bounds.width() / 2. + 5.5 * TILE_SIZE,
+                        interactable.bounds.height() / 2. + 3.5 * TILE_SIZE,
                     )
                     + -BOARD_SHIFT.truncate(),
                 tile_size,
@@ -110,6 +108,9 @@ fn update_tile_coords(
 
 fn log_coords(cursor_pos: Res<CursorWorldPosition>) {
     if cursor_pos.is_changed() {
-        info!("Cursor coords [{}, {}]", cursor_pos.0.x, cursor_pos.0.y);
+        info!(
+            "Cursor coords [{}, {}]",
+            cursor_pos.position.x, cursor_pos.position.y
+        );
     }
 }

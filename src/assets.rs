@@ -5,6 +5,7 @@ use iyes_loopless::prelude::*;
 
 use crate::GameState;
 
+// todo: add a system which check all sprites/sheets have even dimensions (frame dimensions for sheets) else just panic
 pub struct AssetsPlugin;
 impl Plugin for AssetsPlugin {
     fn build(&self, app: &mut App) {

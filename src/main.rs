@@ -6,7 +6,7 @@ use bevy::render::texture::ImageSettings;
 use bevy::window::WindowId;
 use bevy::winit::WinitWindows;
 use bevy::DefaultPlugins;
-use bevy_game::{GamePlugin, WINDOW_SIZE};
+use bevy_game::{GamePlugin, VIEW_SIZE};
 use std::io::Cursor;
 use winit::window::Icon;
 
@@ -16,10 +16,9 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
         .insert_resource(ImageSettings::default_nearest())
         .insert_resource(WindowDescriptor {
-            width: WINDOW_SIZE.x,
-            height: WINDOW_SIZE.y,
-            title: "Bevy game".to_string(), // ToDo
+            title: "Rusty Cauldron".to_string(), // ToDo
             canvas: Some("#bevy".to_owned()),
+            fit_canvas_to_parent: true,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)

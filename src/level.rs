@@ -4,12 +4,11 @@ use crate::{
     anim::SheetAnimation,
     assets::{Fonts, Sprites},
     card::Ingredient,
-    drag::DragGroup,
     highlight::Highligtable,
+    interaction::{Interactable, InteractionGroup},
     order::SpecialOrder,
     render::{
-        NoRescale, ZIndex, COL_DARK, COL_DARKER, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED,
-        COL_OUTLINE_HOVERED_DRAG, SCALE_MULT,
+        ZIndex, COL_DARK, COL_DARKER, COL_LIGHT, COL_OUTLINE_HIGHLIGHTED, COL_OUTLINE_HOVERED_DRAG,
     },
     tile_placement::{Pieces, BOARD_SHIFT, BOARD_SIZE, SECTION_SIZE, TILE_SIZE},
     tools::enum_variant_eq,
@@ -21,7 +20,6 @@ use crate::{
     GameState,
 };
 use bevy::{ecs::event::Event, prelude::*};
-use bevy_interact_2d::Interactable;
 use bevy_tweening::{Animator, EaseFunction};
 use iyes_loopless::prelude::*;
 use rand::{distributions::WeightedIndex, thread_rng, Rng};
@@ -29,18 +27,7 @@ use rand::{distributions::WeightedIndex, thread_rng, Rng};
 pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
-        let levels = vec![
-            // Level {
-            //     name: "TEST".into(),
-            //     allowed_ingredients: vec![Ingredient::Pumpkin],
-            //     required_ingredients: Vec::new(),
-            //     ingredient_count_range: 1..2,
-            //     ingredient_type_range: 1..2,
-            //     max_simultaneous_orders: 3,
-            //     next_customer_delay_range_ms: 5000..5001,
-            //     total_order_count: 3,
-            //     special_order: None,
-            // },
+        let mut levels = vec![
             Level {
                 name: "Soup 101".into(),
                 allowed_ingredients: vec![
@@ -224,6 +211,31 @@ impl Plugin for LevelPlugin {
             },
         ];
 
+        if cfg!(debug_assertions) {
+            levels.insert(
+                1,
+                Level {
+                    name: "TEST".into(),
+                    allowed_ingredients: vec![
+                        Ingredient::Pumpkin,
+                        Ingredient::Potato,
+                        Ingredient::Tomato,
+                        Ingredient::Mushroom,
+                        Ingredient::Eggplant,
+                        Ingredient::Garlic,
+                    ],
+                    required_ingredients: Vec::new(),
+                    ingredient_count_range: 5..7,
+                    ingredient_type_range: 3..4,
+                    max_simultaneous_orders: 4,
+                    next_customer_delay_range_ms: 1000..1001,
+                    total_order_count: 3,
+                    special_order: None,
+                    pieces_range: None,
+                },
+            );
+        }
+
         app.add_event::<LevelEv>()
             .insert_resource(Levels(levels))
             .add_startup_system(setup_fade)
@@ -390,7 +402,7 @@ struct Tutorial;
 fn setup_fade(mut cmd: Commands) {
     cmd.spawn_bundle(SpriteBundle {
         sprite: Sprite {
-            custom_size: Some(Vec2::splat(4000.)),
+            custom_size: Some(Vec2::splat(1000.)),
             color: COL_DARKER,
             ..default()
         },
@@ -405,13 +417,16 @@ fn setup_app(
     sprites: Res<Sprites>,
     fonts: Res<Fonts>,
     fade_q: Query<Entity, With<StartFade>>,
+    lvl: Res<CurrentLevel>,
 ) {
-    cmd.spawn_bundle(SpriteBundle {
-        texture: sprites.tutorial.clone(),
-        transform: Transform::from_xyz(0., 0., 99.),
-        ..default()
-    })
-    .insert(Tutorial);
+    if lvl.level_index == 0 {
+        cmd.spawn_bundle(SpriteBundle {
+            texture: sprites.tutorial.clone(),
+            transform: Transform::from_xyz(0., 0., 99.),
+            ..default()
+        })
+        .insert(Tutorial);
+    }
 
     for e in fade_q.iter() {
         cmd.entity(e).insert(get_relative_sprite_color_anim(
@@ -439,15 +454,15 @@ fn setup_app(
         (
             sprites.ferris.clone(),
             ZIndex::Shopkeep,
-            -350.,
-            -218.,
+            -88.,
+            -55.,
             "ferris",
         ),
         (
             sprites.shop_smoke.clone(),
             ZIndex::BgShop,
-            -470.,
-            169.,
+            -118.,
+            42.,
             "shop_smoke",
         ),
     ]
@@ -466,13 +481,13 @@ fn setup_app(
 
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.parchment.clone(),
-        transform: Transform::from_xyz(BOARD_SHIFT.x + 23., -1500., 0.),
+        transform: Transform::from_xyz(BOARD_SHIFT.x + 6., -375., 0.),
         ..default()
     })
     .insert(ZIndex::Grid)
     .insert(
         EvTween::new(
-            LevelEventTweenType::MoveByY(910.),
+            LevelEventTweenType::MoveByY(228.),
             LevelEv::LevelStart,
             LevelEv::LevelOut,
             800,
@@ -486,19 +501,18 @@ fn setup_app(
             texture: sprites.parchment_grid.clone(),
             transform: Transform::from_xyz(0., 0., 0.5),
             ..default()
-        })
-        .insert(NoRescale);
+        });
     });
 
     cmd.spawn_bundle(SpriteBundle {
         texture: sprites.title_tooltip.clone(),
-        transform: Transform::from_xyz(0., 450., 0.),
+        transform: Transform::from_xyz(0., 113., 0.),
         ..default()
     })
     .insert(ZIndex::Tooltip)
     .insert(
         EvTween::new(
-            LevelEventTweenType::MoveByY(-240.),
+            LevelEventTweenType::MoveByY(-60.),
             LevelEv::LevelIn,
             LevelEv::LevelStart,
             1200,
@@ -514,13 +528,12 @@ fn setup_app(
                 "",
                 TextStyle {
                     font: fonts.tooltip.clone(),
-                    font_size: 16.0 * SCALE_MULT,
+                    font_size: 16.0,
                     color: COL_DARK,
                 },
             )
             .with_alignment(TextAlignment::CENTER),
-            transform: Transform::from_xyz(0., 2., 0.01)
-                .with_scale(Vec2::splat(1. / SCALE_MULT).extend(1.)),
+            transform: Transform::from_xyz(0., 2., 0.01),
             ..default()
         })
         .insert(LevelTooltiptext);
@@ -531,12 +544,12 @@ fn setup_app(
             format!("Click anywhere to start the day..."),
             TextStyle {
                 font: fonts.tooltip.clone(),
-                font_size: 16.0 * SCALE_MULT,
+                font_size: 16.0,
                 color: Color::NONE,
             },
         )
         .with_alignment(TextAlignment::CENTER_LEFT),
-        transform: Transform::from_xyz(-50., -321., 0.),
+        transform: Transform::from_xyz(-13., -80., 0.),
         ..default()
     })
     .insert(ZIndex::Tooltip)
@@ -554,10 +567,9 @@ fn setup_app(
 
     let corner = Vec2::splat(SECTION_SIZE as f32 / 2. * TILE_SIZE);
     let section_box = (-corner, corner);
-    // -520., 54.
     for i in 0..(BOARD_SIZE / SECTION_SIZE).pow(2) {
-        let x = (i % SECTION_SIZE) as f32 * corner.x * 2. - 520.;
-        let y = (i / SECTION_SIZE) as f32 * -corner.x * 2. + 58.;
+        let x = (i % SECTION_SIZE) as f32 * corner.x * 2. - 130.;
+        let y = (i / SECTION_SIZE) as f32 * -corner.x * 2. + 15.;
 
         cmd.spawn_bundle(SpriteBundle {
             transform: Transform::from_xyz(x, y, f32::from(ZIndex::Grid) + 0.1),
@@ -568,13 +580,13 @@ fn setup_app(
             },
             ..default()
         })
-        .insert(Interactable {
-            bounding_box: section_box,
-            groups: vec![DragGroup::GridSection.into()],
-        })
+        .insert(Interactable::new_rectangle(
+            InteractionGroup::GridSection,
+            corner,
+        ))
         .insert(InteractableSection(i))
         .insert(Highligtable {
-            drag_groups: vec![DragGroup::Card],
+            drag_groups: vec![InteractionGroup::Card],
             normal_color: Color::NONE,
             hightlight_color: Color::rgba(
                 COL_OUTLINE_HIGHLIGHTED.r(),
@@ -590,7 +602,6 @@ fn setup_app(
             ),
             sprite_e: None,
         })
-        .insert(NoRescale)
         .insert(Name::new("interactable_section"));
     }
 }

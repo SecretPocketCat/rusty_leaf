@@ -21,7 +21,7 @@ impl<T: Component> Plugin for ListPlugin<T> {
             timer: None,
             _t: PhantomData::<T>::default(),
         })
-        .add_system(enqueue_place_items::<T>)
+        .add_system_to_stage(CoreStage::Last, enqueue_place_items::<T>)
         // works with removedComponents, so can't run during Last
         .add_system_to_stage(CoreStage::PostUpdate, enqueue_shift_items::<T>)
         .add_system(run_queue_timer::<T>)
@@ -44,6 +44,8 @@ pub struct ListPluginOptions {
     pub offset: f32,
     pub offscreen_offset: f32,
     pub horizontal: bool,
+    pub place_duration_ms: u64,
+    pub shift_duration_ms: u64,
 }
 
 struct ListOptions<T: Component> {
@@ -104,8 +106,10 @@ fn shift_items<T: Component>(
 ) {
     if queue.timer.is_none() {
         if queue.shift {
-            let duration = 300;
-            queue.timer = Some(Timer::new(Duration::from_millis(duration), false));
+            queue.timer = Some(Timer::new(
+                Duration::from_millis(opts.options.shift_duration_ms),
+                false,
+            ));
             queue.shift = false;
 
             let used_indices: Vec<usize> = index_q.iter().map(|(i, ..)| i.0).collect();
@@ -124,11 +128,13 @@ fn shift_items<T: Component>(
                             c_t.translation,
                             c_index.0 - i,
                             -opts.options.offset,
-                            None,
                             opts.options.horizontal,
                         );
-                        cmd.entity(*c_e)
-                            .insert(get_relative_move_anim(target_pos, duration, None));
+                        cmd.entity(*c_e).insert(get_relative_move_anim(
+                            target_pos,
+                            opts.options.shift_duration_ms,
+                            None,
+                        ));
                         c_index.0 = i;
                         i += 1;
                     }
@@ -146,27 +152,28 @@ fn place_items<T: Component>(
 ) {
     // prioritize shifting over placing items
     if queue.timer.is_none() && !queue.shift && queue.place_queue.len() > 0 {
-        let duration = 400;
-        queue.timer = Some(Timer::new(Duration::from_millis(duration), false));
+        queue.timer = Some(Timer::new(
+            Duration::from_millis(opts.options.place_duration_ms),
+            false,
+        ));
 
         let mut item_i = item_q.iter().len() - queue.place_queue.len();
 
         for e in queue.place_queue.drain(..) {
             if let Ok((c_e, mut c_sprite, mut item_t)) = item_q.get_mut(e) {
-                let target_pos = get_item_target_position(
+                let start_pos = get_item_target_position(
                     item_t.translation,
                     item_i,
                     opts.options.offset,
-                    Some(opts.options.offscreen_offset),
                     opts.options.horizontal,
                 );
 
-                let start_pos = target_pos
+                let target_pos = start_pos
                     + if opts.options.horizontal {
                         Vec3::Y
                     } else {
                         Vec3::X
-                    } * 250.;
+                    } * opts.options.offscreen_offset;
 
                 c_sprite.color = Color::WHITE;
                 item_t.translation = start_pos;
@@ -176,8 +183,8 @@ fn place_items<T: Component>(
                     .insert(get_move_anim(
                         start_pos,
                         target_pos,
-                        duration,
-                        EaseFunction::CircularOut,
+                        opts.options.place_duration_ms,
+                        EaseFunction::QuadraticOut,
                         None,
                     ));
                 item_i += 1;
@@ -190,20 +197,17 @@ fn get_item_target_position(
     current_position: Vec3,
     item_index: usize,
     offset: f32,
-    offscreen_offset: Option<f32>,
     is_horizontal: bool,
 ) -> Vec3 {
-    let offscreen_offset = offscreen_offset.unwrap_or(0.);
-
     if is_horizontal {
         Vec3::new(
             current_position.x + offset * item_index as f32,
-            current_position.y - offscreen_offset,
+            current_position.y,
             current_position.z,
         )
     } else {
         Vec3::new(
-            current_position.x - offscreen_offset,
+            current_position.x,
             current_position.y + offset * item_index as f32,
             current_position.z,
         )

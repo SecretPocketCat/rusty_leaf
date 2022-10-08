@@ -8,7 +8,7 @@ use crate::{
     level::LevelEv,
     order::{Order, OrderEv},
     render::ZIndex,
-    GameState, WINDOW_SIZE,
+    GameState, VIEW_SIZE,
 };
 
 pub struct CustomerPlugin;
@@ -71,7 +71,7 @@ fn spawn_customer(
                 flip_x: true,
                 ..default()
             },
-            transform: Transform::from_xyz(WINDOW_SIZE.x / 2. + 50., -240., 0.0),
+            transform: Transform::from_xyz(VIEW_SIZE.x / 2. + 13., -60., 0.0),
             ..default()
         })
         .insert(ZIndex::Character)
@@ -90,7 +90,7 @@ fn spawn_customer(
 }
 
 fn get_rand_target() -> f32 {
-    thread_rng().gen_range(0.0..(WINDOW_SIZE.x / 2. - 50.))
+    thread_rng().gen_range(0.0..(VIEW_SIZE.x / 2. - 13.))
 }
 
 fn wander_around(
@@ -104,7 +104,7 @@ fn wander_around(
     time: Res<Time>,
 ) {
     for (e, mut c, mut c_t, mut sprite) in customer_q.iter_mut() {
-        if c_t.translation.x > WINDOW_SIZE.x / 2. + 200. {
+        if c_t.translation.x > VIEW_SIZE.x / 2. + 50. {
             // despawn if offscreen
             cmd.entity(e).despawn_recursive();
         } else {
@@ -128,9 +128,7 @@ fn on_order_completed(
         if let OrderEv::Completed(e) = ev {
             if let Some((mut c, mut sprite)) = customer_q.iter_mut().find(|(c, ..)| c.order_e == *e)
             {
-                // just walk offscreen
-                c.target_x = 10000.;
-                sprite.flip_x = false;
+                walk_away(&mut c, &mut sprite);
             }
         }
     }
@@ -143,11 +141,16 @@ fn on_level_over(
     for ev in lvl_evr.iter() {
         if let LevelEv::LevelOver { .. } = ev {
             for (mut c, mut sprite) in customer_q.iter_mut() {
-                c.target_x = 10000.;
-                sprite.flip_x = false;
+                walk_away(&mut c, &mut sprite);
             }
 
             break;
         }
     }
+}
+
+fn walk_away(customer: &mut Customer, sprite: &mut TextureAtlasSprite) {
+    // just walk offscreen
+    customer.target_x = 10000.;
+    sprite.flip_x = false;
 }
