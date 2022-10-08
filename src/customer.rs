@@ -43,7 +43,7 @@ fn spawn_customer(
 ) {
     let mut rng = thread_rng();
     let frame_duration = rng.gen_range(110..140);
-    let speed = (140. - frame_duration as f32) + 30.;
+    let speed = ((140. - frame_duration as f32) + 30.) / 4.;
 
     for e in new_order_q.iter() {
         let current_indices: Vec<_> = customer_q.iter().map(|c| c.character_index).collect();

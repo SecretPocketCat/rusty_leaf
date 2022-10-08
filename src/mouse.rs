@@ -6,7 +6,9 @@ pub struct MousePlugin;
 impl Plugin for MousePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CursorWorldPosition>()
-            .add_system(store_cursor_pos);
+            .init_resource::<CursorTouch>()
+            .add_system(store_cursor_pos)
+            .add_system(map_touch);
     }
 }
 
@@ -25,9 +27,16 @@ impl Default for CursorWorldPosition {
     }
 }
 
+#[derive(Debug, Default)]
+struct CursorTouch {
+    id: Option<u64>,
+}
+
 #[allow(clippy::only_used_in_recursion)]
 fn store_cursor_pos(
     wnds: Res<Windows>,
+    touch: Res<Touches>,
+    cursor_touch: Res<CursorTouch>,
     camera_q: Query<(&Camera, &GlobalTransform), With<MainCam>>,
     mut cursor_pos: ResMut<CursorWorldPosition>,
 ) {
@@ -38,8 +47,14 @@ fn store_cursor_pos(
     if let RenderTarget::Window(window_id) = cam.target {
         let win = wnds.get(window_id).unwrap();
 
+        let pos = if let Some(id) = cursor_touch.id {
+            touch.iter().find(|t| t.id() == id).map(|t| t.position())
+        } else {
+            win.cursor_position()
+        };
+
         // check if the cursor is inside the window and get its position
-        if let Some(screen_pos) = win.cursor_position() {
+        if let Some(screen_pos) = pos {
             let win_size = Vec2::new(win.width() as f32, win.height() as f32);
             let viewport_scale = cam.viewport.as_ref().map_or(Vec2::ONE, |viewport| {
                 Vec2::new(
@@ -58,6 +73,24 @@ fn store_cursor_pos(
             let pos = ndc_to_world.project_point3(ndc.extend(-1.0)).truncate() / viewport_scale;
             cursor_pos.delta = pos - cursor_pos.position;
             cursor_pos.position = pos;
+        }
+    }
+}
+
+fn map_touch(mut touch_evr: EventReader<TouchInput>, mut cursor: ResMut<CursorTouch>) {
+    use bevy::input::touch::TouchPhase;
+    for ev in touch_evr.iter() {
+        match ev.phase {
+            TouchPhase::Started => {
+            if cursor.id.is_none() {
+                cursor.id = Some(ev.id);}
+            }
+            TouchPhase::Ended | TouchPhase::Cancelled => {
+                if let Some(  id) = cursor.id && id == ev.id {
+                    cursor.id = None;
+                }
+            }
+            TouchPhase::Moved => {}
         }
     }
 }
