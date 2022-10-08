@@ -117,7 +117,7 @@ pub fn spawn_piece(
                         ..default()
                     },
                     DrawMode::Outlined {
-                        outline_mode: StrokeMode::new(COL_DARK, 4.),
+                        outline_mode: StrokeMode::new(COL_DARK, 1.),
                         fill_mode: FillMode::color(Color::rgb_u8(254, 209, 113)),
                     },
                     Transform::from_translation(Vec3::new(0., 63., pos.z)),
