@@ -1,8 +1,4 @@
 use bevy::prelude::*;
-use iyes_loopless::prelude::*;
-use web_sys::Location;
-
-use crate::{level::LevelEv, GameState};
 
 pub struct GameInputPlugin;
 impl Plugin for GameInputPlugin {
